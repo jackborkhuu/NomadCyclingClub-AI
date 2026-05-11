@@ -1296,6 +1296,11 @@ function handleLoginStatusChange(response) {
   const loginSection = document.getElementById('fbLoginSection');
   const composer = document.getElementById('fbPostComposer');
 
+  // Gallery page doesn't have these elements, so check before accessing
+  if (!loginSection || !composer) {
+    return;
+  }
+
   if (response.status === 'connected') {
     loginSection.style.display = 'none';
     composer.style.display = 'block';
