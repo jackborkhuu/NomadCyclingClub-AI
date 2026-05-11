@@ -720,11 +720,53 @@ async function renderOnThisDay() {
   `).join('');
 }
 
+async function renderHomeFeedPosts() {
+  const container = document.getElementById('homeFeedPosts');
+  if (!container) {
+    return;
+  }
+
+  const displayPhotos = await getDisplayPhotos();
+  const recentFirst = [...displayPhotos].sort((left, right) => {
+    if (left.date && right.date) {
+      return right.date.localeCompare(left.date);
+    }
+
+    if (left.date) {
+      return -1;
+    }
+
+    if (right.date) {
+      return 1;
+    }
+
+    return 0;
+  });
+
+  const posts = recentFirst.slice(0, 6);
+  if (posts.length === 0) {
+    container.innerHTML = '<p class="archive-empty">No feed items are available right now.</p>';
+    return;
+  }
+
+  container.innerHTML = posts.map((photo, index) => `
+    <article class="home-feed-card">
+      <img src="${photo.bestSrc || photo.src}" alt="${photo.alt || 'Club archive photo'}" loading="lazy" />
+      <div class="home-feed-copy">
+        <h4>${photo.title || `Post ${index + 1}`}</h4>
+        <p>${getPhotoPostText(photo, index)}</p>
+        <p>${formatLongDate(photo.date)}</p>
+      </div>
+    </article>
+  `).join('');
+}
+
 async function initializeDynamicSections() {
   await Promise.all([
     renderGallery(),
     renderHomePreview(),
-    renderOnThisDay()
+    renderOnThisDay(),
+    renderHomeFeedPosts()
   ]);
 }
 

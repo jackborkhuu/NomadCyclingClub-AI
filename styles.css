@@ -381,6 +381,41 @@ img {
   border: 0;
 }
 
+.home-feed-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.home-feed-card {
+  background: #ffffff;
+  border: 1px solid var(--facebook-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.home-feed-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.home-feed-copy {
+  padding: 10px;
+}
+
+.home-feed-copy h4 {
+  margin: 0 0 4px;
+  font-size: 0.98rem;
+  color: var(--ink);
+}
+
+.home-feed-copy p {
+  margin: 0;
+  color: var(--facebook-text-secondary);
+  font-size: 0.9rem;
+}
+
 .values-list {
   margin: 0;
   padding-left: 20px;
