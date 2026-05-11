@@ -80,7 +80,37 @@ function normalizeMediaNode(node) {
 
 function normalizePost(post) {
   const attachmentData = Array.isArray(post?.attachments?.data) ? post.attachments.data : [];
-  const media = uniqueMedia(attachmentData.flatMap((entry) => normalizeMediaNode(entry)));
+  let media = uniqueMedia(attachmentData.flatMap((entry) => normalizeMediaNode(entry)));
+
+  // Remove poster images (photo type) if video with same imageUrl exists
+  // This prevents duplicate thumbnails from showing alongside videos/reels
+  const videoImageUrls = new Set();
+  media.forEach((item) => {
+    if (item.type === 'video' && item.imageUrl) {
+      videoImageUrls.add(item.imageUrl);
+    }
+  });
+  media = media.filter((item) => {
+    if (item.type === 'photo' && videoImageUrls.has(item.imageUrl)) {
+      return false;
+    }
+    return true;
+  });
+
+  // Remove album type if individual photo types with same imageUrl exist
+  // This prevents album metadata from showing as separate media item
+  const photoImageUrls = new Set();
+  media.forEach((item) => {
+    if (item.type === 'photo' && item.imageUrl) {
+      photoImageUrls.add(item.imageUrl);
+    }
+  });
+  media = media.filter((item) => {
+    if (item.type === 'album' && photoImageUrls.has(item.imageUrl)) {
+      return false;
+    }
+    return true;
+  });
 
   if (post?.full_picture && !media.some((item) => item.imageUrl === post.full_picture)) {
     media.unshift({

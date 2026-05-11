@@ -715,27 +715,31 @@ async function renderGallery() {
         }))
         .filter((media) => media.imageUrl || media.videoUrl);
 
-      const seenUrls = new Set();
-      const dedupedMedia = [];
-      const videoPosterSet = new Set();
+      // Deduplicate: remove poster images when videos with same poster exist
+      // Also remove album types when photos with same image exist
+      const videoImageUrls = new Set();
+      const videoMedia = normalizedMedia.filter((m) => m.type === 'video' && m.videoUrl);
+      videoMedia.forEach((v) => {
+        if (v.imageUrl) videoImageUrls.add(v.imageUrl);
+      });
 
-      for (const media of normalizedMedia) {
-        const videoKey = `video:${media.videoUrl}`;
-        const imageKey = `image:${media.imageUrl}`;
+      const photoImageUrls = new Set();
+      const photoMedia = normalizedMedia.filter((m) => m.type === 'photo' && m.imageUrl);
+      photoMedia.forEach((p) => {
+        photoImageUrls.add(p.imageUrl);
+      });
 
-        if (media.type === 'video' && media.videoUrl) {
-          if (!seenUrls.has(videoKey)) {
-            dedupedMedia.push(media);
-            seenUrls.add(videoKey);
-            if (media.imageUrl) {
-              videoPosterSet.add(media.imageUrl);
-            }
-          }
-        } else if (media.imageUrl && !seenUrls.has(imageKey) && !videoPosterSet.has(media.imageUrl)) {
-          dedupedMedia.push(media);
-          seenUrls.add(imageKey);
+      const dedupedMedia = normalizedMedia.filter((media) => {
+        // Remove photo if it's a poster image for a video
+        if (media.type === 'photo' && videoImageUrls.has(media.imageUrl)) {
+          return false;
         }
-      }
+        // Remove album if it has same image as a photo
+        if (media.type === 'album' && photoImageUrls.has(media.imageUrl)) {
+          return false;
+        }
+        return true;
+      });
 
       const displayMedia = dedupedMedia.filter((media) => Boolean(media.imageUrl || media.videoUrl));
 
@@ -1007,10 +1011,38 @@ async function renderApiHomeFeedPosts(container) {
       targetUrl: media.targetUrl || media.target_url || ''
     }));
 
-    const hasVideo = normalizedMedia.some((media) => media.type === 'video' && media.videoUrl);
+    // Deduplicate media: filter out poster images when videos with same poster exist
+    // Also filter out album types when photos with same image exist
+    const videoImageUrls = new Set();
+    const videoMedia = normalizedMedia.filter((media) => media.type === 'video' && media.videoUrl);
+    videoMedia.forEach((video) => {
+      if (video.imageUrl) {
+        videoImageUrls.add(video.imageUrl);
+      }
+    });
+
+    const photoImageUrls = new Set();
+    const photoMedia = normalizedMedia.filter((media) => media.type === 'photo' && media.imageUrl);
+    photoMedia.forEach((photo) => {
+      photoImageUrls.add(photo.imageUrl);
+    });
+
+    const dedupedMedia = normalizedMedia.filter((media) => {
+      // Remove photo if it's a poster image for an existing video
+      if (media.type === 'photo' && videoImageUrls.has(media.imageUrl)) {
+        return false;
+      }
+      // Remove album if it has same image as a photo
+      if (media.type === 'album' && photoImageUrls.has(media.imageUrl)) {
+        return false;
+      }
+      return true;
+    });
+
+    const hasVideo = dedupedMedia.some((media) => media.type === 'video' && media.videoUrl);
     const displayMedia = hasVideo
-      ? normalizedMedia.filter((media) => media.type === 'video' && media.videoUrl)
-      : normalizedMedia;
+      ? dedupedMedia.filter((media) => media.type === 'video' && media.videoUrl)
+      : dedupedMedia.filter((media) => media.type === 'photo' || media.type === 'video');
 
     const mediaHtml = displayMedia.map((media, mediaIndex) => {
       const mediaType = media.type;
