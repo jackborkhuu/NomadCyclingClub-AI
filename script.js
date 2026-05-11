@@ -707,38 +707,37 @@ async function renderGallery() {
       const message = post.message || post.story || `Facebook post ${postIndex + 1}`;
       const postedAt = formatDateTime(post.createdTime || post.created_time);
 
-      const normalizedMedia = post.media.map((media) => ({
-        type: String(media.type || '').toLowerCase(),
-        imageUrl: media.imageUrl || media.image_url || media.previewUrl || media.preview_url || '',
-        videoUrl: media.videoUrl || media.video_url || media.sourceUrl || media.source_url || '',
-        targetUrl: media.targetUrl || media.target_url || ''
-      }));
+      const normalizedMedia = post.media
+        .map((media) => ({
+          type: String(media.type || '').toLowerCase(),
+          imageUrl: media.imageUrl || media.image_url || media.previewUrl || media.preview_url || '',
+          videoUrl: media.videoUrl || media.video_url || media.sourceUrl || media.source_url || ''
+        }))
+        .filter((media) => media.imageUrl || media.videoUrl);
 
-      const seenMedia = new Set();
-      const dedupedMedia = normalizedMedia.filter((media) => {
-        const key = `${media.type}|${media.imageUrl}|${media.videoUrl}`;
-        if (seenMedia.has(key)) {
-          return false;
-        }
-        seenMedia.add(key);
-        return true;
-      });
+      const seenUrls = new Set();
+      const dedupedMedia = [];
+      const videoPosterSet = new Set();
 
-      const videoPosterSet = new Set(
-        dedupedMedia
-          .filter((media) => media.type === 'video' && media.videoUrl && media.imageUrl)
-          .map((media) => media.imageUrl)
-      );
+      for (const media of normalizedMedia) {
+        const videoKey = `video:${media.videoUrl}`;
+        const imageKey = `image:${media.imageUrl}`;
 
-      const displayMedia = dedupedMedia.filter((media) => {
-        if (media.type === 'video') {
-          return Boolean(media.videoUrl);
+        if (media.type === 'video' && media.videoUrl) {
+          if (!seenUrls.has(videoKey)) {
+            dedupedMedia.push(media);
+            seenUrls.add(videoKey);
+            if (media.imageUrl) {
+              videoPosterSet.add(media.imageUrl);
+            }
+          }
+        } else if (media.imageUrl && !seenUrls.has(imageKey) && !videoPosterSet.has(media.imageUrl)) {
+          dedupedMedia.push(media);
+          seenUrls.add(imageKey);
         }
-        if (!media.imageUrl) {
-          return false;
-        }
-        return !videoPosterSet.has(media.imageUrl);
-      });
+      }
+
+      const displayMedia = dedupedMedia.filter((media) => Boolean(media.imageUrl || media.videoUrl));
 
       const mediaHtml = displayMedia.map((media, mediaIndex) => {
         const isReel = /\/reel\//i.test(postUrl) || /reel/i.test(media.type) || /\/reel\//i.test(media.targetUrl || '');
@@ -1145,3 +1144,87 @@ if (contactForm) {
     alert('This contact form is a placeholder. Please email support@nomadcyclingclub.com to reach the club.');
   });
 }
+
+// Facebook SDK and Interactive Posting
+const FB_APP_ID = '514212502254865';
+const FB_PAGE_ID = '514212502254865';
+
+window.fbAsyncInit = function() {
+  FB.init({
+    appId: FB_APP_ID,
+    xfbml: true,
+    version: 'v19.0'
+  });
+
+  FB.getLoginStatus(function(response) {
+    handleLoginStatusChange(response);
+  });
+};
+
+function handleLoginStatusChange(response) {
+  const loginSection = document.getElementById('fbLoginSection');
+  const composer = document.getElementById('fbPostComposer');
+
+  if (response.status === 'connected') {
+    loginSection.style.display = 'none';
+    composer.style.display = 'block';
+  } else {
+    loginSection.style.display = 'block';
+    composer.style.display = 'none';
+  }
+}
+
+document.getElementById('fbLoginBtn')?.addEventListener('click', function() {
+  FB.login(function(response) {
+    handleLoginStatusChange(response);
+  }, { scope: 'public_profile,pages_manage_posts,pages_read_engagement' });
+});
+
+document.getElementById('fbLogoutBtn')?.addEventListener('click', function() {
+  FB.logout(function(response) {
+    handleLoginStatusChange(response);
+  });
+});
+
+document.getElementById('submitPostBtn')?.addEventListener('click', function() {
+  const message = document.getElementById('postMessage')?.value || '';
+  const statusEl = document.getElementById('postStatus');
+  const submitBtn = document.getElementById('submitPostBtn');
+
+  if (!message.trim()) {
+    statusEl.textContent = 'Please enter a message';
+    statusEl.classList.add('error');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  statusEl.textContent = 'Posting...';
+  statusEl.classList.remove('success', 'error');
+
+  FB.api(`/${FB_PAGE_ID}/feed`, 'POST', { message: message }, function(response) {
+    submitBtn.disabled = false;
+
+    if (response.error) {
+      statusEl.textContent = `Error: ${response.error.message}`;
+      statusEl.classList.add('error');
+    } else {
+      statusEl.textContent = 'Posted successfully!';
+      statusEl.classList.add('success');
+      document.getElementById('postMessage').value = '';
+
+      setTimeout(() => {
+        statusEl.textContent = '';
+        statusEl.classList.remove('success', 'error');
+        renderHomeFeedPosts();
+      }, 2000);
+    }
+  });
+});
+
+(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v19.0&appId=" + FB_APP_ID;
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));

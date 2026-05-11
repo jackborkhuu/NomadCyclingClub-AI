@@ -678,6 +678,142 @@ img {
   font-size: 0.9rem;
 }
 
+.fb-login-section {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: var(--facebook-light-blue);
+  border-radius: 10px;
+  text-align: center;
+}
+
+.fb-login-button {
+  background: var(--facebook-blue);
+  color: #ffffff;
+  border: 0;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.2s ease;
+}
+
+.fb-login-button:hover {
+  background: #166fe5;
+}
+
+.fb-post-composer {
+  background: #ffffff;
+  border: 1px solid var(--facebook-border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+
+.composer-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.composer-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.composer-user-info {
+  flex: 1;
+}
+
+.composer-label {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--facebook-text);
+  font-weight: 500;
+}
+
+.fb-logout-button {
+  background: transparent;
+  color: var(--facebook-blue);
+  border: 1px solid var(--facebook-border);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.fb-logout-button:hover {
+  background: var(--facebook-light-blue);
+}
+
+.composer-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border: 1px solid var(--facebook-border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--facebook-text);
+  resize: vertical;
+  margin-bottom: 12px;
+}
+
+.composer-textarea:focus {
+  outline: none;
+  border-color: var(--facebook-blue);
+  box-shadow: 0 0 0 2px var(--facebook-light-blue);
+}
+
+.composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.composer-submit-btn {
+  background: var(--facebook-blue);
+  color: #ffffff;
+  border: 0;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.2s ease;
+}
+
+.composer-submit-btn:hover {
+  background: #166fe5;
+}
+
+.composer-submit-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.post-status {
+  font-size: 0.85rem;
+  color: var(--facebook-text-secondary);
+}
+
+.post-status.success {
+  color: #31a24c;
+  font-weight: 600;
+}
+
+.post-status.error {
+  color: #e4163a;
+  font-weight: 600;
+}
+
 .gallery-card {
   background: #ffffff;
   border: 1px solid var(--card-border);

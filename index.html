@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div id="fb-root"></div>
   <div class="facebook-page">
     <div class="profile-banner">
       <img
@@ -127,6 +128,23 @@
               </div>
               <div class="post-content">
                 <p class="archive-intro">Recent Facebook posts rendered directly into the website layout.</p>
+                <div id="fbLoginSection" class="fb-login-section">
+                  <button id="fbLoginBtn" class="fb-login-button">Log in with Facebook to post</button>
+                </div>
+                <div id="fbPostComposer" class="fb-post-composer" style="display: none;">
+                  <div class="composer-header">
+                    <img src="https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/434604830_1029036748669316_4381808470709969180_n.jpg" alt="Club" class="composer-avatar" />
+                    <div class="composer-user-info">
+                      <p class="composer-label">Share an update</p>
+                    </div>
+                    <button id="fbLogoutBtn" class="fb-logout-button">Logout</button>
+                  </div>
+                  <textarea id="postMessage" class="composer-textarea" placeholder="What's on your mind?"></textarea>
+                  <div class="composer-actions">
+                    <button id="submitPostBtn" class="composer-submit-btn">Post</button>
+                    <span id="postStatus" class="post-status"></span>
+                  </div>
+                </div>
                 <div id="homeFeedPosts" class="home-feed-stream"></div>
               </div>
             </section>
