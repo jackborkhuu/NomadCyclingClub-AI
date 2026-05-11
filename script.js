@@ -322,12 +322,42 @@ function closeLightbox() {
   document.body.classList.remove('lightbox-open');
 }
 
+function ensureGalleryLightbox() {
+  let lightbox = document.getElementById('galleryLightbox');
+  if (!lightbox) {
+    const markup = `
+      <div class="gallery-lightbox" id="galleryLightbox" aria-hidden="true" role="dialog" aria-label="Gallery photo viewer">
+        <button class="lightbox-close" id="lightboxClose" aria-label="Close photo viewer">&times;</button>
+        <button class="lightbox-nav prev" id="lightboxPrev" aria-label="Previous photo">&#10094;</button>
+        <figure class="lightbox-figure">
+          <img id="lightboxImage" src="" alt="" />
+          <figcaption class="lightbox-caption">
+            <strong id="lightboxTitle"></strong>
+            <p id="lightboxMeta"></p>
+          </figcaption>
+        </figure>
+        <button class="lightbox-nav next" id="lightboxNext" aria-label="Next photo">&#10095;</button>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', markup);
+    lightbox = document.getElementById('galleryLightbox');
+  }
+
+  return {
+    lightbox,
+    closeButton: document.getElementById('lightboxClose'),
+    previousButton: document.getElementById('lightboxPrev'),
+    nextButton: document.getElementById('lightboxNext')
+  };
+}
+
 function setupGalleryLightbox() {
   const gallery = document.getElementById('randomGallery');
-  const lightbox = document.getElementById('galleryLightbox');
-  const closeButton = document.getElementById('lightboxClose');
-  const previousButton = document.getElementById('lightboxPrev');
-  const nextButton = document.getElementById('lightboxNext');
+  const lightboxParts = ensureGalleryLightbox();
+  const lightbox = lightboxParts?.lightbox;
+  const closeButton = lightboxParts?.closeButton;
+  const previousButton = lightboxParts?.previousButton;
+  const nextButton = lightboxParts?.nextButton;
 
   if (!gallery || !lightbox) {
     return;
