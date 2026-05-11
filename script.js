@@ -929,6 +929,63 @@ async function fetchApiFeedPosts() {
   }
 }
 
+function renderPostComments(post, postIndex) {
+  const comments = Array.isArray(post.comments) ? post.comments : [];
+  const commentCount = post.commentCount || 0;
+
+  if (comments.length === 0 && commentCount === 0) {
+    return '';
+  }
+
+  const commentsHtml = comments.map(comment => `
+    <div class="comment-item">
+      <div class="comment-author">${escapeHtml(comment.from || 'User')}</div>
+      <p class="comment-text">${escapeHtml(comment.message || '')}</p>
+      <div class="comment-time">${formatDateTime(comment.createdTime)}</div>
+    </div>
+  `).join('');
+
+  const commentInputHtml = `
+    <div class="comment-input-form">
+      <textarea class="comment-textarea" placeholder="Write a comment..." data-post-index="${postIndex}"></textarea>
+      <button class="comment-submit-btn" data-post-index="${postIndex}" data-post-id="${escapeHtml(post.id || '')}">Post</button>
+    </div>
+  `;
+
+  return `
+    <div class="post-comments-section">
+      <div class="post-comments-header">
+        <span>${commentCount} comment${commentCount !== 1 ? 's' : ''}</span>
+      </div>
+      ${commentsHtml}
+      <div id="loginToComment-${postIndex}" class="login-to-comment">
+        Log in to comment
+      </div>
+      <div id="commentForm-${postIndex}" style="display: none;">
+        ${commentInputHtml}
+      </div>
+    </div>
+  `;
+}
+
+async function fetchApiFeedPosts() {
+  try {
+    const response = await fetch('data/facebook-feed.json', { cache: 'no-store' });
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = await response.json();
+    if (!payload || !Array.isArray(payload.posts)) {
+      return [];
+    }
+
+    return payload.posts;
+  } catch {
+    return [];
+  }
+}
+
 async function renderApiHomeFeedPosts(container) {
   const apiPosts = await fetchApiFeedPosts();
   if (apiPosts.length === 0) {
@@ -1023,6 +1080,7 @@ async function renderApiHomeFeedPosts(container) {
           <p class="home-feed-text"><a class="home-feed-text-link" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">${escapeHtml(message)}</a></p>
           ${mediaHtml ? `<div class="home-feed-photo-grid ${hasVideo ? 'home-feed-photo-grid-video' : ''}">${mediaHtml}</div>` : ''}
           <div class="home-feed-footer"><a href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">Open original Facebook post</a></div>
+          ${renderPostComments(post, postIndex)}
         </div>
       </article>
     `;
@@ -1041,6 +1099,17 @@ async function renderApiHomeFeedPosts(container) {
       openLightbox(index);
     });
   });
+
+  // Check if user is logged in and show/hide comment forms accordingly
+  if (window.FB) {
+    FB.getLoginStatus((response) => {
+      if (response.status === 'connected') {
+        showCommentForms();
+      } else {
+        hideCommentForms();
+      }
+    });
+  }
 
   return true;
 }
@@ -1168,10 +1237,83 @@ function handleLoginStatusChange(response) {
   if (response.status === 'connected') {
     loginSection.style.display = 'none';
     composer.style.display = 'block';
+    showCommentForms();
   } else {
     loginSection.style.display = 'block';
     composer.style.display = 'none';
+    hideCommentForms();
   }
+}
+
+function showCommentForms() {
+  const commentForms = document.querySelectorAll('[id^="commentForm-"]');
+  const loginToCommentElems = document.querySelectorAll('[id^="loginToComment-"]');
+
+  commentForms.forEach(form => {
+    form.style.display = 'block';
+  });
+
+  loginToCommentElems.forEach(elem => {
+    elem.style.display = 'none';
+  });
+
+  setupCommentSubmitHandlers();
+}
+
+function hideCommentForms() {
+  const commentForms = document.querySelectorAll('[id^="commentForm-"]');
+  const loginToCommentElems = document.querySelectorAll('[id^="loginToComment-"]');
+
+  commentForms.forEach(form => {
+    form.style.display = 'none';
+  });
+
+  loginToCommentElems.forEach(elem => {
+    elem.style.display = 'block';
+  });
+}
+
+function setupCommentSubmitHandlers() {
+  const submitBtns = document.querySelectorAll('.comment-submit-btn');
+  submitBtns.forEach((btn) => {
+    if (btn.classList.contains('comment-listener-attached')) {
+      return;
+    }
+
+    btn.classList.add('comment-listener-attached');
+    btn.addEventListener('click', function() {
+      const postIndex = this.getAttribute('data-post-index');
+      const postId = this.getAttribute('data-post-id');
+      const textarea = document.querySelector(`[data-post-index="${postIndex}"].comment-textarea`);
+
+      if (!textarea) {
+        return;
+      }
+
+      const message = textarea.value.trim();
+      if (!message) {
+        alert('Please enter a comment');
+        return;
+      }
+
+      this.disabled = true;
+      this.textContent = 'Posting...';
+
+      FB.api(`/${postId}/comments`, 'POST', { message: message }, (response) => {
+        this.disabled = false;
+        this.textContent = 'Post';
+
+        if (response.error) {
+          alert(`Error: ${response.error.message}`);
+        } else {
+          textarea.value = '';
+          alert('Comment posted successfully!');
+          // Refresh the feed to show the new comment
+          renderHomeFeedPosts();
+        }
+      });
+    });
+  });
 }
 
 document.getElementById('fbLoginBtn')?.addEventListener('click', function() {

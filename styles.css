@@ -814,6 +814,103 @@ img {
   font-weight: 600;
 }
 
+.post-comments-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--facebook-border);
+}
+
+.post-comments-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  color: var(--facebook-text-secondary);
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.comment-item {
+  background: var(--facebook-gray);
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: var(--facebook-text);
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.comment-text {
+  color: var(--facebook-text);
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.comment-time {
+  color: var(--facebook-text-secondary);
+  font-size: 0.8rem;
+}
+
+.comment-input-form {
+  display: flex;
+  gap: 8px;
+}
+
+.comment-textarea {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--facebook-border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--facebook-text);
+  resize: none;
+  min-height: 36px;
+}
+
+.comment-textarea:focus {
+  outline: none;
+  border-color: var(--facebook-blue);
+}
+
+.comment-submit-btn {
+  padding: 8px 14px;
+  background: var(--facebook-blue);
+  color: #ffffff;
+  border: 0;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.comment-submit-btn:hover {
+  background: #166fe5;
+}
+
+.comment-submit-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.login-to-comment {
+  text-align: center;
+  padding: 10px;
+  color: var(--facebook-text-secondary);
+  font-size: 0.9rem;
+}
+
 .gallery-card {
   background: #ffffff;
   border: 1px solid var(--card-border);

@@ -99,7 +99,14 @@ function normalizePost(post) {
     story: post?.story || null,
     permalinkUrl: post?.permalink_url || null,
     createdTime: post?.created_time || null,
-    media
+    media,
+    comments: Array.isArray(post?.comments?.data) ? post.comments.data.slice(0, 5).map(comment => ({
+      id: comment.id || null,
+      message: comment.message || null,
+      from: comment.from?.name || 'Anonymous',
+      createdTime: comment.created_time || null
+    })) : [],
+    commentCount: post?.comments?.summary?.total_count || 0
   };
 }
 
@@ -111,7 +118,9 @@ async function fetchPosts() {
     'created_time',
     'permalink_url',
     'full_picture',
-    'attachments{media_type,media,url,target,title,description,subattachments}'
+    'attachments{media_type,media,url,target,title,description,subattachments}',
+    'comments.limit(5){id,message,created_time,from{name}}',
+    'comments.limit(0).summary(true){total_count}'
   ].join(',');
 
   const params = new URLSearchParams({
