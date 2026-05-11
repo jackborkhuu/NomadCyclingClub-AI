@@ -276,16 +276,129 @@ function formatLongDate(value) {
   }).format(date);
 }
 
+let galleryPhotosForView = [];
+let activePhotoIndex = 0;
+
+function updateLightboxPhoto(index) {
+  const lightbox = document.getElementById('galleryLightbox');
+  const image = document.getElementById('lightboxImage');
+  const title = document.getElementById('lightboxTitle');
+  const meta = document.getElementById('lightboxMeta');
+
+  if (!lightbox || !image || !title || !meta || galleryPhotosForView.length === 0) {
+    return;
+  }
+
+  const total = galleryPhotosForView.length;
+  activePhotoIndex = (index + total) % total;
+  const photo = galleryPhotosForView[activePhotoIndex];
+
+  image.src = photo.src;
+  image.alt = photo.alt || 'Club gallery photo';
+  title.textContent = photo.title || `Photo ${activePhotoIndex + 1}`;
+  meta.textContent = `${formatLongDate(photo.date)} • ${activePhotoIndex + 1} / ${total}`;
+}
+
+function openLightbox(index) {
+  const lightbox = document.getElementById('galleryLightbox');
+  if (!lightbox || galleryPhotosForView.length === 0) {
+    return;
+  }
+
+  updateLightboxPhoto(index);
+  lightbox.classList.add('open');
+  lightbox.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('lightbox-open');
+}
+
+function closeLightbox() {
+  const lightbox = document.getElementById('galleryLightbox');
+  if (!lightbox) {
+    return;
+  }
+
+  lightbox.classList.remove('open');
+  lightbox.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('lightbox-open');
+}
+
+function setupGalleryLightbox() {
+  const gallery = document.getElementById('randomGallery');
+  const lightbox = document.getElementById('galleryLightbox');
+  const closeButton = document.getElementById('lightboxClose');
+  const previousButton = document.getElementById('lightboxPrev');
+  const nextButton = document.getElementById('lightboxNext');
+
+  if (!gallery || !lightbox) {
+    return;
+  }
+
+  const triggers = gallery.querySelectorAll('.gallery-trigger');
+  triggers.forEach((trigger) => {
+    trigger.addEventListener('click', () => {
+      const index = Number(trigger.getAttribute('data-photo-index'));
+      if (Number.isNaN(index)) {
+        return;
+      }
+      openLightbox(index);
+    });
+
+    trigger.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+      }
+      event.preventDefault();
+      const index = Number(trigger.getAttribute('data-photo-index'));
+      if (Number.isNaN(index)) {
+        return;
+      }
+      openLightbox(index);
+    });
+  });
+
+  closeButton?.addEventListener('click', closeLightbox);
+  previousButton?.addEventListener('click', () => updateLightboxPhoto(activePhotoIndex - 1));
+  nextButton?.addEventListener('click', () => updateLightboxPhoto(activePhotoIndex + 1));
+
+  lightbox.addEventListener('click', (event) => {
+    if (event.target === lightbox) {
+      closeLightbox();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (!lightbox.classList.contains('open')) {
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      closeLightbox();
+      return;
+    }
+
+    if (event.key === 'ArrowLeft') {
+      updateLightboxPhoto(activePhotoIndex - 1);
+      return;
+    }
+
+    if (event.key === 'ArrowRight') {
+      updateLightboxPhoto(activePhotoIndex + 1);
+    }
+  });
+}
+
 function renderGallery() {
   const gallery = document.getElementById('randomGallery');
   if (!gallery) {
     return;
   }
 
-  const randomizedPhotos = shuffle(facebookPhotos);
-  gallery.innerHTML = randomizedPhotos.map((photo, index) => `
+  galleryPhotosForView = shuffle(facebookPhotos);
+  gallery.innerHTML = galleryPhotosForView.map((photo, index) => `
     <article class="gallery-card">
-      <img src="${photo.src}" alt="${photo.alt}" loading="lazy" />
+      <button class="gallery-trigger" type="button" data-photo-index="${index}" aria-label="Open photo ${index + 1}">
+        <img src="${photo.src}" alt="${photo.alt}" loading="lazy" />
+      </button>
       <div class="gallery-card-copy">
         <h3>${photo.title || `Photo ${index + 1}`}</h3>
         <p>${formatLongDate(photo.date)}</p>
@@ -349,6 +462,7 @@ function renderOnThisDay() {
 }
 
 renderGallery();
+setupGalleryLightbox();
 renderHomePreview();
 renderOnThisDay();
 

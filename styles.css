@@ -477,6 +477,19 @@ img {
   box-shadow: var(--shadow);
 }
 
+.gallery-trigger {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.gallery-trigger img {
+  pointer-events: none;
+}
+
 .gallery-card img {
   aspect-ratio: 1;
 }
@@ -494,6 +507,91 @@ img {
 .gallery-card-copy p {
   margin: 0;
   color: var(--muted);
+}
+
+body.lightbox-open {
+  overflow: hidden;
+}
+
+.gallery-lightbox {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: rgba(15, 23, 42, 0.9);
+  z-index: 90;
+}
+
+.gallery-lightbox.open {
+  display: flex;
+}
+
+.lightbox-figure {
+  margin: 0;
+  width: min(1000px, 100%);
+  max-height: calc(100vh - 3rem);
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: #020617;
+}
+
+.lightbox-figure img {
+  width: 100%;
+  max-height: calc(100vh - 10rem);
+  object-fit: contain;
+  background: #020617;
+}
+
+.lightbox-caption {
+  padding: 0.9rem 1rem 1rem;
+  color: #e2e8f0;
+}
+
+.lightbox-caption strong {
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.lightbox-caption p {
+  margin: 0;
+  color: #cbd5e1;
+}
+
+.lightbox-close,
+.lightbox-nav {
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  color: #ffffff;
+  background: rgba(15, 23, 42, 0.8);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.lightbox-nav {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.lightbox-close:hover,
+.lightbox-nav:hover {
+  background: rgba(30, 41, 59, 0.95);
 }
 
 .highlights {
@@ -631,6 +729,32 @@ img {
 
   .profile-banner {
     height: 220px;
+  }
+
+  .gallery-lightbox {
+    padding: 0.5rem;
+  }
+
+  .lightbox-nav {
+    position: absolute;
+    bottom: 1rem;
+    z-index: 2;
+  }
+
+  .lightbox-nav.prev {
+    left: 1rem;
+  }
+
+  .lightbox-nav.next {
+    right: 1rem;
+  }
+
+  .lightbox-figure {
+    width: 100%;
+  }
+
+  .lightbox-figure img {
+    max-height: calc(100vh - 12rem);
   }
 }
 
