@@ -14,72 +14,84 @@ const facebookPhotos = [
   },
   {
     src: 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/673625921_1637213444518307_5611692299590495681_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=107&ccb=1-7&_nc_sid=7b2446&_nc_ohc=XMCWLhA7ivMQ7kNvwF6Gpzm&_nc_oc=AdrVVEfwaswkK9-vdH-3nm3ubNRZFok2XB_UpDP1rUBH1083_RK93o1YBkqy-L0e_8Y&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=_c4g0HlUc6xXnNHQukpKWg&_nc_ss=7b289&oh=00_Af4qtLpypEaDcDQMfOzvUTaTUDfzEUONQx6_uSLj5S6abg&oe=6A07F72F',
+    fullSrc: 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/673625921_1637213444518307_5611692299590495681_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=107&ccb=1-7&_nc_sid=7b2446&_nc_ohc=XMCWLhA7ivMQ7kNvwF6Gpzm&_nc_oc=AdrVVEfwaswkK9-vdH-3nm3ubNRZFok2XB_UpDP1rUBH1083_RK93o1YBkqy-L0e_8Y&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=qaDqrN0Mz-aHjEfqOFp77w&_nc_ss=7b289&oh=00_Af6-xCn41SEsULvG7BdUvhLAq5xN2tmt9_47_aV7cOq1jg&oe=6A082F6F',
     alt: 'Club ride archive photo 1',
     title: 'Facebook archive photo',
     date: null
   },
   {
     src: 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/672683099_1637213437851641_7228904326571331058_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=7b2446&_nc_ohc=DijEINDBPKEQ7kNvwFzFeHh&_nc_oc=AdpoDMg1Vg_eVVf7-HZq7koRuc3WnMAsWU4esNWoUT0bGDn6np5eB3uww4midIJQzdw&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=NWIyd6DrgIWed5MMBMmwcQ&_nc_ss=7b289&oh=00_Af4gSwCPnb8waySHAeGh1YkMCUu6638_4lrHEAJ_uMRucA&oe=6A07FE31',
+    fullSrc: 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/672683099_1637213437851641_7228904326571331058_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=7b2446&_nc_ohc=DijEINDBPKEQ7kNvwFzFeHh&_nc_oc=AdpoDMg1Vg_eVVf7-HZq7koRuc3WnMAsWU4esNWoUT0bGDn6np5eB3uww4midIJQzdw&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=SRc0vFTsv-DTPJWT_qxwRg&_nc_ss=7b289&oh=00_Af62wzPxSddz1v23wRwsDx2dlP31-h1ups-RyARsGl4Duw&oe=6A07FE31',
     alt: 'Club ride archive photo 2',
     title: 'Facebook archive photo',
     date: null
   },
   {
     src: 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/673535871_1637213414518310_7903495935145392462_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=7b2446&_nc_ohc=RhRRNJswA_cQ7kNvwEt9qUa&_nc_oc=AdpmouZtIJ5_2j_kpq8UyejV_hi3o75kUpSVoztm0dWCX5rX95X_ua2d2cg1uc5Z3ns&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=o5lQXyqyrQhUhTytC4-GPQ&_nc_ss=7b289&oh=00_Af4xx4qztXjiOQYBJZL3bhksStJDgZG9BQbtvvb_JTs3KA&oe=6A082523',
+    fullSrc: 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/673535871_1637213414518310_7903495935145392462_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=7b2446&_nc_ohc=RhRRNJswA_cQ7kNvwEt9qUa&_nc_oc=AdpmouZtIJ5_2j_kpq8UyejV_hi3o75kUpSVoztm0dWCX5rX95X_ua2d2cg1uc5Z3ns&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=gYKlr5TOJCzJ0FNiP3HGDw&_nc_ss=7b289&oh=00_Af7cXGQFK4304XTtf5lTTZtJHZTj3K6_uzxhkaEWD19PCA&oe=6A082523',
     alt: 'Club ride archive photo 3',
     title: 'Facebook archive photo',
     date: null
   },
   {
     src: 'https://scontent-sea1-1.xx.fbcdn.net/v/t39.30808-6/672643464_1637213431184975_1515063720095141462_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=101&ccb=1-7&_nc_sid=7b2446&_nc_ohc=S5ej16cRdd0Q7kNvwF7nFKF&_nc_oc=AdpjQp1ODCxCeNe92ZhbUFlVilB6RylOAk2SWSQ-T3bkqQkMIy-NId9NHxc16VLAn7o&_nc_zt=23&_nc_ht=scontent-sea1-1.xx&_nc_gid=k2TvIU6P3CB7tdS2ms1OcA&_nc_ss=7b289&oh=00_Af6t_gQ2jfecFcHqCDJMNVLGmrRoNwimq5jQQThsg41VRg&oe=6A0804D3',
+    fullSrc: 'https://scontent-sea1-1.xx.fbcdn.net/v/t39.30808-6/672643464_1637213431184975_1515063720095141462_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=101&ccb=1-7&_nc_sid=7b2446&_nc_ohc=S5ej16cRdd0Q7kNvwF7nFKF&_nc_oc=AdpjQp1ODCxCeNe92ZhbUFlVilB6RylOAk2SWSQ-T3bkqQkMIy-NId9NHxc16VLAn7o&_nc_zt=23&_nc_ht=scontent-sea1-1.xx&_nc_gid=F645uD67NF9txL9CD76MNQ&_nc_ss=7b289&oh=00_Af6s5oUaHjTi84mGfJrzUtsTYBn6-6sd5SFHRXFfRzA0kw&oe=6A0804D3',
     alt: 'Club ride archive photo 4',
     title: 'Facebook archive photo',
     date: null
   },
   {
     src: 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/607950584_1545940523645600_7370249189459747437_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=7b2446&_nc_ohc=d6r2XKgz5rMQ7kNvwGk8-1y&_nc_oc=AdpjDo1UMJrXMBi-tKlU_OtK1_fCpjbvGEBcM2KS1cIApzUh5i4V67NqbbRV3odCBFo&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=xXbmXiK1g5tdOokut_nY5Q&_nc_ss=7b289&oh=00_Af6xLmyeY1jqfkqI01Dwie20bI3UPJsJVFnoaVJb1zIAEw&oe=6A080B06',
+    fullSrc: 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/607950584_1545940523645600_7370249189459747437_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=7b2446&_nc_ohc=d6r2XKgz5rMQ7kNvwGk8-1y&_nc_oc=AdpjDo1UMJrXMBi-tKlU_OtK1_fCpjbvGEBcM2KS1cIApzUh5i4V67NqbbRV3odCBFo&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=-qBjMjt5vAxoEH3gJvQq-A&_nc_ss=7b289&oh=00_Af5lvWhqKwIYPsSU7_SbjM7ExmtAa05JDZrRCgjwMTH2MA&oe=6A080B06',
     alt: 'Club archive photo from the Facebook page',
     title: 'Archive ride',
     date: null
   },
   {
     src: 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/574390030_1493128615593458_7589757113301233912_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=7b2446&_nc_ohc=ZwoZNMuZ1I4Q7kNvwFbCWER&_nc_oc=AdpPHgE9PoqdPRQxfoMcEp6mcAs7Fq57h5dYXMeVCu3OpSu9lJPKQalsLMNeIKDhrpc&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=zBF5CE0pd4GuczGwTD74Mw&_nc_ss=7b289&oh=00_Af5Na7dsqTqQQAdDimg7alm8LrwfzUsD_2_hUl8cO36pVg&oe=6A07FF8E',
+    fullSrc: 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/574390030_1493128615593458_7589757113301233912_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=7b2446&_nc_ohc=ZwoZNMuZ1I4Q7kNvwFbCWER&_nc_oc=AdpPHgE9PoqdPRQxfoMcEp6mcAs7Fq57h5dYXMeVCu3OpSu9lJPKQalsLMNeIKDhrpc&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=KU0wW7oGmelCvdQTozJP5g&_nc_ss=7b289&oh=00_Af4Oqo4fPpmcxofypS5ScaX2rRtQTf9iUP9SQW00U4hHBw&oe=6A07FF8E',
     alt: 'Club archive photo from November 2, 2025',
     title: 'Archive ride',
     date: '2025-11-02'
   },
   {
     src: 'https://scontent-sea1-1.xx.fbcdn.net/v/t39.30808-6/573891801_1493128602260126_3070074279857641340_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=7b2446&_nc_ohc=V0sg0KEHtkMQ7kNvwGp9jLL&_nc_oc=Adq9Kxze8BQg4cyfgal0fQA7CCvTgwyD8LXPBiLHB8bG0I7j59j0aly6O0Kaa0Vpbj8&_nc_zt=23&_nc_ht=scontent-sea1-1.xx&_nc_gid=q-CNl_Bml224eZYcua3bNw&_nc_ss=7b289&oh=00_Af4ydW-cSJU6zA6_VzAQ2KigcaQyso9OzajElZPJkxZXSw&oe=6A080FA1',
+    fullSrc: 'https://scontent-sea1-1.xx.fbcdn.net/v/t39.30808-6/573891801_1493128602260126_3070074279857641340_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=7b2446&_nc_ohc=V0sg0KEHtkMQ7kNvwGp9jLL&_nc_oc=Adq9Kxze8BQg4cyfgal0fQA7CCvTgwyD8LXPBiLHB8bG0I7j59j0aly6O0Kaa0Vpbj8&_nc_zt=23&_nc_ht=scontent-sea1-1.xx&_nc_gid=7jR6ZrcCkCKBmU3VDWIzzw&_nc_ss=7b289&oh=00_Af4y--0HDORJPVYRZLJrbY1P2ggo1WGUygyU5R3Rwb6KTw&oe=6A080FA1',
     alt: 'Club archive photo from November 2, 2025',
     title: 'Archive ride',
     date: '2025-11-02'
   },
   {
     src: 'https://scontent-sea1-1.xx.fbcdn.net/v/t39.30808-6/574034432_1493128632260123_628460640214557466_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=7b2446&_nc_ohc=kOq_sVn1SxkQ7kNvwHthGr2&_nc_oc=Adp71Hgw2Vj_Cl_AwY9kiOT-5B1neOGyB3RkGJecW57Ry4MoqgaZeusXepwuU4mccxs&_nc_zt=23&_nc_ht=scontent-sea1-1.xx&_nc_gid=x6Pw0DqOsUEBKNs-4lteWQ&_nc_ss=7b289&oh=00_Af7zH3CPeEUYgzHxSwUDr8fHp08BT6vWvlvojU3x7JPFag&oe=6A07FFC2',
+    fullSrc: 'https://scontent-sea1-1.xx.fbcdn.net/v/t39.30808-6/574034432_1493128632260123_628460640214557466_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=7b2446&_nc_ohc=kOq_sVn1SxkQ7kNvwHthGr2&_nc_oc=Adp71Hgw2Vj_Cl_AwY9kiOT-5B1neOGyB3RkGJecW57Ry4MoqgaZeusXepwuU4mccxs&_nc_zt=23&_nc_ht=scontent-sea1-1.xx&_nc_gid=HiCFbwLB_FKWyozbSfN74A&_nc_ss=7b289&oh=00_Af5nYZG2Tmb3JKCabYtaZN1vjxsZafAw9dzCdmGvFJl8ug&oe=6A07FFC2',
     alt: 'Club archive photo from November 2, 2025',
     title: 'Archive ride',
     date: '2025-11-02'
   },
   {
     src: 'https://scontent-sea1-1.xx.fbcdn.net/v/t39.30808-6/573374469_1493127725593547_5547752852223608786_n.jpg?stp=c210.0.540.540a_dst-jpg_s206x206_tt6&_nc_cat=104&ccb=1-7&_nc_sid=5df8b4&_nc_ohc=E80XUI34XBgQ7kNvwHomNbr&_nc_oc=AdqP6Ys04WIf7auSNA6RrWSRSP-q8dQ_3DsfBBxOFLewgA03QEbUdDpHR7YYaKyzFxU&_nc_zt=23&_nc_ht=scontent-sea1-1.xx&_nc_gid=jE_fGkkO9VHC49CdFQBBLg&_nc_ss=7b289&oh=00_Af74zWFLkYGdJzXVdURC4jEUtq7c3ToRE2v3O5UpubkbbQ&oe=6A07FF4A',
+    fullSrc: 'https://scontent-sea1-1.xx.fbcdn.net/v/t39.30808-6/573374469_1493127725593547_5547752852223608786_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=7b2446&_nc_ohc=E80XUI34XBgQ7kNvwHomNbr&_nc_oc=AdqP6Ys04WIf7auSNA6RrWSRSP-q8dQ_3DsfBBxOFLewgA03QEbUdDpHR7YYaKyzFxU&_nc_zt=23&_nc_ht=scontent-sea1-1.xx&_nc_gid=OtO5q_CcNLZzGprN_BSqPA&_nc_ss=7b289&oh=00_Af7cqREtYuqaybl5ZVv6KmqBjqRttYFZcAyTJdQHMYtZlg&oe=6A07FF4A',
     alt: 'Club archive photo',
     title: 'Archive ride',
     date: null
   },
   {
     src: 'https://scontent-sea1-1.xx.fbcdn.net/v/t39.30808-6/576469767_1493128565593463_8311896667144904990_n.jpg?stp=c0.169.1536.1536a_dst-jpg_s206x206_tt6&_nc_cat=101&ccb=1-7&_nc_sid=5df8b4&_nc_ohc=J5tQRiuUE_IQ7kNvwHjr0sz&_nc_oc=AdoffP_fFJgM_W3och8QHosk7BgYUemSCft5hbZZE6AdZcj__RHEJLPiyy9Rt4qFbDg&_nc_zt=23&_nc_ht=scontent-sea1-1.xx&_nc_gid=jE_fGkkO9VHC49CdFQBBLg&_nc_ss=7b289&oh=00_Af5uua2R8yKT7UOerxgV_Ahrf__dNcsCnWs3xtwcDxwzug&oe=6A07FBC9',
+    fullSrc: 'https://scontent-sea1-1.xx.fbcdn.net/v/t39.30808-6/576469767_1493128565593463_8311896667144904990_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=7b2446&_nc_ohc=J5tQRiuUE_IQ7kNvwHjr0sz&_nc_oc=AdoffP_fFJgM_W3och8QHosk7BgYUemSCft5hbZZE6AdZcj__RHEJLPiyy9Rt4qFbDg&_nc_zt=23&_nc_ht=scontent-sea1-1.xx&_nc_gid=_MMVIkUu4vRZSk4HqfDYDw&_nc_ss=7b289&oh=00_Af6KRHf3Mun1qUkZ0GSEr4pJHW0dT3Rr-2emikiRk9NgAA&oe=6A07FBC9',
     alt: 'Club archive photo',
     title: 'Archive ride',
     date: null
   },
   {
     src: 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/573923631_1493128558926797_956038550251571563_n.jpg?stp=c256.0.1536.1536a_dst-jpg_s206x206_tt6&_nc_cat=105&ccb=1-7&_nc_sid=5df8b4&_nc_ohc=RDxdHpZ3H2oQ7kNvwFZQYV_&_nc_oc=AdpLyDOYSCiTDrrWPeWbZjPEa5DrOKv0P-e2qOxSpQOFzk4Z_-2kdJ8tVCd72NdGpEg&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=jE_fGkkO9VHC49CdFQBBLg&_nc_ss=7b289&oh=00_Af6f5bCM3z04ty-6hlzFfHYB8sChapuhe-03bGM2GOpIaw&oe=6A07FA2A',
+    fullSrc: 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/573923631_1493128558926797_956038550251571563_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=7b2446&_nc_ohc=RDxdHpZ3H2oQ7kNvwFZQYV_&_nc_oc=AdpLyDOYSCiTDrrWPeWbZjPEa5DrOKv0P-e2qOxSpQOFzk4Z_-2kdJ8tVCd72NdGpEg&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=Los3JAbCwCn65t4rowhLiQ&_nc_ss=7b289&oh=00_Af7p8l3ldQgOYEnCCIdZn_xyu9nYHRF09UpPUJGQUEFf5g&oe=6A08326A',
     alt: 'Club archive photo',
     title: 'Archive ride',
     date: null
   },
   {
     src: 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/549715556_1448003536772633_4648318552302692281_n.jpg?stp=c164.0.992.992a_cp6_dst-jpg_s206x206_tt6&_nc_cat=110&ccb=1-7&_nc_sid=5df8b4&_nc_ohc=1zx0SHMnaHAQ7kNvwEfjHyt&_nc_oc=AdqY67gtvMXMd5Xp_y2YusdDgNHbhnXF74YIt9SPDblbJQaQ5oJMXB3C4lRvwT1YSYI&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=jE_fGkkO9VHC49CdFQBBLg&_nc_ss=7b289&oh=00_Af5pTn1tCNETqeR-o_KhD_jGCUzgsHn9FQOaI3MOKNK_9w&oe=6A0800FC',
+    fullSrc: 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/549715556_1448003536772633_4648318552302692281_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=110&ccb=1-7&_nc_sid=7b2446&_nc_ohc=1zx0SHMnaHAQ7kNvwEfjHyt&_nc_oc=AdqY67gtvMXMd5Xp_y2YusdDgNHbhnXF74YIt9SPDblbJQaQ5oJMXB3C4lRvwT1YSYI&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=twtwxK2DQxClGpklq-l1cw&_nc_ss=7b289&oh=00_Af5GaKFSVmwpKr-Qeo8eqA3zDI4plIUTd6v8MwnPGF-5mA&oe=6A0800FC',
     alt: 'Club archive photo',
     title: 'Archive ride',
     date: null
@@ -489,7 +501,10 @@ function renderGallery() {
 
   galleryPhotosForView = shuffle(facebookPhotos).map((photo) => ({
     ...photo,
-    candidateSrcs: getFacebookSourceCandidates(photo.src)
+    candidateSrcs: [...new Set(photo.fullSrc
+      ? [photo.fullSrc, ...getFacebookSourceCandidates(photo.src)]
+      : getFacebookSourceCandidates(photo.src)
+    )]
   }));
   gallery.innerHTML = galleryPhotosForView.map((photo, index) => `
     <article class="gallery-card">
