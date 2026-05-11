@@ -274,6 +274,22 @@ img {
   font-size: 1.25rem;
 }
 
+.about-card h3 {
+  margin: 16px 0 8px;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.about-values {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.about-values li {
+  margin-bottom: 8px;
+  color: var(--facebook-text);
+}
+
 .card-heading {
   display: flex;
   align-items: baseline;
@@ -350,6 +366,19 @@ img {
 .post-content p {
   margin: 0 0 12px;
   color: var(--facebook-text);
+}
+
+.fb-feed-wrap {
+  border: 1px solid var(--facebook-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.fb-feed-frame {
+  width: 100%;
+  min-height: 760px;
+  border: 0;
 }
 
 .values-list {
@@ -509,6 +538,12 @@ img {
   color: var(--muted);
 }
 
+.gallery-caption-note {
+  margin-top: 6px;
+  font-size: 0.88rem;
+  color: var(--facebook-text-secondary);
+}
+
 body.lightbox-open {
   overflow: hidden;
 }
@@ -664,6 +699,11 @@ body.lightbox-open {
   gap: 0.5rem;
 }
 
+.footer-mission-note {
+  color: #cbd5e1;
+  max-width: 90ch;
+}
+
 .site-footer a {
   color: #93c5fd;
 }
@@ -755,6 +795,10 @@ body.lightbox-open {
 
   .lightbox-figure img {
     max-height: calc(100vh - 12rem);
+  }
+
+  .fb-feed-frame {
+    min-height: 620px;
   }
 }
 

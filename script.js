@@ -344,6 +344,18 @@ function formatLongDate(value) {
   }).format(date);
 }
 
+function getPhotoPostText(photo, index) {
+  if (photo.postText) {
+    return photo.postText;
+  }
+
+  if (photo.alt) {
+    return photo.alt;
+  }
+
+  return `Facebook archive photo ${index + 1}`;
+}
+
 function getFacebookSourceCandidates(url) {
   try {
     const parsed = new URL(url);
@@ -497,7 +509,7 @@ function updateLightboxPhoto(index) {
   image.src = photo.src;
   image.alt = photo.alt || 'Club gallery photo';
   title.textContent = photo.title || `Photo ${activePhotoIndex + 1}`;
-  meta.textContent = `${formatLongDate(photo.date)} • ${activePhotoIndex + 1} / ${total}`;
+  meta.textContent = `${formatLongDate(photo.date)} • ${getPhotoPostText(photo, activePhotoIndex)} • ${activePhotoIndex + 1} / ${total}`;
 
   setBestLightboxImage(photo, image, requestId);
 }
@@ -644,6 +656,7 @@ async function renderGallery() {
       <div class="gallery-card-copy">
         <h3>${photo.title || `Photo ${index + 1}`}</h3>
         <p>${formatLongDate(photo.date)}</p>
+        <p class="gallery-caption-note">${getPhotoPostText(photo, index)}</p>
       </div>
     </article>
   `).join('');
