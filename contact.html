@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact · River City Cycling Club</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html">River City Cycling Club</a>
+      <button class="nav-toggle" id="navToggle" aria-label="Open navigation">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="site-nav" id="siteNav">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="events.html">Events</a>
+        <a href="join.html">Join</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="section container">
+      <h1>Contact</h1>
+      <p>Reach out to learn more about rides, membership, and club events.</p>
+      <div class="contact-grid">
+        <div>
+          <h2>Get in touch</h2>
+          <p>Email: <a href="mailto:info@rivercitycycling.org">info@rivercitycycling.org</a></p>
+          <p>Phone: (555) 123-4567</p>
+          <p>Location: Riverside Park, River City</p>
+        </div>
+        <form id="contactForm">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" required />
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required />
+          <label for="message">Message</label>
+          <textarea id="message" name="message" rows="5" required></textarea>
+          <button class="button button-primary" type="submit">Send message</button>
+          <p class="form-note">This form does not submit yet. Use our club email to contact us.</p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>River City Cycling Club • Nonprofit community rides</p>
+      <p><a href="about.html">About</a> • <a href="events.html">Events</a></p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
