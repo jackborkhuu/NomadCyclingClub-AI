@@ -1,11 +1,18 @@
-/* Global styles */
+/* Facebook-like Global Styles */
 :root {
-  color-scheme: light;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #1d2939;
-  background: #f8fafc;
-  line-height: 1.6;
-  font-size: 16px;
+  --facebook-blue: #1877f2;
+  --facebook-light-blue: #e7f3ff;
+  --facebook-gray: #f0f2f5;
+  --facebook-border: #dadde1;
+  --facebook-text: #1c1e21;
+  --facebook-text-secondary: #65676b;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: var(--facebook-text);
+  background: var(--facebook-gray);
+  line-height: 1.5;
+  font-size: 14px;
 }
 
 * {
@@ -15,11 +22,16 @@
 body {
   margin: 0;
   min-height: 100vh;
+  background: var(--facebook-gray);
 }
 
 a {
-  color: inherit;
+  color: var(--facebook-blue);
   text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
 }
 
 img {
@@ -27,91 +39,351 @@ img {
   display: block;
 }
 
-.site-banner {
-  width: 100%;
+/* Facebook Page Layout */
+.facebook-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: white;
+  min-height: 100vh;
+}
+
+/* Profile Banner */
+.profile-banner {
   height: 300px;
   overflow: hidden;
   position: relative;
+  background: var(--facebook-gray);
 }
 
-.site-banner img {
+.banner-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
 }
 
+/* Profile Header */
+.profile-header {
+  background: white;
+  border-bottom: 1px solid var(--facebook-border);
+  padding: 20px 0;
+}
+
+.profile-info {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  padding: 0 16px;
+}
+
+.profile-avatar {
+  width: 168px;
+  height: 168px;
+  border-radius: 50%;
+  border: 4px solid white;
+  overflow: hidden;
+  margin-top: -84px;
+  position: relative;
+  z-index: 1;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-details h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--facebook-text);
+}
+
+.profile-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--facebook-text-secondary);
+  font-size: 15px;
+}
+
+/* Navigation Tabs */
+.nav-tabs {
+  background: white;
+  border-bottom: 1px solid var(--facebook-border);
+}
+
+.tabs {
+  display: flex;
+  padding: 0 16px;
+}
+
+.tab {
+  padding: 16px 16px 12px;
+  color: var(--facebook-text-secondary);
+  font-weight: 600;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  background: var(--facebook-gray);
+  color: var(--facebook-text);
+}
+
+.tab.active {
+  color: var(--facebook-blue);
+  border-bottom-color: var(--facebook-blue);
+}
+
+/* Main Content Grid */
+.main-content {
+  padding: 20px 0;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 20px;
+  padding: 0 16px;
+}
+
+@media (max-width: 900px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Sidebar */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Cards */
+.intro-card,
+.photos-card,
+.post-card {
+  background: white;
+  border: 1px solid var(--facebook-border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.intro-card {
+  padding: 16px;
+}
+
+.intro-card h2 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+  color: var(--facebook-text);
+}
+
+.intro-card p {
+  margin: 0 0 16px 0;
+  color: var(--facebook-text);
+}
+
+.detail-item {
+  margin-bottom: 8px;
+  color: var(--facebook-text-secondary);
+}
+
+.detail-item a {
+  color: var(--facebook-blue);
+}
+
+.photos-card {
+  padding: 16px;
+}
+
+.photos-card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--facebook-text);
+}
+
+.photos-card h3 a {
+  color: var(--facebook-text);
+}
+
+.see-all {
+  color: var(--facebook-text-secondary);
+  font-size: 15px;
+  margin-bottom: 12px;
+  display: inline-block;
+}
+
+.photos-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+}
+
+.photos-grid img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+/* Feed */
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.post-card {
+  padding: 16px;
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.post-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.post-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.post-info h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--facebook-text);
+}
+
+.post-time {
+  font-size: 13px;
+  color: var(--facebook-text-secondary);
+}
+
+.post-content {
+  line-height: 1.6;
+}
+
+.post-content p {
+  margin: 0 0 12px 0;
+}
+
+.values-list {
+  margin: 12px 0;
+  padding-left: 20px;
+}
+
+.values-list li {
+  margin-bottom: 8px;
+  color: var(--facebook-text);
+}
+
+.stats-highlight {
+  display: flex;
+  gap: 16px;
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--facebook-light-blue);
+  border-radius: var(--border-radius);
+}
+
+.stat {
+  font-weight: 600;
+  color: var(--facebook-blue);
+}
+
+.post-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--facebook-border);
+}
+
+.action-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--facebook-border);
+  border-radius: var(--border-radius);
+  background: white;
+  color: var(--facebook-text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: var(--facebook-gray);
+}
+
+.action-btn.primary {
+  background: var(--facebook-blue);
+  color: white;
+  border-color: var(--facebook-blue);
+}
+
+.action-btn.primary:hover {
+  background: #166fe5;
+}
+
+/* Container */
 .container {
   width: min(1120px, calc(100% - 2rem));
   margin: 0 auto;
 }
 
-.site-header {
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
+/* Mobile Responsive */
+@media (max-width: 720px) {
+  .profile-info {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
 
-.header-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 0;
-}
+  .profile-avatar {
+    margin-top: -60px;
+    width: 120px;
+    height: 120px;
+  }
 
-.brand {
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
+  .profile-details h1 {
+    font-size: 24px;
+  }
 
-.site-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: center;
-}
+  .tabs {
+    overflow-x: auto;
+    padding: 0 8px;
+  }
 
-.nav-toggle {
-  display: none;
-  background: transparent;
-  border: 0;
-  gap: 0.35rem;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-}
+  .tab {
+    white-space: nowrap;
+    padding: 12px 12px 8px;
+  }
 
-.nav-toggle span {
-  width: 1.75rem;
-  height: 0.15rem;
-  background: #1d2939;
-  border-radius: 999px;
-}
+  .content-grid {
+    padding: 0 8px;
+  }
 
-.hero {
-  padding: 4rem 0 2rem;
-  background: linear-gradient(180deg, #dbeafe 0%, #ffffff 100%);
+  .stats-highlight {
+    flex-direction: column;
+    gap: 8px;
+  }
 }
-
-.hero-content {
-  display: grid;
-  gap: 1.5rem;
-}
-
-.eyebrow {
-  color: #2563eb;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.13em;
-  font-size: 0.85rem;
-}
-
-.hero h1 {
-  margin: 0;
   font-size: clamp(2.5rem, 5vw, 4rem);
   line-height: 1.05;
 }
