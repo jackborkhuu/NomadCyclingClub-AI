@@ -2,11 +2,31 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
 const pageId = process.env.FB_PAGE_ID;
-const pageToken = process.env.FB_PAGE_TOKEN;
+const rawPageToken = process.env.FB_PAGE_TOKEN;
 const graphVersion = process.env.FB_GRAPH_VERSION || 'v23.0';
+
+function sanitizeToken(token) {
+  if (!token) {
+    return token;
+  }
+
+  const trimmed = token.trim();
+  // Common copy/paste mistake: secret value is wrapped in quotes.
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    return trimmed.slice(1, -1).trim();
+  }
+
+  return trimmed;
+}
+
+const pageToken = sanitizeToken(rawPageToken);
 
 if (!pageId || !pageToken) {
   throw new Error('Missing required env vars: FB_PAGE_ID and FB_PAGE_TOKEN');
+}
+
+if (/\s/.test(pageToken)) {
+  throw new Error('FB_PAGE_TOKEN contains whitespace. Paste only the raw page access token value into the GitHub secret.');
 }
 
 function uniqueMedia(mediaList) {
@@ -109,7 +129,13 @@ async function fetchPosts() {
 
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`Graph API request failed (${response.status}): ${body}`);
+    let help = '';
+    if (/Cannot parse access token/i.test(body)) {
+      help = ' FB_PAGE_TOKEN appears malformed. Re-copy the page access_token from /me/accounts and replace the GitHub secret value with no quotes and no extra spaces.';
+    } else if (/User Access Token Is Not Supported/i.test(body) || /A Page access token is required/i.test(body)) {
+      help = ' FB_PAGE_TOKEN is a user token. Use the page access_token for your page from /me/accounts.';
+    }
+    throw new Error(`Graph API request failed (${response.status}): ${body}${help}`);
   }
 
   const payload = await response.json();
