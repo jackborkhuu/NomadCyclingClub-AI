@@ -694,9 +694,117 @@ async function renderGallery() {
     return;
   }
 
+  const apiPosts = await fetchApiFeedPosts();
+  const postsWithMedia = apiPosts.filter((post) => Array.isArray(post.media) && post.media.length > 0);
+
+  if (postsWithMedia.length > 0) {
+    gallery.classList.remove('gallery-grid', 'gallery-grid-large');
+    gallery.classList.add('gallery-feed-grid');
+
+    const lightboxPhotos = [];
+    const html = postsWithMedia.map((post, postIndex) => {
+      const postUrl = post.permalinkUrl || post.permalink_url || 'https://www.facebook.com/nomadcyclingclub';
+      const message = post.message || post.story || `Facebook post ${postIndex + 1}`;
+      const postedAt = formatDateTime(post.createdTime || post.created_time);
+
+      const normalizedMedia = post.media.map((media) => ({
+        type: String(media.type || '').toLowerCase(),
+        imageUrl: media.imageUrl || media.image_url || media.previewUrl || media.preview_url || '',
+        videoUrl: media.videoUrl || media.video_url || media.sourceUrl || media.source_url || '',
+        targetUrl: media.targetUrl || media.target_url || ''
+      }));
+
+      const seenMedia = new Set();
+      const dedupedMedia = normalizedMedia.filter((media) => {
+        const key = `${media.type}|${media.imageUrl}|${media.videoUrl}`;
+        if (seenMedia.has(key)) {
+          return false;
+        }
+        seenMedia.add(key);
+        return true;
+      });
+
+      const videoPosterSet = new Set(
+        dedupedMedia
+          .filter((media) => media.type === 'video' && media.videoUrl && media.imageUrl)
+          .map((media) => media.imageUrl)
+      );
+
+      const displayMedia = dedupedMedia.filter((media) => {
+        if (media.type === 'video') {
+          return Boolean(media.videoUrl);
+        }
+        if (!media.imageUrl) {
+          return false;
+        }
+        return !videoPosterSet.has(media.imageUrl);
+      });
+
+      const mediaHtml = displayMedia.map((media, mediaIndex) => {
+        const isReel = /\/reel\//i.test(postUrl) || /reel/i.test(media.type) || /\/reel\//i.test(media.targetUrl || '');
+        const mediaAlt = escapeHtml(message || `Post media ${mediaIndex + 1}`);
+
+        if (media.type === 'video' && media.videoUrl) {
+          return `
+            <div class="gallery-post-video${isReel ? ' gallery-post-video-reel' : ''}">
+              <video controls preload="metadata" ${media.imageUrl ? `poster="${escapeHtml(media.imageUrl)}"` : ''}>
+                <source src="${escapeHtml(media.videoUrl)}" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          `;
+        }
+
+        const lightboxIndex = lightboxPhotos.length;
+        lightboxPhotos.push({
+          src: media.imageUrl,
+          bestSrc: media.imageUrl,
+          alt: message || `Facebook media ${lightboxIndex + 1}`,
+          title: 'Facebook post',
+          date: (post.createdTime || post.created_time || '').slice(0, 10) || null,
+          postText: message,
+          candidateSrcs: [media.imageUrl]
+        });
+
+        return `
+          <button class="gallery-trigger gallery-media-trigger" type="button" data-photo-index="${lightboxIndex}" aria-label="Open photo ${mediaIndex + 1}">
+            <img src="${escapeHtml(media.imageUrl)}" alt="${mediaAlt}" loading="lazy" />
+          </button>
+        `;
+      }).join('');
+
+      return `
+        <article class="gallery-post-card">
+          <div class="post-header">
+            <div class="post-avatar">
+              <img src="https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/434604830_1029036748669316_4381808470709969180_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=wq6mCRo7vpIQ7kNvwHIVhPS&_nc_oc=Ado4Ht_3AIz3aO1db-EVOdfN-qkfL3TCPq8taQVZkyQ7dVnBfr7e9iDzd4ak1kjYHAg&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=42QPR6HS6egX18UFG_KD8g&_nc_ss=7b2a8&oh=00_Af7ow7NgPBFrQEn-u9g6Gon4xNzTwNI_Mn4qC4PcXEMyPA&oe=6A080E03" alt="Nomad Cycling Club" loading="lazy" />
+            </div>
+            <div class="post-info">
+              <h3>Nomad Cycling Club - USA</h3>
+              <span class="post-time">${escapeHtml(postedAt)}</span>
+            </div>
+          </div>
+          <div class="gallery-post-body">
+            <p class="gallery-post-message"><a class="home-feed-text-link" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">${escapeHtml(message)}</a></p>
+            ${mediaHtml ? `<div class="gallery-post-media-grid">${mediaHtml}</div>` : ''}
+            <p class="gallery-post-footer"><a href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">Open original Facebook post</a></p>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    galleryPhotosForView = lightboxPhotos;
+    gallery.innerHTML = html;
+    setupGalleryLightbox();
+    return;
+  }
+
+  gallery.classList.add('gallery-grid', 'gallery-grid-large');
+  gallery.classList.remove('gallery-feed-grid');
+
   const displayPhotos = await getDisplayPhotos();
   if (displayPhotos.length === 0) {
-    gallery.innerHTML = '<p class="gallery-note">No non-square high-quality photos are currently available from the source set.</p>';
+    gallery.innerHTML = '<p class="gallery-note">No Facebook media is currently available.</p>';
     return;
   }
 
