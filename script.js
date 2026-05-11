@@ -318,8 +318,20 @@ function getFacebookSourceCandidates(url) {
 function loadImageDimensions(url) {
   return new Promise((resolve, reject) => {
     const image = new Image();
-    image.onload = () => resolve({ url, width: image.naturalWidth, height: image.naturalHeight });
-    image.onerror = reject;
+    const timer = setTimeout(() => {
+      reject(new Error('Image load timeout'));
+    }, 5000);
+
+    image.onload = () => {
+      clearTimeout(timer);
+      resolve({ url, width: image.naturalWidth, height: image.naturalHeight });
+    };
+
+    image.onerror = () => {
+      clearTimeout(timer);
+      reject(new Error('Image load error'));
+    };
+
     image.src = url;
   });
 }
@@ -330,6 +342,7 @@ let lightboxRequestId = 0;
 
 async function setBestLightboxImage(photo, image, requestId) {
   const candidates = photo.candidateSrcs || [photo.src];
+  let bestCandidate = null;
 
   for (const candidate of candidates) {
     try {
@@ -339,8 +352,11 @@ async function setBestLightboxImage(photo, image, requestId) {
       }
 
       if (loaded.width > 0 && loaded.height > 0) {
-        image.src = loaded.url;
-        return;
+        const loadedArea = loaded.width * loaded.height;
+        const bestArea = bestCandidate ? bestCandidate.width * bestCandidate.height : 0;
+        if (loadedArea > bestArea) {
+          bestCandidate = loaded;
+        }
       }
     } catch {
       // Try the next candidate URL.
@@ -348,7 +364,7 @@ async function setBestLightboxImage(photo, image, requestId) {
   }
 
   if (requestId === lightboxRequestId) {
-    image.src = photo.src;
+    image.src = bestCandidate ? bestCandidate.url : photo.src;
   }
 }
 
