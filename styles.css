@@ -440,6 +440,24 @@ img {
   text-decoration: underline;
 }
 
+.home-feed-text-link {
+  white-space: pre-line;
+}
+
+.home-feed-photo-grid-video {
+  grid-template-columns: 1fr;
+}
+
+.home-feed-photo-grid-video .home-feed-video {
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.home-feed-video-reel video {
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+}
+
 .home-feed-photo {
   border-radius: 10px;
   overflow: hidden;

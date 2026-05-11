@@ -836,17 +836,29 @@ async function renderApiHomeFeedPosts(container) {
     const message = post.message || post.story || `Facebook post ${postIndex + 1}`;
     const postedAt = formatDateTime(post.createdTime || post.created_time);
     const mediaList = Array.isArray(post.media) ? post.media : [];
+    const normalizedMedia = mediaList.map((media) => ({
+      type: String(media.type || '').toLowerCase(),
+      imageUrl: media.imageUrl || media.image_url || media.previewUrl || media.preview_url || '',
+      videoUrl: media.videoUrl || media.video_url || media.sourceUrl || media.source_url || '',
+      targetUrl: media.targetUrl || media.target_url || ''
+    }));
 
-    const mediaHtml = mediaList.map((media, mediaIndex) => {
-      const mediaType = (media.type || '').toLowerCase();
-      const imageUrl = media.imageUrl || media.image_url || media.previewUrl || media.preview_url || '';
-      const videoUrl = media.videoUrl || media.video_url || media.sourceUrl || media.source_url || '';
-      const mediaAlt = escapeHtml(media.title || message || `Post media ${mediaIndex + 1}`);
+    const hasVideo = normalizedMedia.some((media) => media.type === 'video' && media.videoUrl);
+    const displayMedia = hasVideo
+      ? normalizedMedia.filter((media) => media.type === 'video' && media.videoUrl)
+      : normalizedMedia;
+
+    const mediaHtml = displayMedia.map((media, mediaIndex) => {
+      const mediaType = media.type;
+      const imageUrl = media.imageUrl;
+      const videoUrl = media.videoUrl;
+      const isReel = /\/reel\//i.test(postUrl) || /reel/i.test(mediaType) || /\/reel\//i.test(media.targetUrl || '');
+      const mediaAlt = escapeHtml(message || `Post media ${mediaIndex + 1}`);
 
       if (mediaType === 'video') {
         if (videoUrl) {
           return `
-            <div class="home-feed-video">
+            <div class="home-feed-video${isReel ? ' home-feed-video-reel' : ''}">
               <video controls preload="metadata" ${imageUrl ? `poster="${escapeHtml(imageUrl)}"` : ''}>
                 <source src="${escapeHtml(videoUrl)}" type="video/mp4" />
                 Your browser does not support the video tag.
@@ -902,7 +914,7 @@ async function renderApiHomeFeedPosts(container) {
         </div>
         <div class="home-feed-body">
           <p class="home-feed-text"><a class="home-feed-text-link" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">${escapeHtml(message)}</a></p>
-          ${mediaHtml ? `<div class="home-feed-photo-grid">${mediaHtml}</div>` : ''}
+          ${mediaHtml ? `<div class="home-feed-photo-grid ${hasVideo ? 'home-feed-photo-grid-video' : ''}">${mediaHtml}</div>` : ''}
           <div class="home-feed-footer"><a href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">Open original Facebook post</a></div>
         </div>
       </article>
