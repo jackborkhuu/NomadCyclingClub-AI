@@ -726,6 +726,8 @@ async function renderHomeFeedPosts() {
     return;
   }
 
+  const clubAvatar = 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/434604830_1029036748669316_4381808470709969180_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=wq6mCRo7vpIQ7kNvwHIVhPS&_nc_oc=Ado4Ht_3AIz3aO1db-EVOdfN-qkfL3TCPq8taQVZkyQ7dVnBfr7e9iDzd4ak1kjYHAg&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=42QPR6HS6egX18UFG_KD8g&_nc_ss=7b2a8&oh=00_Af7ow7NgPBFrQEn-u9g6Gon4xNzTwNI_Mn4qC4PcXEMyPA&oe=6A080E03';
+
   const displayPhotos = await getDisplayPhotos();
   const recentFirst = [...displayPhotos].sort((left, right) => {
     if (left.date && right.date) {
@@ -750,12 +752,22 @@ async function renderHomeFeedPosts() {
   }
 
   container.innerHTML = posts.map((photo, index) => `
-    <article class="home-feed-card">
-      <img src="${photo.bestSrc || photo.src}" alt="${photo.alt || 'Club archive photo'}" loading="lazy" />
-      <div class="home-feed-copy">
-        <h4>${photo.title || `Post ${index + 1}`}</h4>
-        <p>${getPhotoPostText(photo, index)}</p>
-        <p>${formatLongDate(photo.date)}</p>
+    <article class="home-feed-post">
+      <div class="post-header">
+        <div class="post-avatar">
+          <img src="${clubAvatar}" alt="Nomad Cycling Club" loading="lazy" />
+        </div>
+        <div class="post-info">
+          <h3>Nomad Cycling Club - USA</h3>
+          <span class="post-time">${formatLongDate(photo.date)}</span>
+        </div>
+      </div>
+      <div class="home-feed-body">
+        <p class="home-feed-text">${getPhotoPostText(photo, index)}</p>
+        <div class="home-feed-photo">
+          <img src="${photo.bestSrc || photo.src}" alt="${photo.alt || 'Club archive photo'}" loading="lazy" />
+        </div>
+        <div class="home-feed-footer">${photo.title || `Post ${index + 1}`}</div>
       </div>
     </article>
   `).join('');
