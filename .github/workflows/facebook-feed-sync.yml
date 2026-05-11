@@ -1,0 +1,41 @@
+name: Sync Facebook Feed Data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */3 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  sync_facebook_feed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch Facebook feed via Graph API
+        env:
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+          FB_GRAPH_VERSION: v23.0
+        run: node .github/scripts/fetch-facebook-feed.mjs
+
+      - name: Commit updated feed JSON
+        run: |
+          if git diff --quiet -- data/facebook-feed.json; then
+            echo "No feed changes detected."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/facebook-feed.json
+          git commit -m "Update Facebook feed data"
+          git push

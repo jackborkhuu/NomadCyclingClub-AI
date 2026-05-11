@@ -776,12 +776,157 @@ async function renderOnThisDay() {
   `).join('');
 }
 
-async function renderHomeFeedPosts() {
-  const container = document.getElementById('homeFeedPosts');
-  if (!container) {
-    return;
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatDateTime(value) {
+  if (!value) {
+    return 'Date unavailable';
   }
 
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'Date unavailable';
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  }).format(date);
+}
+
+async function fetchApiFeedPosts() {
+  try {
+    const response = await fetch('data/facebook-feed.json', { cache: 'no-store' });
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = await response.json();
+    if (!payload || !Array.isArray(payload.posts)) {
+      return [];
+    }
+
+    return payload.posts;
+  } catch {
+    return [];
+  }
+}
+
+async function renderApiHomeFeedPosts(container) {
+  const apiPosts = await fetchApiFeedPosts();
+  if (apiPosts.length === 0) {
+    return false;
+  }
+
+  const clubAvatar = 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/434604830_1029036748669316_4381808470709969180_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=wq6mCRo7vpIQ7kNvwHIVhPS&_nc_oc=Ado4Ht_3AIz3aO1db-EVOdfN-qkfL3TCPq8taQVZkyQ7dVnBfr7e9iDzd4ak1kjYHAg&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=42QPR6HS6egX18UFG_KD8g&_nc_ss=7b2a8&oh=00_Af7ow7NgPBFrQEn-u9g6Gon4xNzTwNI_Mn4qC4PcXEMyPA&oe=6A080E03';
+  const lightboxPhotos = [];
+
+  container.innerHTML = apiPosts.slice(0, 10).map((post, postIndex) => {
+    const postUrl = post.permalinkUrl || post.permalink_url || 'https://www.facebook.com/nomadcyclingclub';
+    const message = post.message || post.story || `Facebook post ${postIndex + 1}`;
+    const postedAt = formatDateTime(post.createdTime || post.created_time);
+    const mediaList = Array.isArray(post.media) ? post.media : [];
+
+    const mediaHtml = mediaList.map((media, mediaIndex) => {
+      const mediaType = (media.type || '').toLowerCase();
+      const imageUrl = media.imageUrl || media.image_url || media.previewUrl || media.preview_url || '';
+      const videoUrl = media.videoUrl || media.video_url || media.sourceUrl || media.source_url || '';
+      const mediaAlt = escapeHtml(media.title || message || `Post media ${mediaIndex + 1}`);
+
+      if (mediaType === 'video') {
+        if (videoUrl) {
+          return `
+            <div class="home-feed-video">
+              <video controls preload="metadata" ${imageUrl ? `poster="${escapeHtml(imageUrl)}"` : ''}>
+                <source src="${escapeHtml(videoUrl)}" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          `;
+        }
+
+        if (imageUrl) {
+          return `
+            <a class="home-feed-video-link" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">
+              <img src="${escapeHtml(imageUrl)}" alt="${mediaAlt}" loading="lazy" />
+              <span>Watch on Facebook</span>
+            </a>
+          `;
+        }
+
+        return '';
+      }
+
+      if (!imageUrl) {
+        return '';
+      }
+
+      const lightboxIndex = lightboxPhotos.length;
+      lightboxPhotos.push({
+        src: imageUrl,
+        bestSrc: imageUrl,
+        alt: media.title || message || `Facebook media ${lightboxIndex + 1}`,
+        title: post.title || 'Facebook post',
+        date: post.createdTime || post.created_time || null,
+        postText: message,
+        candidateSrcs: [imageUrl]
+      });
+
+      return `
+        <button class="feed-media-trigger" type="button" data-lightbox-index="${lightboxIndex}" aria-label="Open post image ${mediaIndex + 1}">
+          <img src="${escapeHtml(imageUrl)}" alt="${mediaAlt}" loading="lazy" />
+        </button>
+      `;
+    }).join('');
+
+    return `
+      <article class="home-feed-post">
+        <div class="post-header">
+          <div class="post-avatar">
+            <img src="${clubAvatar}" alt="Nomad Cycling Club" loading="lazy" />
+          </div>
+          <div class="post-info">
+            <h3>Nomad Cycling Club - USA</h3>
+            <span class="post-time">${escapeHtml(postedAt)}</span>
+          </div>
+        </div>
+        <div class="home-feed-body">
+          <p class="home-feed-text"><a class="home-feed-text-link" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">${escapeHtml(message)}</a></p>
+          ${mediaHtml ? `<div class="home-feed-photo-grid">${mediaHtml}</div>` : ''}
+          <div class="home-feed-footer"><a href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">Open original Facebook post</a></div>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  const triggers = container.querySelectorAll('.feed-media-trigger[data-lightbox-index]');
+  triggers.forEach((trigger) => {
+    trigger.addEventListener('click', () => {
+      const index = Number(trigger.getAttribute('data-lightbox-index'));
+      if (Number.isNaN(index)) {
+        return;
+      }
+
+      galleryPhotosForView = lightboxPhotos;
+      ensureGalleryLightbox();
+      openLightbox(index);
+    });
+  });
+
+  return true;
+}
+
+async function renderFallbackHomeFeedPosts(container) {
   const clubAvatar = 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/434604830_1029036748669316_4381808470709969180_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=wq6mCRo7vpIQ7kNvwHIVhPS&_nc_oc=Ado4Ht_3AIz3aO1db-EVOdfN-qkfL3TCPq8taQVZkyQ7dVnBfr7e9iDzd4ak1kjYHAg&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=42QPR6HS6egX18UFG_KD8g&_nc_ss=7b2a8&oh=00_Af7ow7NgPBFrQEn-u9g6Gon4xNzTwNI_Mn4qC4PcXEMyPA&oe=6A080E03';
 
   const displayPhotos = await getDisplayPhotos();
@@ -835,7 +980,7 @@ async function renderHomeFeedPosts() {
     candidateSrcs: photo.candidateSrcs || [photo.bestSrc || photo.src]
   }));
 
-  const triggers = container.querySelectorAll('.feed-media-trigger');
+  const triggers = container.querySelectorAll('.feed-media-trigger[data-feed-index]');
   triggers.forEach((trigger) => {
     trigger.addEventListener('click', () => {
       const index = Number(trigger.getAttribute('data-feed-index'));
@@ -848,6 +993,18 @@ async function renderHomeFeedPosts() {
       openLightbox(index);
     });
   });
+}
+
+async function renderHomeFeedPosts() {
+  const container = document.getElementById('homeFeedPosts');
+  if (!container) {
+    return;
+  }
+
+  const renderedApiFeed = await renderApiHomeFeedPosts(container);
+  if (!renderedApiFeed) {
+    await renderFallbackHomeFeedPosts(container);
+  }
 }
 
 async function initializeDynamicSections() {

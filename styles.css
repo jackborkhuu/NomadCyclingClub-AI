@@ -374,6 +374,12 @@ img {
   gap: 12px;
 }
 
+.home-feed-photo-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
 .home-feed-post {
   border: 1px solid var(--facebook-border);
   border-radius: 12px;
@@ -381,12 +387,42 @@ img {
   background: #ffffff;
 }
 
+  border-radius: 10px;
+  overflow: hidden;
+}
 .home-feed-post .post-header {
   padding: 12px 12px 0;
   margin-bottom: 8px;
 }
 
 .home-feed-body {
+
+.home-feed-photo-grid img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.home-feed-video video {
+  width: 100%;
+  border-radius: 10px;
+  background: #000000;
+}
+
+.home-feed-video-link {
+  display: block;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--facebook-border);
+}
+
+.home-feed-video-link span {
+  display: block;
+  padding: 8px 10px;
+  background: #ffffff;
+  color: var(--facebook-blue);
+  font-weight: 600;
+}
   padding: 0 12px 12px;
 }
 
