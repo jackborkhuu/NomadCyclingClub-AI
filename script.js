@@ -276,8 +276,69 @@ function formatLongDate(value) {
   }).format(date);
 }
 
+function getFacebookSourceCandidates(url) {
+  try {
+    const parsed = new URL(url);
+    const stp = parsed.searchParams.get('stp');
+    const candidates = [];
+
+    if (stp && /s\d+x\d+/i.test(stp)) {
+      const sizeSteps = ['s2048x2048', 's1536x1536', 's1080x1080', 's960x960', 's720x720'];
+      for (const sizeStep of sizeSteps) {
+        const candidate = new URL(url);
+        candidate.searchParams.set('stp', stp.replace(/s\d+x\d+/i, sizeStep));
+        candidates.push(candidate.toString());
+      }
+
+      // Some URLs permit removal of stp for original quality; keep as optional candidate.
+      const noStp = new URL(url);
+      noStp.searchParams.delete('stp');
+      candidates.push(noStp.toString());
+    }
+
+    candidates.push(parsed.toString());
+    return [...new Set(candidates)];
+  } catch {
+    return [url];
+  }
+}
+
+function loadImageDimensions(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve({ url, width: image.naturalWidth, height: image.naturalHeight });
+    image.onerror = reject;
+    image.src = url;
+  });
+}
+
 let galleryPhotosForView = [];
 let activePhotoIndex = 0;
+let lightboxRequestId = 0;
+
+async function setBestLightboxImage(photo, image, requestId) {
+  const candidates = photo.candidateSrcs || [photo.src];
+
+  for (const candidate of candidates) {
+    try {
+      const loaded = await loadImageDimensions(candidate);
+      if (requestId !== lightboxRequestId) {
+        return;
+      }
+
+      if (loaded.width > 0 && loaded.height > 0) {
+        image.src = loaded.url;
+        return;
+      }
+    } catch {
+      // Try the next candidate URL.
+    }
+  }
+
+  if (requestId === lightboxRequestId) {
+    image.src = photo.src;
+  }
+}
 
 function updateLightboxPhoto(index) {
   const lightbox = document.getElementById('galleryLightbox');
@@ -292,11 +353,14 @@ function updateLightboxPhoto(index) {
   const total = galleryPhotosForView.length;
   activePhotoIndex = (index + total) % total;
   const photo = galleryPhotosForView[activePhotoIndex];
+  const requestId = ++lightboxRequestId;
 
   image.src = photo.src;
   image.alt = photo.alt || 'Club gallery photo';
   title.textContent = photo.title || `Photo ${activePhotoIndex + 1}`;
   meta.textContent = `${formatLongDate(photo.date)} • ${activePhotoIndex + 1} / ${total}`;
+
+  setBestLightboxImage(photo, image, requestId);
 }
 
 function openLightbox(index) {
@@ -423,7 +487,10 @@ function renderGallery() {
     return;
   }
 
-  galleryPhotosForView = shuffle(facebookPhotos);
+  galleryPhotosForView = shuffle(facebookPhotos).map((photo) => ({
+    ...photo,
+    candidateSrcs: getFacebookSourceCandidates(photo.src)
+  }));
   gallery.innerHTML = galleryPhotosForView.map((photo, index) => `
     <article class="gallery-card">
       <button class="gallery-trigger" type="button" data-photo-index="${index}" aria-label="Open photo ${index + 1}">
