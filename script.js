@@ -322,6 +322,49 @@ const facebookHighQualityByFile = facebookHighQualitySources.reduce((map, url) =
   return map;
 }, {});
 
+const facebookPostByFile = {
+  '673625921_1637213444518307_5611692299590495681_n.jpg': 'https://www.facebook.com/photo.php?fbid=1637213154518336&set=pb.100046890018721.-2207520000&type=3',
+  '672683099_1637213437851641_7228904326571331058_n.jpg': 'https://www.facebook.com/photo.php?fbid=1637213121185006&set=pb.100046890018721.-2207520000&type=3',
+  '673535871_1637213414518310_7903495935145392462_n.jpg': 'https://www.facebook.com/photo.php?fbid=1637213097851675&set=pb.100046890018721.-2207520000&type=3',
+  '672643464_1637213431184975_1515063720095141462_n.jpg': 'https://www.facebook.com/photo.php?fbid=1637213077851677&set=pb.100046890018721.-2207520000&type=3',
+  '607950584_1545940523645600_7370249189459747437_n.jpg': 'https://www.facebook.com/photo.php?fbid=1545940516978934&set=pb.100046890018721.-2207520000&type=3',
+  '574390030_1493128615593458_7589757113301233912_n.jpg': 'https://www.facebook.com/photo.php?fbid=1493127775593542&set=pb.100046890018721.-2207520000&type=3',
+  '573891801_1493128602260126_3070074279857641340_n.jpg': 'https://www.facebook.com/photo.php?fbid=1493127762260210&set=pb.100046890018721.-2207520000&type=3',
+  '574034432_1493128632260123_628460640214557466_n.jpg': 'https://www.facebook.com/photo.php?fbid=1493127722260214&set=pb.100046890018721.-2207520000&type=3',
+  '573374469_1493127725593547_5547752852223608786_n.jpg': 'https://www.facebook.com/photo.php?fbid=1493127715593548&set=pb.100046890018721.-2207520000&type=3',
+  '576469767_1493128565593463_8311896667144904990_n.jpg': 'https://www.facebook.com/photo.php?fbid=1493127675593552&set=pb.100046890018721.-2207520000&type=3',
+  '573923631_1493128558926797_956038550251571563_n.jpg': 'https://www.facebook.com/photo.php?fbid=1493127662260220&set=pb.100046890018721.-2207520000&type=3',
+  '549715556_1448003536772633_4648318552302692281_n.jpg': 'https://www.facebook.com/photo.php?fbid=1448002896772697&set=pb.100046890018721.-2207520000&type=3',
+  '548723599_1448003550105965_2989915834329744314_n.jpg': 'https://www.facebook.com/photo.php?fbid=1447998550106465&set=pb.100046890018721.-2207520000&type=3',
+  '547646100_1448003506772636_2683809327190524157_n.jpg': 'https://www.facebook.com/photo.php?fbid=1447998510106469&set=pb.100046890018721.-2207520000&type=3',
+  '547455296_1448003500105970_3265662309900955788_n.jpg': 'https://www.facebook.com/photo.php?fbid=1447998496773137&set=pb.100046890018721.-2207520000&type=3',
+  '520293361_1396853558554298_776466652404772281_n.jpg': 'https://www.facebook.com/photo.php?fbid=1396853555220965&set=pb.100046890018721.-2207520000&type=3',
+  '493982209_1328772302029091_374628181166287241_n.jpg': 'https://www.facebook.com/photo.php?fbid=1302141158025539&set=pb.100046890018721.-2207520000&type=3',
+  '493993822_1328773985362256_3554910033961218563_n.jpg': 'https://www.facebook.com/photo.php?fbid=1302141141358874&set=pb.100046890018721.-2207520000&type=3',
+  '491840374_1322662695973385_6246702159607105157_n.jpg': 'https://www.facebook.com/photo.php?fbid=1295398278699827&set=pb.100046890018721.-2207520000&type=3',
+  '491445977_1322662272640094_1731749990350305946_n.jpg': 'https://www.facebook.com/photo.php?fbid=1295398262033162&set=pb.100046890018721.-2207520000&type=3',
+  '489553677_1310107440562244_4634812104059425717_n.jpg': 'https://www.facebook.com/photo.php?fbid=1145609870345336&set=pb.100046890018721.-2207520000&type=3',
+  '488566338_1310107223895599_303539282409666909_n.jpg': 'https://www.facebook.com/photo.php?fbid=1145609830345340&set=pb.100046890018721.-2207520000&type=3',
+  '488615640_1310107423895579_428050740681099241_n.jpg': 'https://www.facebook.com/photo.php?fbid=1145609813678675&set=pb.100046890018721.-2207520000&type=3',
+  '489503393_1310107007228954_5696515006301429549_n.jpg': 'https://www.facebook.com/photo.php?fbid=1145609763678680&set=pb.100046890018721.-2207520000&type=3',
+  '489027217_1310107047228950_1149573966605870278_n.jpg': 'https://www.facebook.com/photo.php?fbid=1145609750345348&set=pb.100046890018721.-2207520000&type=3',
+  '489027088_1310107000562288_5360028761265217842_n.jpg': 'https://www.facebook.com/photo.php?fbid=1145609713678685&set=pb.100046890018721.-2207520000&type=3',
+  '488546570_1310107267228928_4662144639266566876_n.jpg': 'https://www.facebook.com/photo.php?fbid=1145609697012020&set=pb.100046890018721.-2207520000&type=3',
+  '488571345_1308339584072363_5698708514327297594_n.jpg': 'https://www.facebook.com/photo.php?fbid=1092085229031134&set=pb.100046890018721.-2207520000&type=3',
+  '488659282_1308339467405708_5434926097325623031_n.jpg': 'https://www.facebook.com/photo.php?fbid=1092085152364475&set=pb.100046890018721.-2207520000&type=3',
+  '488793005_1308339764072345_4753571484787772510_n.jpg': 'https://www.facebook.com/photo.php?fbid=1092085145697809&set=pb.100046890018721.-2207520000&type=3',
+  '488654961_1308339530739035_7323435807518980619_n.jpg': 'https://www.facebook.com/photo.php?fbid=1092085122364478&set=pb.100046890018721.-2207520000&type=3',
+  '488977714_1308339510739037_4006594291916193589_n.jpg': 'https://www.facebook.com/photo.php?fbid=1092085099031147&set=pb.100046890018721.-2207520000&type=3',
+  '489110535_1308339657405689_1558066768429369335_n.jpg': 'https://www.facebook.com/photo.php?fbid=1092085075697816&set=pb.100046890018721.-2207520000&type=3',
+  '488958805_1308339600739028_9130969183001980312_n.jpg': 'https://www.facebook.com/photo.php?fbid=1092085025697821&set=pb.100046890018721.-2207520000&type=3',
+  '488658629_1308339604072361_1773743819997213647_n.jpg': 'https://www.facebook.com/photo.php?fbid=1092084995697824&set=pb.100046890018721.-2207520000&type=3',
+  '489567274_1308339740739014_5197579257901171374_n.jpg': 'https://www.facebook.com/photo.php?fbid=1092084932364497&set=pb.100046890018721.-2207520000&type=3',
+  '488709753_1308339750739013_2721306050478597448_n.jpg': 'https://www.facebook.com/photo.php?fbid=1092084909031166&set=pb.100046890018721.-2207520000&type=3',
+  '488741829_1308339507405704_5772362889763471595_n.jpg': 'https://www.facebook.com/photo.php?fbid=1092084895697834&set=pb.100046890018721.-2207520000&type=3',
+  '488885813_1308339460739042_5688713796690192284_n.jpg': 'https://www.facebook.com/photo.php?fbid=1092084875697836&set=pb.100046890018721.-2207520000&type=3',
+  '489043159_1308339614072360_8308880985299752319_n.jpg': 'https://www.facebook.com/photo.php?fbid=1092084852364505&set=pb.100046890018721.-2207520000&type=3'
+};
+
 function shuffle(array) {
   const clone = [...array];
   for (let index = clone.length - 1; index > 0; index -= 1) {
@@ -354,6 +397,19 @@ function getPhotoPostText(photo, index) {
   }
 
   return `Facebook archive photo ${index + 1}`;
+}
+
+function getPhotoPostUrl(photo) {
+  try {
+    const filename = new URL(photo.src).pathname.split('/').pop();
+    if (filename && facebookPostByFile[filename]) {
+      return facebookPostByFile[filename];
+    }
+  } catch {
+    // ignore URL parse failures
+  }
+
+  return 'https://www.facebook.com/nomadcyclingclub/photos';
 }
 
 function getFacebookSourceCandidates(url) {
@@ -763,14 +819,35 @@ async function renderHomeFeedPosts() {
         </div>
       </div>
       <div class="home-feed-body">
-        <p class="home-feed-text">${getPhotoPostText(photo, index)}</p>
+        <p class="home-feed-text"><a class="home-feed-text-link" href="${getPhotoPostUrl(photo)}" target="_blank" rel="noreferrer">${getPhotoPostText(photo, index)}</a></p>
         <div class="home-feed-photo">
-          <img src="${photo.bestSrc || photo.src}" alt="${photo.alt || 'Club archive photo'}" loading="lazy" />
+          <button class="feed-media-trigger" type="button" data-feed-index="${index}" aria-label="Open post image ${index + 1}">
+            <img src="${photo.bestSrc || photo.src}" alt="${photo.alt || 'Club archive photo'}" loading="lazy" />
+          </button>
         </div>
         <div class="home-feed-footer">${photo.title || `Post ${index + 1}`}</div>
       </div>
     </article>
   `).join('');
+
+  const feedPhotos = posts.map((photo) => ({
+    ...photo,
+    candidateSrcs: photo.candidateSrcs || [photo.bestSrc || photo.src]
+  }));
+
+  const triggers = container.querySelectorAll('.feed-media-trigger');
+  triggers.forEach((trigger) => {
+    trigger.addEventListener('click', () => {
+      const index = Number(trigger.getAttribute('data-feed-index'));
+      if (Number.isNaN(index)) {
+        return;
+      }
+
+      galleryPhotosForView = feedPhotos;
+      ensureGalleryLightbox();
+      openLightbox(index);
+    });
+  });
 }
 
 async function initializeDynamicSections() {

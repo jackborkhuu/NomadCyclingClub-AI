@@ -395,10 +395,28 @@ img {
   color: var(--facebook-text);
 }
 
+.home-feed-text-link {
+  color: var(--facebook-text);
+  text-decoration: none;
+}
+
+.home-feed-text-link:hover {
+  text-decoration: underline;
+}
+
 .home-feed-photo {
   border-radius: 10px;
   overflow: hidden;
   background: var(--facebook-gray);
+}
+
+.feed-media-trigger {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
 }
 
 .home-feed-photo img {
