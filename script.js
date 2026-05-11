@@ -722,7 +722,7 @@ async function renderGallery() {
 
       for (const media of normalizedMedia) {
         const videoKey = `video:${media.videoUrl}`;
-        const imageKey = `image:${media.imageUrl}`;
+        const imageKey = `image:${extractImageId(media.imageUrl)}`;
 
         if (media.type === 'video' && media.videoUrl) {
           // Add video if not already seen
@@ -730,12 +730,12 @@ async function renderGallery() {
             dedupedMedia.push(media);
             seenUrls.add(videoKey);
             if (media.imageUrl) {
-              videoPosterSet.add(media.imageUrl);
+              videoPosterSet.add(extractImageId(media.imageUrl));
             }
           }
         } else if (media.imageUrl) {
           // Add photo/album if not already seen AND not a video poster
-          if (!seenUrls.has(imageKey) && !videoPosterSet.has(media.imageUrl)) {
+          if (!seenUrls.has(imageKey) && !videoPosterSet.has(extractImageId(media.imageUrl))) {
             dedupedMedia.push(media);
             seenUrls.add(imageKey);
           }
@@ -746,13 +746,13 @@ async function renderGallery() {
       const photoImageUrls = new Set();
       dedupedMedia.forEach((m) => {
         if (m.type === 'photo' && m.imageUrl) {
-          photoImageUrls.add(m.imageUrl);
+          photoImageUrls.add(extractImageId(m.imageUrl));
         }
       });
 
       const displayMedia = dedupedMedia.filter((media) => {
         // Remove album if it has same image as a photo
-        if (media.type === 'album' && photoImageUrls.has(media.imageUrl)) {
+        if (media.type === 'album' && photoImageUrls.has(extractImageId(media.imageUrl))) {
           return false;
         }
         return true;
@@ -1033,7 +1033,7 @@ async function renderApiHomeFeedPosts(container) {
 
     for (const media of normalizedMedia) {
       const videoKey = `video:${media.videoUrl}`;
-      const imageKey = `image:${media.imageUrl}`;
+      const imageKey = `image:${extractImageId(media.imageUrl)}`;
 
       if (media.type === 'video' && media.videoUrl) {
         // Add video if not already seen
@@ -1041,12 +1041,12 @@ async function renderApiHomeFeedPosts(container) {
           dedupedMedia.push(media);
           seenUrls.add(videoKey);
           if (media.imageUrl) {
-            videoPosterSet.add(media.imageUrl);
+            videoPosterSet.add(extractImageId(media.imageUrl));
           }
         }
       } else if (media.imageUrl) {
         // Add photo/album if not already seen AND not a video poster
-        if (!seenUrls.has(imageKey) && !videoPosterSet.has(media.imageUrl)) {
+        if (!seenUrls.has(imageKey) && !videoPosterSet.has(extractImageId(media.imageUrl))) {
           dedupedMedia.push(media);
           seenUrls.add(imageKey);
         }
@@ -1057,13 +1057,13 @@ async function renderApiHomeFeedPosts(container) {
     const photoImageUrls = new Set();
     dedupedMedia.forEach((m) => {
       if (m.type === 'photo' && m.imageUrl) {
-        photoImageUrls.add(m.imageUrl);
+        photoImageUrls.add(extractImageId(m.imageUrl));
       }
     });
 
     const displayMedia = dedupedMedia.filter((media) => {
       // Remove album if it has same image as a photo
-      if (media.type === 'album' && photoImageUrls.has(media.imageUrl)) {
+      if (media.type === 'album' && photoImageUrls.has(extractImageId(media.imageUrl))) {
         return false;
       }
       return true;
