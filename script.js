@@ -911,6 +911,14 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function extractImageId(imageUrl) {
+  if (!imageUrl) {
+    return '';
+  }
+
+  return imageUrl.split('?')[0];
+}
+
 function formatDateTime(value) {
   if (!value) {
     return 'Date unavailable';
