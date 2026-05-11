@@ -715,33 +715,48 @@ async function renderGallery() {
         }))
         .filter((media) => media.imageUrl || media.videoUrl);
 
-      // Deduplicate: remove poster images when videos with same poster exist
-      // Also remove album types when photos with same image exist
-      const videoImageUrls = new Set();
-      const videoMedia = normalizedMedia.filter((m) => m.type === 'video' && m.videoUrl);
-      videoMedia.forEach((v) => {
-        if (v.imageUrl) videoImageUrls.add(v.imageUrl);
-      });
+      // Original deduplication: avoid duplicate videos and images
+      const seenUrls = new Set();
+      const videoPosterSet = new Set();
+      const dedupedMedia = [];
 
-      const photoImageUrls = new Set();
-      const photoMedia = normalizedMedia.filter((m) => m.type === 'photo' && m.imageUrl);
-      photoMedia.forEach((p) => {
-        photoImageUrls.add(p.imageUrl);
-      });
+      for (const media of normalizedMedia) {
+        const videoKey = `video:${media.videoUrl}`;
+        const imageKey = `image:${media.imageUrl}`;
 
-      const dedupedMedia = normalizedMedia.filter((media) => {
-        // Remove photo if it's a poster image for a video
-        if (media.type === 'photo' && videoImageUrls.has(media.imageUrl)) {
-          return false;
+        if (media.type === 'video' && media.videoUrl) {
+          // Add video if not already seen
+          if (!seenUrls.has(videoKey)) {
+            dedupedMedia.push(media);
+            seenUrls.add(videoKey);
+            if (media.imageUrl) {
+              videoPosterSet.add(media.imageUrl);
+            }
+          }
+        } else if (media.imageUrl) {
+          // Add photo/album if not already seen AND not a video poster
+          if (!seenUrls.has(imageKey) && !videoPosterSet.has(media.imageUrl)) {
+            dedupedMedia.push(media);
+            seenUrls.add(imageKey);
+          }
         }
+      }
+
+      // Additional filter: remove album types if photos with same image exist
+      const photoImageUrls = new Set();
+      dedupedMedia.forEach((m) => {
+        if (m.type === 'photo' && m.imageUrl) {
+          photoImageUrls.add(m.imageUrl);
+        }
+      });
+
+      const displayMedia = dedupedMedia.filter((media) => {
         // Remove album if it has same image as a photo
         if (media.type === 'album' && photoImageUrls.has(media.imageUrl)) {
           return false;
         }
         return true;
-      });
-
-      const displayMedia = dedupedMedia.filter((media) => Boolean(media.imageUrl || media.videoUrl));
+      }).filter((media) => Boolean(media.imageUrl || media.videoUrl));
 
       const mediaHtml = displayMedia.map((media, mediaIndex) => {
         const isReel = /\/reel\//i.test(postUrl) || /reel/i.test(media.type) || /\/reel\//i.test(media.targetUrl || '');
@@ -1011,27 +1026,42 @@ async function renderApiHomeFeedPosts(container) {
       targetUrl: media.targetUrl || media.target_url || ''
     }));
 
-    // Deduplicate media: filter out poster images when videos with same poster exist
-    // Also filter out album types when photos with same image exist
-    const videoImageUrls = new Set();
-    const videoMedia = normalizedMedia.filter((media) => media.type === 'video' && media.videoUrl);
-    videoMedia.forEach((video) => {
-      if (video.imageUrl) {
-        videoImageUrls.add(video.imageUrl);
-      }
-    });
+    // Original deduplication: avoid duplicate videos and images
+    const seenUrls = new Set();
+    const videoPosterSet = new Set();
+    const dedupedMedia = [];
 
+    for (const media of normalizedMedia) {
+      const videoKey = `video:${media.videoUrl}`;
+      const imageKey = `image:${media.imageUrl}`;
+
+      if (media.type === 'video' && media.videoUrl) {
+        // Add video if not already seen
+        if (!seenUrls.has(videoKey)) {
+          dedupedMedia.push(media);
+          seenUrls.add(videoKey);
+          if (media.imageUrl) {
+            videoPosterSet.add(media.imageUrl);
+          }
+        }
+      } else if (media.imageUrl) {
+        // Add photo/album if not already seen AND not a video poster
+        if (!seenUrls.has(imageKey) && !videoPosterSet.has(media.imageUrl)) {
+          dedupedMedia.push(media);
+          seenUrls.add(imageKey);
+        }
+      }
+    }
+
+    // Additional filter: remove album types if photos with same image exist
     const photoImageUrls = new Set();
-    const photoMedia = normalizedMedia.filter((media) => media.type === 'photo' && media.imageUrl);
-    photoMedia.forEach((photo) => {
-      photoImageUrls.add(photo.imageUrl);
+    dedupedMedia.forEach((m) => {
+      if (m.type === 'photo' && m.imageUrl) {
+        photoImageUrls.add(m.imageUrl);
+      }
     });
 
-    const dedupedMedia = normalizedMedia.filter((media) => {
-      // Remove photo if it's a poster image for an existing video
-      if (media.type === 'photo' && videoImageUrls.has(media.imageUrl)) {
-        return false;
-      }
+    const displayMedia = dedupedMedia.filter((media) => {
       // Remove album if it has same image as a photo
       if (media.type === 'album' && photoImageUrls.has(media.imageUrl)) {
         return false;
@@ -1039,12 +1069,12 @@ async function renderApiHomeFeedPosts(container) {
       return true;
     });
 
-    const hasVideo = dedupedMedia.some((media) => media.type === 'video' && media.videoUrl);
-    const displayMedia = hasVideo
-      ? dedupedMedia.filter((media) => media.type === 'video' && media.videoUrl)
-      : dedupedMedia.filter((media) => media.type === 'photo' || media.type === 'video');
+    const hasVideo = displayMedia.some((media) => media.type === 'video' && media.videoUrl);
+    const finalDisplayMedia = hasVideo
+      ? displayMedia.filter((media) => media.type === 'video' && media.videoUrl)
+      : displayMedia.filter((media) => media.type === 'photo' || media.type === 'video');
 
-    const mediaHtml = displayMedia.map((media, mediaIndex) => {
+    const mediaHtml = finalDisplayMedia.map((media, mediaIndex) => {
       const mediaType = media.type;
       const imageUrl = media.imageUrl;
       const videoUrl = media.videoUrl;
