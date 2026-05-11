@@ -339,6 +339,53 @@ function loadImageDimensions(url) {
 let galleryPhotosForView = [];
 let activePhotoIndex = 0;
 let lightboxRequestId = 0;
+let displayPhotosPromise = null;
+
+function isSquareAspect(width, height) {
+  if (!width || !height) {
+    return true;
+  }
+
+  const ratio = width / height;
+  return Math.abs(ratio - 1) <= 0.08;
+}
+
+async function resolveDisplayPhoto(photo) {
+  const rawCandidates = photo.fullSrc
+    ? [photo.fullSrc, ...getFacebookSourceCandidates(photo.src)]
+    : getFacebookSourceCandidates(photo.src);
+  const candidates = [...new Set(rawCandidates)];
+
+  for (const candidate of candidates) {
+    try {
+      const loaded = await loadImageDimensions(candidate);
+      if (isSquareAspect(loaded.width, loaded.height)) {
+        continue;
+      }
+
+      return {
+        ...photo,
+        bestSrc: loaded.url,
+        width: loaded.width,
+        height: loaded.height,
+        candidateSrcs: [loaded.url, ...candidates.filter((item) => item !== loaded.url)]
+      };
+    } catch {
+      // Try the next source candidate.
+    }
+  }
+
+  return null;
+}
+
+async function getDisplayPhotos() {
+  if (!displayPhotosPromise) {
+    displayPhotosPromise = Promise.all(facebookPhotos.map((photo) => resolveDisplayPhoto(photo)))
+      .then((photos) => photos.filter(Boolean));
+  }
+
+  return displayPhotosPromise;
+}
 
 async function setBestLightboxImage(photo, image, requestId) {
   const candidates = photo.candidateSrcs || [photo.src];
@@ -509,23 +556,26 @@ function setupGalleryLightbox() {
   });
 }
 
-function renderGallery() {
+async function renderGallery() {
   const gallery = document.getElementById('randomGallery');
   if (!gallery) {
     return;
   }
 
-  galleryPhotosForView = shuffle(facebookPhotos).map((photo) => ({
+  const displayPhotos = await getDisplayPhotos();
+  if (displayPhotos.length === 0) {
+    gallery.innerHTML = '<p class="gallery-note">No non-square high-quality photos are currently available from the source set.</p>';
+    return;
+  }
+
+  galleryPhotosForView = shuffle(displayPhotos).map((photo) => ({
     ...photo,
-    candidateSrcs: [...new Set(photo.fullSrc
-      ? [photo.fullSrc, ...getFacebookSourceCandidates(photo.src)]
-      : getFacebookSourceCandidates(photo.src)
-    )]
+    candidateSrcs: photo.candidateSrcs || getFacebookSourceCandidates(photo.src)
   }));
   gallery.innerHTML = galleryPhotosForView.map((photo, index) => `
     <article class="gallery-card">
       <button class="gallery-trigger" type="button" data-photo-index="${index}" aria-label="Open photo ${index + 1}">
-        <img src="${photo.src}" alt="${photo.alt}" loading="lazy" />
+        <img src="${photo.bestSrc || photo.src}" alt="${photo.alt}" loading="lazy" />
       </button>
       <div class="gallery-card-copy">
         <h3>${photo.title || `Photo ${index + 1}`}</h3>
@@ -533,21 +583,24 @@ function renderGallery() {
       </div>
     </article>
   `).join('');
+
+  setupGalleryLightbox();
 }
 
-function renderHomePreview() {
+async function renderHomePreview() {
   const preview = document.getElementById('homePhotoPreview');
   if (!preview) {
     return;
   }
 
-  const randomizedPhotos = shuffle(facebookPhotos).slice(0, 4);
+  const displayPhotos = await getDisplayPhotos();
+  const randomizedPhotos = shuffle(displayPhotos).slice(0, 4);
   preview.innerHTML = randomizedPhotos.map((photo) => `
-    <img src="${photo.src}" alt="${photo.alt}" loading="lazy" />
+    <img src="${photo.bestSrc || photo.src}" alt="${photo.alt}" loading="lazy" />
   `).join('');
 }
 
-function renderOnThisDay() {
+async function renderOnThisDay() {
   const section = document.getElementById('onThisDaySection');
   const label = document.getElementById('onThisDayLabel');
   if (!section) {
@@ -566,7 +619,8 @@ function renderOnThisDay() {
     label.textContent = `On this day · ${memoryDate}`;
   }
 
-  const matches = facebookPhotos.filter((photo) => photo.date && photo.date.slice(5) === `${month}-${day}`);
+  const displayPhotos = await getDisplayPhotos();
+  const matches = displayPhotos.filter((photo) => photo.date && photo.date.slice(5) === `${month}-${day}`);
 
   if (matches.length === 0) {
     section.innerHTML = `
@@ -580,7 +634,7 @@ function renderOnThisDay() {
 
   section.innerHTML = matches.map((photo) => `
     <article class="memory-item">
-      <img src="${photo.src}" alt="${photo.alt}" loading="lazy" />
+      <img src="${photo.bestSrc || photo.src}" alt="${photo.alt}" loading="lazy" />
       <div class="memory-copy">
         <h4>${photo.title}</h4>
         <p>${formatLongDate(photo.date)}</p>
@@ -589,10 +643,15 @@ function renderOnThisDay() {
   `).join('');
 }
 
-renderGallery();
-setupGalleryLightbox();
-renderHomePreview();
-renderOnThisDay();
+async function initializeDynamicSections() {
+  await Promise.all([
+    renderGallery(),
+    renderHomePreview(),
+    renderOnThisDay()
+  ]);
+}
+
+initializeDynamicSections();
 
 const contactForm = document.getElementById('contactForm');
 if (contactForm) {
