@@ -84,6 +84,12 @@
               </ul>
             </article>
 
+            <article class="on-this-day-card">
+              <h2>On This Day</h2>
+              <p class="archive-intro" id="onThisDayLabel">On this day</p>
+              <div id="onThisDaySection" class="memory-grid"></div>
+            </article>
+
               <article class="social-media-card about-card">
                 <h2>Social Media</h2>
                 <div class="social-links">
@@ -98,58 +104,8 @@
           </aside>
 
           <main class="feed">
-            <section class="post-card">
-              <div class="post-header">
-                <div class="post-avatar">
-                  <img
-                    src="https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/434604830_1029036748669316_4381808470709969180_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=wq6mCRo7vpIQ7kNvwHIVhPS&_nc_oc=Ado4Ht_3AIz3aO1db-EVOdfN-qkfL3TCPq8taQVZkyQ7dVnBfr7e9iDzd4ak1kjYHAg&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=42QPR6HS6egX18UFG_KD8g&_nc_ss=7b2a8&oh=00_Af7ow7NgPBFrQEn-u9g6Gon4xNzTwNI_Mn4qC4PcXEMyPA&oe=6A080E03"
-                    alt="Nomad Cycling Club"
-                  />
-                </div>
-                <div class="post-info">
-                  <h3>Nomad Cycling Club - USA</h3>
-                  <span class="post-time" id="onThisDayLabel">On this day</span>
-                </div>
-              </div>
-              <div class="post-content">
-                <p class="archive-intro">Archive photos taken on this same month and day in previous years.</p>
-                <div id="onThisDaySection" class="memory-grid"></div>
-              </div>
-            </section>
-
-            <section class="post-card">
-              <div class="post-header">
-                <div class="post-avatar">
-                  <img
-                    src="https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/434604830_1029036748669316_4381808470709969180_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=wq6mCRo7vpIQ7kNvwHIVhPS&_nc_oc=Ado4Ht_3AIz3aO1db-EVOdfN-qkfL3TCPq8taQVZkyQ7dVnBfr7e9iDzd4ak1kjYHAg&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=42QPR6HS6egX18UFG_KD8g&_nc_ss=7b2a8&oh=00_Af7ow7NgPBFrQEn-u9g6Gon4xNzTwNI_Mn4qC4PcXEMyPA&oe=6A080E03"
-                    alt="Nomad Cycling Club"
-                  />
-                </div>
-                <div class="post-info">
-                  <h3>Nomad Cycling Club - USA</h3>
-                  <span class="post-time">Feed from FB Page</span>
-                </div>
-              </div>
-              <div class="post-content">
-                <div id="fbLoginSection" class="fb-login-section">
-                  <button id="fbLoginBtn" class="fb-login-button">Log in with Facebook to post</button>
-                </div>
-                <div id="fbPostComposer" class="fb-post-composer" style="display: none;">
-                  <div class="composer-header">
-                    <img src="https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/434604830_1029036748669316_4381808470709969180_n.jpg" alt="Club" class="composer-avatar" />
-                    <div class="composer-user-info">
-                      <p class="composer-label">Share an update</p>
-                    </div>
-                    <button id="fbLogoutBtn" class="fb-logout-button">Logout</button>
-                  </div>
-                  <textarea id="postMessage" class="composer-textarea" placeholder="What's on your mind?"></textarea>
-                  <div class="composer-actions">
-                    <button id="submitPostBtn" class="composer-submit-btn">Post</button>
-                    <span id="postStatus" class="post-status"></span>
-                  </div>
-                </div>
-                <div id="homeFeedPosts" class="home-feed-stream"></div>
-              </div>
+            <section class="post-card home-feed-card">
+              <div id="homeFeedPosts" class="home-feed-stream"></div>
             </section>
 
             <section class="post-card home-gallery-preview-card">

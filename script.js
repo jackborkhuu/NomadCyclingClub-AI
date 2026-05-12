@@ -905,27 +905,72 @@ async function renderOnThisDay() {
   }
 
   const displayPhotos = await getDisplayPhotos();
-  const matches = displayPhotos.filter((photo) => photo.date && photo.date.slice(5) === `${month}-${day}`);
+  const validPhotos = displayPhotos
+    .filter((photo) => photo.date)
+    .map((photo) => ({
+      photo,
+      date: new Date(photo.date),
+      year: Number(photo.date.slice(0, 4))
+    }))
+    .filter((item) => !Number.isNaN(item.date.getTime()));
+
+  const byYear = new Map();
+  validPhotos.forEach((item) => {
+    const targetDate = new Date(item.date.getFullYear(), Number(month) - 1, Number(day));
+    const currentDate = new Date(item.date.getFullYear(), item.date.getMonth(), item.date.getDate());
+    const dayDelta = Math.round((currentDate.getTime() - targetDate.getTime()) / 86400000);
+    const candidate = {
+      ...item,
+      dayDelta,
+      absDayDelta: Math.abs(dayDelta)
+    };
+
+    const existing = byYear.get(item.year);
+    if (!existing || candidate.absDayDelta < existing.absDayDelta) {
+      byYear.set(item.year, candidate);
+    }
+  });
+
+  const matches = [...byYear.values()]
+    .sort((left, right) => {
+      if (left.absDayDelta !== right.absDayDelta) {
+        return left.absDayDelta - right.absDayDelta;
+      }
+      return right.year - left.year;
+    })
+    .slice(0, 6);
 
   if (matches.length === 0) {
     section.innerHTML = `
       <div class="archive-empty">
         <strong>No archived club photos for ${memoryDate} yet.</strong>
-        <p>As more Facebook photos are added with matching dates, they will appear here automatically.</p>
+        <p>As more Facebook photos are added, nearby dates from past years will appear here automatically.</p>
       </div>
     `;
     return;
   }
 
-  section.innerHTML = matches.map((photo) => `
+  const hasExactMatch = matches.some((item) => item.dayDelta === 0);
+  if (label) {
+    label.textContent = `${hasExactMatch ? 'On this day' : 'Closest to today'} · ${memoryDate}`;
+  }
+
+  section.innerHTML = matches.map((item) => {
+    const deltaLabel = item.dayDelta === 0
+      ? 'Exact day match'
+      : `${item.dayDelta > 0 ? '+' : ''}${item.dayDelta} day${Math.abs(item.dayDelta) === 1 ? '' : 's'} from ${memoryDate}`;
+
+    return `
     <article class="memory-item">
-      <img src="${photo.bestSrc || photo.src}" alt="${photo.alt}" loading="lazy" />
+      <img src="${item.photo.bestSrc || item.photo.src}" alt="${item.photo.alt}" loading="lazy" />
       <div class="memory-copy">
-        <h4>${photo.title}</h4>
-        <p>${formatLongDate(photo.date)}</p>
+        <h4>${item.photo.title}</h4>
+        <p>${formatLongDate(item.photo.date)}</p>
+        <p class="memory-delta">${deltaLabel}</p>
       </div>
     </article>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function escapeHtml(value) {
@@ -1440,9 +1485,13 @@ async function renderPinnedUpcomingEvent() {
   const place = nextEvent.place
     ? [nextEvent.place.name, nextEvent.place.city, nextEvent.place.state].filter(Boolean).join(', ')
     : '';
+  const coverHtml = nextEvent.coverUrl
+    ? `<a href="${nextEvent.eventUrl}" target="_blank" rel="noopener" class="upcoming-pin-cover-link"><img src="${nextEvent.coverUrl}" alt="${nextEvent.name || 'Upcoming event'}" class="upcoming-pin-cover" loading="lazy" /></a>`
+    : '';
 
   container.innerHTML = `
     <div class="upcoming-pin-event">
+      ${coverHtml}
       <div class="upcoming-pin-event-head">
         <h3><a href="${nextEvent.eventUrl}" target="_blank" rel="noopener">${nextEvent.name || 'Upcoming Event'}</a></h3>
         <span id="pinnedEventCountdown" class="countdown-badge"></span>

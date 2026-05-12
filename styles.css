@@ -309,6 +309,21 @@ img {
   color: var(--facebook-text-secondary);
 }
 
+.upcoming-pin-cover-link {
+  display: block;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #dbeafe;
+}
+
+.upcoming-pin-cover {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  display: block;
+}
+
 .upcoming-pin-event-head {
   display: flex;
   align-items: flex-start;
@@ -354,6 +369,31 @@ img {
   margin-top: 10px;
   font-size: 0.86rem;
   font-weight: 600;
+}
+
+.on-this-day-card {
+  background: #ffffff;
+  border: 1px solid var(--facebook-border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.on-this-day-card h2 {
+  margin: 0 0 10px;
+  color: var(--facebook-text);
+  font-size: 1.25rem;
+}
+
+.on-this-day-card .memory-grid {
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.memory-delta {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--facebook-text-secondary);
 }
 
 .social-links {
@@ -1536,6 +1576,10 @@ body.lightbox-open {
 
   .content-grid {
     padding: 0 8px;
+  }
+
+  .upcoming-pin-cover {
+    height: 180px;
   }
 
   .stats-highlight {
