@@ -35,6 +35,76 @@ function parseActivityId(activity, details) {
   return null;
 }
 
+function toIsoTimestamp(value) {
+  if (value === null || value === undefined || value === '') {
+    return '';
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    if (value <= 0) {
+      return '';
+    }
+
+    const millis = value < 1e12 ? value * 1000 : value;
+    const parsed = new Date(millis);
+    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
+  }
+
+  const raw = String(value).trim();
+  if (!raw) {
+    return '';
+  }
+
+  if (/^\d+$/.test(raw)) {
+    const numeric = Number(raw);
+    if (Number.isFinite(numeric)) {
+      const millis = numeric < 1e12 ? numeric * 1000 : numeric;
+      const parsed = new Date(millis);
+      return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
+    }
+  }
+
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toISOString();
+  }
+
+  return '';
+}
+
+function pickActivityTimestamp(activity, details) {
+  const source = details && typeof details === 'object' ? details : activity;
+  const candidates = [
+    source?.start_date,
+    source?.start_date_local,
+    source?.activity_date,
+    source?.activity_at,
+    source?.created_at,
+    source?.created_time,
+    source?.date,
+    source?.timestamp,
+    source?.time,
+    activity?.start_date,
+    activity?.start_date_local,
+    activity?.activity_date,
+    activity?.activity_at,
+    activity?.created_at,
+    activity?.created_time,
+    activity?.date,
+    activity?.timestamp,
+    activity?.time
+  ];
+
+  for (const candidate of candidates) {
+    const iso = toIsoTimestamp(candidate);
+    if (iso) {
+      return iso;
+    }
+  }
+
+  return '';
+}
+
 async function getUsableAccessToken() {
   const staticToken = (process.env.STRAVA_ACCESS_TOKEN || '').trim();
   if (staticToken) {
@@ -168,7 +238,7 @@ function normalizeActivity(activity, details = null, photos = []) {
   const athleteProfileUrl = athleteId ? `https://www.strava.com/athletes/${athleteId}` : null;
 
   const activityUrl = activityId ? `https://www.strava.com/activities/${activityId}` : null;
-  const activityTimestamp = source.start_date || source.start_date_local || activity.start_date || activity.start_date_local || '1970-01-01T00:00:00.000Z';
+  const activityTimestamp = pickActivityTimestamp(activity, details);
 
   const map = source.map && typeof source.map === 'object' ? source.map : null;
   const mapSummaryPolyline = typeof map?.summary_polyline === 'string' ? map.summary_polyline : '';
@@ -184,8 +254,8 @@ function normalizeActivity(activity, details = null, photos = []) {
     name: source.name || activity.name || 'Unnamed Activity',
     message,
     summary,
-    createdTime: activityTimestamp,
-    created_time: activityTimestamp,
+    createdTime: activityTimestamp || null,
+    created_time: activityTimestamp || null,
     permalinkUrl: activityUrl,
     permalink_url: activityUrl,
     source: 'strava',
