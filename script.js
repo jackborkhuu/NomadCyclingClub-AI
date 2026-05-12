@@ -1331,6 +1331,141 @@ async function renderHomeFeedPosts() {
   }
 }
 
+let pinnedEventCountdownInterval = null;
+
+function parseFacebookDate(dateString) {
+  if (!dateString || typeof dateString !== 'string') {
+    return null;
+  }
+
+  const normalized = dateString.replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatPinnedEventDate(startTime, endTime) {
+  const start = parseFacebookDate(startTime);
+  if (!start) {
+    return '';
+  }
+
+  const datePart = start.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+  const timePart = start.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+
+  let label = timePart === '12:00 AM' ? datePart : `${datePart} · ${timePart}`;
+
+  const end = parseFacebookDate(endTime);
+  if (end) {
+    const sameDay = start.toDateString() === end.toDateString();
+    if (sameDay) {
+      label += ` - ${end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+    } else {
+      label += ` - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    }
+  }
+
+  return label;
+}
+
+function formatCountdownLabel(startDate) {
+  const diffMs = startDate.getTime() - Date.now();
+  if (diffMs <= 0) {
+    return 'Started';
+  }
+
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (days > 0) {
+    return `${days}d ${hours}h ${minutes}m`;
+  }
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s`;
+  }
+
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
+  }
+
+  return `${seconds}s`;
+}
+
+async function renderPinnedUpcomingEvent() {
+  const container = document.getElementById('pinnedUpcomingEvent');
+  if (!container) {
+    return;
+  }
+
+  if (pinnedEventCountdownInterval) {
+    clearInterval(pinnedEventCountdownInterval);
+    pinnedEventCountdownInterval = null;
+  }
+
+  let data;
+  try {
+    const response = await fetch('data/facebook-events.json');
+    if (!response.ok) {
+      throw new Error('Unable to load events');
+    }
+    data = await response.json();
+  } catch {
+    container.innerHTML = '<p class="upcoming-pin-empty">Could not load upcoming events. <a href="https://www.facebook.com/nomadcyclingclub/events" target="_blank" rel="noopener">Check Facebook</a>.</p>';
+    return;
+  }
+
+  const upcoming = Array.isArray(data.upcoming) ? data.upcoming : [];
+  const nextEvent = upcoming
+    .filter((event) => !event.isCanceled && parseFacebookDate(event.startTime))
+    .sort((left, right) => parseFacebookDate(left.startTime) - parseFacebookDate(right.startTime))[0];
+
+  if (!nextEvent) {
+    container.innerHTML = '<p class="upcoming-pin-empty">No upcoming events right now.</p>';
+    return;
+  }
+
+  const startDate = parseFacebookDate(nextEvent.startTime);
+  const place = nextEvent.place
+    ? [nextEvent.place.name, nextEvent.place.city, nextEvent.place.state].filter(Boolean).join(', ')
+    : '';
+
+  container.innerHTML = `
+    <div class="upcoming-pin-event">
+      <div class="upcoming-pin-event-head">
+        <h3><a href="${nextEvent.eventUrl}" target="_blank" rel="noopener">${nextEvent.name || 'Upcoming Event'}</a></h3>
+        <span id="pinnedEventCountdown" class="countdown-badge"></span>
+      </div>
+      ${startDate ? `<p class="upcoming-pin-date">${formatPinnedEventDate(nextEvent.startTime, nextEvent.endTime)}</p>` : ''}
+      ${place ? `<p class="upcoming-pin-place">${place}</p>` : ''}
+      <a class="upcoming-pin-link" href="${nextEvent.eventUrl}" target="_blank" rel="noopener">View on Facebook -></a>
+    </div>
+  `;
+
+  const countdownEl = document.getElementById('pinnedEventCountdown');
+  if (!countdownEl || !startDate) {
+    return;
+  }
+
+  const updateCountdown = () => {
+    countdownEl.textContent = formatCountdownLabel(startDate);
+  };
+
+  updateCountdown();
+  pinnedEventCountdownInterval = setInterval(updateCountdown, 1000);
+}
+
 async function renderFbEvents() {
   const upcomingList = document.getElementById('fbEventsUpcomingList');
   const pastList = document.getElementById('fbEventsPastList');
@@ -1414,6 +1549,7 @@ async function renderFbEvents() {
 
 async function initializeDynamicSections() {
   await Promise.all([
+    renderPinnedUpcomingEvent(),
     renderGallery(),
     renderHomePreview(),
     renderOnThisDay(),
