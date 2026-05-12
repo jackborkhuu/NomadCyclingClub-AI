@@ -1331,12 +1331,94 @@ async function renderHomeFeedPosts() {
   }
 }
 
+async function renderFbEvents() {
+  const upcomingList = document.getElementById('fbEventsUpcomingList');
+  const pastList = document.getElementById('fbEventsPastList');
+  const pastSection = document.getElementById('fbEventsPast');
+  if (!upcomingList) return;
+
+  let data;
+  try {
+    const res = await fetch('data/facebook-events.json');
+    if (!res.ok) throw new Error('Not found');
+    data = await res.json();
+  } catch {
+    upcomingList.innerHTML = '<p class="events-empty">Could not load events from Facebook. Check back soon or <a href="https://www.facebook.com/nomadcyclingclub/events" target="_blank" rel="noopener">view on Facebook</a>.</p>';
+    return;
+  }
+
+  function formatEventDate(startTime, endTime) {
+    if (!startTime) return '';
+    const start = new Date(startTime);
+    const opts = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+    let str = start.toLocaleDateString('en-US', opts);
+    const timeOpts = { hour: 'numeric', minute: '2-digit', hour12: true };
+    const timeStr = start.toLocaleTimeString('en-US', timeOpts);
+    if (timeStr !== '12:00 AM') str += ` · ${timeStr}`;
+    if (endTime) {
+      const end = new Date(endTime);
+      const sameDay = start.toDateString() === end.toDateString();
+      if (sameDay) {
+        str += ` – ${end.toLocaleTimeString('en-US', timeOpts)}`;
+      } else {
+        str += ` – ${end.toLocaleDateString('en-US', opts)}`;
+      }
+    }
+    return str;
+  }
+
+  function renderEventCard(event, isPast) {
+    const dateStr = formatEventDate(event.startTime, event.endTime);
+    const place = event.place
+      ? [event.place.name, event.place.city, event.place.state].filter(Boolean).join(', ')
+      : '';
+    const canceledBadge = event.isCanceled ? '<span class="event-badge event-badge--canceled">Canceled</span>' : '';
+    const coverHtml = event.coverUrl
+      ? `<a href="${event.eventUrl}" target="_blank" rel="noopener" class="event-cover-link">
+           <img src="${event.coverUrl}" alt="${event.name || ''}" class="event-cover" loading="lazy" />
+         </a>`
+      : '';
+    const descHtml = event.description
+      ? `<p class="event-description">${event.description.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</p>`
+      : '';
+
+    return `<div class="fb-event-card${isPast ? ' fb-event-card--past' : ''}">
+      ${coverHtml}
+      <div class="fb-event-info">
+        <div class="fb-event-header">
+          <h3 class="fb-event-name"><a href="${event.eventUrl}" target="_blank" rel="noopener">${event.name || 'Event'}</a></h3>
+          ${canceledBadge}
+        </div>
+        ${dateStr ? `<p class="fb-event-date"><svg class="event-icon" viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg> ${dateStr}</p>` : ''}
+        ${place ? `<p class="fb-event-place"><svg class="event-icon" viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M8 0a5 5 0 0 0-5 5c0 3.5 5 11 5 11s5-7.5 5-11a5 5 0 0 0-5-5zm0 7.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg> ${place}</p>` : ''}
+        ${descHtml}
+        <a class="fb-event-link" href="${event.eventUrl}" target="_blank" rel="noopener">View on Facebook →</a>
+      </div>
+    </div>`;
+  }
+
+  const upcoming = Array.isArray(data.upcoming) ? data.upcoming : [];
+  const past = Array.isArray(data.past) ? data.past : [];
+
+  if (upcoming.length === 0) {
+    upcomingList.innerHTML = '<p class="events-empty">No upcoming events at the moment. <a href="https://www.facebook.com/nomadcyclingclub/events" target="_blank" rel="noopener">Check Facebook</a> for the latest.</p>';
+  } else {
+    upcomingList.innerHTML = upcoming.map(e => renderEventCard(e, false)).join('');
+  }
+
+  if (past.length > 0 && pastSection && pastList) {
+    pastSection.style.display = '';
+    pastList.innerHTML = past.slice(0, 6).map(e => renderEventCard(e, true)).join('');
+  }
+}
+
 async function initializeDynamicSections() {
   await Promise.all([
     renderGallery(),
     renderHomePreview(),
     renderOnThisDay(),
-    renderHomeFeedPosts()
+    renderHomeFeedPosts(),
+    renderFbEvents()
   ]);
 }
 

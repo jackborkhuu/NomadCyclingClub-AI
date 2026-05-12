@@ -27,24 +27,25 @@
   <main>
     <section class="section container">
       <h1>Rides & Events</h1>
-      <p>Nomad Cycling Club hosts 80+ group rides per year plus 10+ cultural and community events. We offer a variety of rides and events throughout Washington State, ranging from casual group rides to challenging routes, so everyone can find their place.</p>
-      
-      <div class="event-card">
-        <h2>Group Rides</h2>
-        <p>We offer regular group rides throughout the year for all skill levels—beginners to experienced riders. Whether you're riding to explore, train, or connect with others, we have something for you.</p>
+      <p>Nomad Cycling Club hosts 80+ group rides per year plus 10+ cultural and community events throughout Washington State, ranging from casual group rides to challenging routes.</p>
+
+      <!-- Upcoming FB events (populated from facebook-events.json) -->
+      <div id="fbEventsUpcoming">
+        <h2 class="events-section-heading">Upcoming Events</h2>
+        <div id="fbEventsUpcomingList" class="fb-events-list">
+          <p class="events-loading">Loading events from Facebook…</p>
+        </div>
       </div>
-      
-      <div class="event-card">
-        <h2>Cultural Events</h2>
-        <p>We celebrate our Mongolian heritage through meaningful cultural events and traditions that bring our community together on and off the bike.</p>
+
+      <!-- Past FB events -->
+      <div id="fbEventsPast" style="display:none;">
+        <h2 class="events-section-heading">Past Events</h2>
+        <div id="fbEventsPastList" class="fb-events-list fb-events-list--past"></div>
       </div>
-      
-      <div class="event-card">
-        <h2>Community Rides</h2>
-        <p>Join us for rides that focus on connection, wellness, and exploring Washington State's beautiful routes together as a supportive community.</p>
-      </div>
-      
-      <p style="margin-top: 2rem;"><strong>For current event details and ride schedules:</strong> <a href="mailto:support@nomadcyclingclub.com">Email us</a> or join us on <a href="https://www.facebook.com/nomadcyclingclub" target="_blank">Facebook</a></p>
+
+      <p class="events-fb-cta">
+        <a href="https://www.facebook.com/nomadcyclingclub/events" target="_blank" rel="noopener">View all events on Facebook →</a>
+      </p>
     </section>
   </main>
 

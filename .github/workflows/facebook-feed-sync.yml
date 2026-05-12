@@ -27,15 +27,22 @@ jobs:
           FB_GRAPH_VERSION: v23.0
         run: node .github/scripts/fetch-facebook-feed.mjs
 
-      - name: Commit updated feed JSON
+      - name: Fetch Facebook events via Graph API
+        env:
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+          FB_GRAPH_VERSION: v23.0
+        run: node .github/scripts/fetch-facebook-events.mjs
+
+      - name: Commit updated data JSON
         run: |
-          if git diff --quiet -- data/facebook-feed.json; then
-            echo "No feed changes detected."
+          if git diff --quiet -- data/facebook-feed.json data/facebook-events.json; then
+            echo "No data changes detected."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/facebook-feed.json
-          git commit -m "Update Facebook feed data"
+          git add data/facebook-feed.json data/facebook-events.json
+          git commit -m "Update Facebook feed and events data"
           git push

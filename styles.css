@@ -1206,6 +1206,160 @@ body.lightbox-open {
   font-size: 0.95rem;
 }
 
+/* ── FB Events Page ─────────────────────────────────────── */
+.events-section-heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 2rem 0 1rem;
+  color: var(--heading);
+}
+
+.fb-events-list {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.fb-event-card {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 0;
+  background: #fff;
+  border: 1px solid var(--card-border);
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+}
+
+.fb-event-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.fb-event-card--past {
+  opacity: 0.7;
+}
+
+.event-cover-link {
+  display: block;
+  height: 100%;
+}
+
+.event-cover {
+  width: 200px;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fb-event-info {
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.fb-event-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.fb-event-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.fb-event-name a {
+  color: var(--heading);
+  text-decoration: none;
+}
+
+.fb-event-name a:hover {
+  color: var(--accent);
+}
+
+.event-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+.event-badge--canceled {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.fb-event-date,
+.fb-event-place {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.event-icon {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.event-description {
+  font-size: 0.875rem;
+  color: var(--body);
+  margin: 0.25rem 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.fb-event-link {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.fb-event-link:hover {
+  text-decoration: underline;
+}
+
+.events-loading,
+.events-empty {
+  color: var(--muted);
+  font-size: 0.95rem;
+  padding: 1rem 0;
+}
+
+.events-fb-cta {
+  margin-top: 2rem;
+  font-size: 0.95rem;
+}
+
+.events-fb-cta a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .fb-event-card {
+    grid-template-columns: 1fr;
+  }
+
+  .event-cover {
+    width: 100%;
+    height: 180px;
+  }
+}
+
 .site-footer {
   background: #0f172a;
   color: #e2e8f0;
