@@ -1484,6 +1484,66 @@ async function fetchMergedFeedPosts() {
   return allPosts;
 }
 
+function selectMixedTopPosts(allPosts, maxCount = 12, minPerSource = 3) {
+  if (!Array.isArray(allPosts) || allPosts.length === 0) {
+    return [];
+  }
+
+  const normalized = allPosts.map((post) => ({
+    ...post,
+    source: post.source === 'strava' ? 'strava' : 'facebook'
+  }));
+
+  const stravaPosts = normalized.filter((post) => post.source === 'strava');
+  const facebookPosts = normalized.filter((post) => post.source === 'facebook');
+
+  if (stravaPosts.length === 0 || facebookPosts.length === 0) {
+    return normalized.slice(0, maxCount);
+  }
+
+  const picked = [];
+  const seenKeys = new Set();
+  const stableKey = (post, index) => `${post.source}:${post.id || post.permalinkUrl || post.permalink_url || index}`;
+
+  const takeFrom = (sourcePosts, count) => {
+    for (const post of sourcePosts) {
+      if (picked.length >= maxCount || count <= 0) {
+        break;
+      }
+
+      const key = stableKey(post, picked.length);
+      if (seenKeys.has(key)) {
+        continue;
+      }
+
+      seenKeys.add(key);
+      picked.push(post);
+      count -= 1;
+    }
+  };
+
+  const baselineStrava = Math.min(minPerSource, stravaPosts.length);
+  const baselineFacebook = Math.min(minPerSource, facebookPosts.length);
+  takeFrom(stravaPosts, baselineStrava);
+  takeFrom(facebookPosts, baselineFacebook);
+
+  for (const post of normalized) {
+    if (picked.length >= maxCount) {
+      break;
+    }
+
+    const key = stableKey(post, picked.length);
+    if (seenKeys.has(key)) {
+      continue;
+    }
+
+    seenKeys.add(key);
+    picked.push(post);
+  }
+
+  return picked;
+}
+
 function getFeedSource() {
   return fetchApiFeedPosts.source || 'unknown';
 }
@@ -1637,7 +1697,9 @@ async function renderMergedHomeFeedPosts(container) {
 
     const clubAvatar = 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/434604830_1029036748669316_4381808470709969180_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=wq6mCRo7vpIQ7kNvwHIVhPS&_nc_oc=Ado4Ht_3AIz3aO1db-EVOdfN-qkfL3TCPq8taQVZkyQ7dVnBfr7e9iDzd4ak1kjYHAg&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=42QPR6HS6egX18UFG_KD8g&_nc_ss=7b2a8&oh=00_Af7ow7NgPBFrQEn-u9g6Gon4xNzTwNI_Mn4qC4PcXEMyPA&oe=6A080E03';
 
-    const postsHtml = allPosts.slice(0, 12).map((post, index) => {
+    const feedPosts = selectMixedTopPosts(allPosts, 12, 3);
+
+    const postsHtml = feedPosts.map((post, index) => {
       const isStrava = post.source === 'strava';
       const isFacebook = !isStrava;
 
