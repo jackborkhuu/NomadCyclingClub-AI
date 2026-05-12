@@ -24,18 +24,21 @@ app.http('health', {
     const hasPageToken = Boolean(process.env.FB_PAGE_TOKEN || process.env.FACEBOOK_PAGE_TOKEN || process.env.FACEBOOK_ACCESS_TOKEN);
     const graphVersion = process.env.FB_GRAPH_VERSION || process.env.GRAPH_VERSION || 'v23.0';
 
+    const liveConfigured = hasPageId && hasPageToken;
+
     return {
-      status: hasPageId && hasPageToken ? 200 : 500,
+      status: 200,
       jsonBody: {
-        ok: hasPageId && hasPageToken,
+        ok: true,
+        mode: liveConfigured ? 'graph' : 'synced-json-fallback',
         checks: {
           hasPageId,
           hasPageToken,
           graphVersion
         },
-        message: hasPageId && hasPageToken
-          ? 'API environment looks configured.'
-          : 'Missing required app settings. Configure FB_PAGE_ID and FB_PAGE_TOKEN in Azure Static Web Apps application settings.'
+        message: liveConfigured
+          ? 'API environment looks configured. Serving live Graph data.'
+          : 'Graph app settings are missing; API will serve synced JSON fallback data.'
       },
       headers: {
         'Content-Type': 'application/json; charset=utf-8',

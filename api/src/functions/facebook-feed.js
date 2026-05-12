@@ -36,6 +36,30 @@ function jsonResponse(body, status = 200) {
   };
 }
 
+async function fetchSyncedPostsFromStaticData(request) {
+  try {
+    const origin = new URL(request.url).origin;
+    const response = await fetch(`${origin}/data/facebook-feed.json`, {
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = await response.json();
+    if (!payload || !Array.isArray(payload.posts)) {
+      return [];
+    }
+
+    return payload.posts;
+  } catch {
+    return [];
+  }
+}
+
 function uniqueMedia(mediaList) {
   const seen = new Set();
   return mediaList.filter((item) => {
@@ -155,15 +179,23 @@ app.http('facebook-feed', {
     );
     const graphVersion = process.env.FB_GRAPH_VERSION || process.env.GRAPH_VERSION || DEFAULT_GRAPH_VERSION;
 
-    if (!pageId || !pageToken) {
-      return jsonResponse({ error: 'Missing page ID/token app settings.' }, 500);
-    }
-
     const limitParam = Number(request.query.get('limit'));
     const after = request.query.get('after');
     const limit = Number.isFinite(limitParam)
       ? Math.max(1, Math.min(MAX_LIMIT, limitParam))
       : DEFAULT_LIMIT;
+
+    if (!pageId || !pageToken) {
+      const syncedPosts = await fetchSyncedPostsFromStaticData(request);
+      if (syncedPosts.length === 0) {
+        return jsonResponse({ error: 'Missing page ID/token app settings.' }, 500);
+      }
+
+      const offset = Number.isFinite(Number(after)) ? Math.max(0, Number(after)) : 0;
+      const posts = syncedPosts.slice(offset, offset + limit);
+      const nextCursor = offset + limit < syncedPosts.length ? String(offset + limit) : null;
+      return jsonResponse({ posts, nextCursor, source: 'synced-json' });
+    }
 
     const url = new URL(`https://graph.facebook.com/${graphVersion}/${pageId}/posts`);
     url.searchParams.set(
@@ -200,7 +232,8 @@ app.http('facebook-feed', {
 
       return jsonResponse({
         posts,
-        nextCursor: payload?.paging?.cursors?.after || null
+        nextCursor: payload?.paging?.cursors?.after || null,
+        source: 'graph'
       });
     } catch (error) {
       return jsonResponse({

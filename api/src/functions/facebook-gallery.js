@@ -36,6 +36,51 @@ function jsonResponse(body, status = 200) {
   };
 }
 
+async function fetchSyncedPostsFromStaticData(request) {
+  try {
+    const origin = new URL(request.url).origin;
+    const response = await fetch(`${origin}/data/facebook-feed.json`, {
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = await response.json();
+    if (!payload || !Array.isArray(payload.posts)) {
+      return [];
+    }
+
+    return payload.posts.map((post) => ({
+      id: post.id || null,
+      message: post.message || post.story || '',
+      story: post.story || '',
+      created_time: post.createdTime || post.created_time || null,
+      permalink_url: post.permalinkUrl || post.permalink_url || null,
+      full_picture: post.full_picture || null,
+      attachments: {
+        data: Array.isArray(post.media)
+          ? post.media.map((media) => ({
+              type: media.type || 'photo',
+              title: media.title || '',
+              url: media.targetUrl || media.target_url || null,
+              target: { id: media.targetId || null },
+              media: {
+                image: { src: media.imageUrl || media.image_url || null },
+                source: media.videoUrl || media.video_url || null
+              }
+            }))
+          : []
+      }
+    }));
+  } catch {
+    return [];
+  }
+}
+
 function normalizeMediaItem(post) {
   const attachments = post.attachments?.data || [];
   const results = [];
@@ -138,18 +183,28 @@ app.http('facebook-gallery', {
     );
     const graphVersion = process.env.FB_GRAPH_VERSION || process.env.GRAPH_VERSION || DEFAULT_GRAPH_VERSION;
 
-    if (!pageId || !pageToken) {
-      return jsonResponse({
-        error: 'Missing FB_PAGE_ID or FB_PAGE_TOKEN environment variables.'
-      }, 500);
-    }
-
-    const url = new URL(`https://graph.facebook.com/${graphVersion}/${pageId}/posts`);
     const limitParam = Number(request.query.get('limit'));
     const after = request.query.get('after');
     const limit = Number.isFinite(limitParam)
       ? Math.max(1, Math.min(MAX_LIMIT, limitParam))
       : DEFAULT_LIMIT;
+
+    if (!pageId || !pageToken) {
+      const syncedPosts = await fetchSyncedPostsFromStaticData(request);
+      if (syncedPosts.length === 0) {
+        return jsonResponse({
+          error: 'Missing FB_PAGE_ID or FB_PAGE_TOKEN environment variables.'
+        }, 500);
+      }
+
+      const offset = Number.isFinite(Number(after)) ? Math.max(0, Number(after)) : 0;
+      const pagePosts = syncedPosts.slice(offset, offset + limit);
+      const items = pagePosts.flatMap(normalizeMediaItem);
+      const nextCursor = offset + limit < syncedPosts.length ? String(offset + limit) : null;
+      return jsonResponse({ items, nextCursor, source: 'synced-json' });
+    }
+
+    const url = new URL(`https://graph.facebook.com/${graphVersion}/${pageId}/posts`);
 
     url.searchParams.set('fields', 'id,message,story,created_time,permalink_url,full_picture,attachments{type,title,url,target,media,subattachments}');
     url.searchParams.set('limit', String(limit));
@@ -181,7 +236,8 @@ app.http('facebook-gallery', {
 
       return jsonResponse({
         items,
-        nextCursor
+        nextCursor,
+        source: 'graph'
       });
     } catch (error) {
       return jsonResponse({
