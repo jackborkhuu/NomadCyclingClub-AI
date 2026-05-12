@@ -5,6 +5,79 @@ navToggle?.addEventListener('click', () => {
   siteNav?.classList.toggle('open');
 });
 
+const DONATE_CASH_TAG = '$NomadCyclingClub';
+const DONATE_URL = `https://cash.app/${encodeURIComponent(DONATE_CASH_TAG)}`;
+const DONATE_QR_URL = 'assets/donate-qr.png';
+
+function initDonateModal() {
+  const donateLinks = document.querySelectorAll('.donate-trigger');
+  if (donateLinks.length === 0) {
+    return;
+  }
+
+  if (!document.getElementById('donateModal')) {
+    const modalMarkup = `
+      <div class="donate-modal" id="donateModal" aria-hidden="true" role="dialog" aria-label="Donate with QR code">
+        <div class="donate-modal-card">
+          <button class="donate-modal-close" id="donateModalClose" aria-label="Close donate popup">&times;</button>
+          <h3>Support Nomad Cycling Club</h3>
+          <p>Scan this QR code with Cash App to donate.</p>
+          <img class="donate-qr-image" src="${DONATE_QR_URL}" alt="Cash App donation QR for Nomad Cycling Club" loading="lazy" />
+          <p class="donate-cashtag">${DONATE_CASH_TAG}</p>
+          <a class="button button-primary donate-open-link" href="${DONATE_URL}" target="_blank" rel="noopener">Open in Cash App</a>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalMarkup);
+  }
+
+  const modal = document.getElementById('donateModal');
+  const closeButton = document.getElementById('donateModalClose');
+
+  const openModal = () => {
+    if (!modal) {
+      return;
+    }
+
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+  };
+
+  const closeModal = () => {
+    if (!modal) {
+      return;
+    }
+
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
+  };
+
+  donateLinks.forEach((link) => {
+    link.addEventListener('click', (event) => {
+      event.preventDefault();
+      openModal();
+    });
+  });
+
+  closeButton?.addEventListener('click', closeModal);
+
+  modal?.addEventListener('click', (event) => {
+    if (event.target === modal) {
+      closeModal();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && modal?.classList.contains('open')) {
+      closeModal();
+    }
+  });
+}
+
+initDonateModal();
+
 const facebookPhotos = [
   {
     src: 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/473013051_2432302783779151_4367558447526915791_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=2a1932&_nc_ohc=2DqLnHDwqkgQ7kNvwGxpYY7&_nc_oc=Adro7iJVgVzbq6SummMGUmd68gYFfSryVKi0FvQyLcHsley_MQ9IUaiKhHRoJSAXbNM&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=jdN_sHT-EBAAJIJ0ZC0gQw&_nc_ss=7b2a8&oh=00_Af4AybgHrTogoWi73qF3KoKxrGtlG4YxKye0jXJBKnW3Jg&oe=6A07E6B7',
