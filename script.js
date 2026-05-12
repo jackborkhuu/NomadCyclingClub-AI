@@ -1551,9 +1551,83 @@ function renderPostComments(post, postIndex, postUrl) {
 }
 
 async function renderApiHomeFeedPosts(container) {
-  const apiPosts = await fetchApiFeedPosts();
-  if (apiPosts.length === 0) {
-    return false;
+  const fetchHomeFeedLivePage = async (afterCursor = '', limit = 10) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (afterCursor) {
+      params.set('after', afterCursor);
+    }
+
+    const response = await fetch(`/api/facebook-feed?${params.toString()}`, { cache: 'no-store' });
+    if (!response.ok) {
+      let details = '';
+      try {
+        const payload = await response.json();
+        details = payload?.details || payload?.error || '';
+      } catch {
+        details = '';
+      }
+
+      throw new Error(`Live feed API failed (${response.status})${details ? `: ${details}` : ''}`);
+    }
+
+    const payload = await response.json();
+    return {
+      posts: Array.isArray(payload?.posts) ? payload.posts : [],
+      nextCursor: payload?.nextCursor || ''
+    };
+  };
+
+  const loadCachedFeedPosts = async () => {
+    try {
+      const response = await fetch('data/facebook-feed.json', { cache: 'no-store' });
+      if (!response.ok) {
+        return [];
+      }
+
+      const payload = await response.json();
+      return Array.isArray(payload?.posts) ? payload.posts : [];
+    } catch {
+      return [];
+    }
+  };
+
+  let state = {
+    mode: 'live',
+    nextCursor: '',
+    cachedPosts: [],
+    cachedOffset: 0,
+    loading: false,
+    hasMore: true
+  };
+
+  try {
+    const firstPage = await fetchHomeFeedLivePage('', 10);
+    if (firstPage.posts.length === 0) {
+      return false;
+    }
+
+    fetchApiFeedPosts.source = 'live';
+    liveFeedDebugReason = '';
+    state.nextCursor = firstPage.nextCursor || '';
+    state.hasMore = Boolean(state.nextCursor);
+    state.cachedPosts = firstPage.posts;
+    state.cachedOffset = firstPage.posts.length;
+  } catch (error) {
+    liveFeedDebugReason = error instanceof Error ? error.message : 'Unknown live feed error';
+    const cachedPosts = await loadCachedFeedPosts();
+    if (cachedPosts.length === 0) {
+      return false;
+    }
+
+    fetchApiFeedPosts.source = 'cached';
+    state = {
+      mode: 'cached',
+      nextCursor: '',
+      cachedPosts,
+      cachedOffset: 0,
+      loading: false,
+      hasMore: true
+    };
   }
 
   const clubAvatar = 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/434604830_1029036748669316_4381808470709969180_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=wq6mCRo7vpIQ7kNvwHIVhPS&_nc_oc=Ado4Ht_3AIz3aO1db-EVOdfN-qkfL3TCPq8taQVZkyQ7dVnBfr7e9iDzd4ak1kjYHAg&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=42QPR6HS6egX18UFG_KD8g&_nc_ss=7b2a8&oh=00_Af7ow7NgPBFrQEn-u9g6Gon4xNzTwNI_Mn4qC4PcXEMyPA&oe=6A080E03';
@@ -1720,9 +1794,30 @@ async function renderApiHomeFeedPosts(container) {
     });
   };
 
-  const renderNextChunk = () => {
-    const nextPosts = apiPosts.slice(renderedCount, renderedCount + pageSize);
+  const getNextPosts = async () => {
+    if (state.mode === 'live') {
+      if (renderedCount === 0) {
+        return state.cachedPosts;
+      }
+
+      if (!state.nextCursor) {
+        return [];
+      }
+
+      const payload = await fetchHomeFeedLivePage(state.nextCursor, pageSize);
+      state.nextCursor = payload.nextCursor || '';
+      return payload.posts;
+    }
+
+    const nextPosts = state.cachedPosts.slice(state.cachedOffset, state.cachedOffset + pageSize);
+    state.cachedOffset += nextPosts.length;
+    return nextPosts;
+  };
+
+  const renderNextChunk = async () => {
+    const nextPosts = await getNextPosts();
     if (nextPosts.length === 0) {
+      state.hasMore = false;
       return false;
     }
 
@@ -1744,16 +1839,28 @@ async function renderApiHomeFeedPosts(container) {
       });
     }
 
-    if (status) {
-      status.textContent = renderedCount < apiPosts.length
-        ? `Live feed active. Loaded ${renderedCount} of ${apiPosts.length} posts. Scroll for more...`
-        : `Live feed active. Showing ${renderedCount} posts.`;
+    if (state.mode === 'live') {
+      state.hasMore = Boolean(state.nextCursor);
+    } else {
+      state.hasMore = state.cachedOffset < state.cachedPosts.length;
     }
 
-    return renderedCount < apiPosts.length;
+    if (status) {
+      if (state.mode === 'live') {
+        status.textContent = state.hasMore
+          ? `Live feed active. Loaded ${renderedCount} posts. Scroll for more...`
+          : `Live feed active. Showing ${renderedCount} posts.`;
+      } else {
+        status.textContent = state.hasMore
+          ? `Synced feed loaded. Showing ${renderedCount} posts. Scroll for more...`
+          : `Synced feed loaded. Showing ${renderedCount} posts.`;
+      }
+    }
+
+    return state.hasMore;
   };
 
-  const hasMoreAfterFirstRender = renderNextChunk();
+  const hasMoreAfterFirstRender = await renderNextChunk();
   if (!hasMoreAfterFirstRender) {
     return true;
   }
@@ -1768,21 +1875,26 @@ async function renderApiHomeFeedPosts(container) {
   sentinel.style.height = '1px';
   container.insertAdjacentElement('afterend', sentinel);
 
-  let loading = false;
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting || loading) {
-        return;
-      }
+  const observer = new IntersectionObserver(async (entries) => {
+    const isIntersecting = entries.some((entry) => entry.isIntersecting);
+    if (!isIntersecting || state.loading) {
+      return;
+    }
 
-      loading = true;
-      const hasMore = renderNextChunk();
+    state.loading = true;
+
+    try {
+      const hasMore = await renderNextChunk();
       if (!hasMore) {
         observer.disconnect();
         sentinel.remove();
       }
-      loading = false;
-    });
+    } catch {
+      observer.disconnect();
+      sentinel.remove();
+    } finally {
+      state.loading = false;
+    }
   }, { rootMargin: '800px 0px' });
 
   observer.observe(sentinel);
