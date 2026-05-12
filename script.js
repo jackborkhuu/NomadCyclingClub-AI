@@ -2039,7 +2039,8 @@ async function renderHomeFeedPosts() {
       createdTime: post?.createdTime || post?.created_time || '',
       message: post?.message || post?.story || ''
     }))
-    .filter((post) => typeof post.permalinkUrl === 'string' && post.permalinkUrl.startsWith('http'));
+    .filter((post) => typeof post.permalinkUrl === 'string' && post.permalinkUrl.startsWith('http'))
+    .sort((left, right) => String(right.createdTime || '').localeCompare(String(left.createdTime || '')));
 
   const pluginReadyPosts = normalizedPosts.filter((post) => isEmbeddablePostUrl(post.permalinkUrl)).slice(0, 6);
   const fallbackLinkPosts = normalizedPosts.filter((post) => !isEmbeddablePostUrl(post.permalinkUrl)).slice(0, 6);
