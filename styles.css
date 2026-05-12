@@ -173,6 +173,9 @@ img {
   height: 100%;
   object-fit: cover;
   border-radius: 16px;
+  filter: saturate(1.14) contrast(1.08) brightness(1.03);
+  transform: scale(1.015);
+  transform-origin: center center;
 }
 
 .profile-header {
@@ -390,10 +393,14 @@ img {
   background: var(--facebook-blue);
   color: #ffffff;
   border-radius: 999px;
-  padding: 0.2rem 0.55rem;
-  font-size: 0.74rem;
+  min-width: 104px;
+  padding: 0.38rem 0.78rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  line-height: 1.4;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-align: center;
+  box-shadow: 0 6px 14px rgba(24, 119, 242, 0.22);
 }
 
 .upcoming-pin-date,
