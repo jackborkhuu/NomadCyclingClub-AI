@@ -982,9 +982,58 @@ async function fetchApiFeedPosts() {
   }
 }
 
+function extractCount(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (!value || typeof value !== 'object') {
+    return 0;
+  }
+
+  const summaryCount = value.summary?.total_count;
+  if (typeof summaryCount === 'number' && Number.isFinite(summaryCount)) {
+    return summaryCount;
+  }
+
+  const totalCount = value.total_count;
+  if (typeof totalCount === 'number' && Number.isFinite(totalCount)) {
+    return totalCount;
+  }
+
+  return 0;
+}
+
+function getPostEngagementCounts(post) {
+  const likesCount = Math.max(
+    extractCount(post.likeCount),
+    extractCount(post.likesCount),
+    extractCount(post.reactionsCount),
+    extractCount(post.likes),
+    extractCount(post.reactions),
+    extractCount(post.reaction_count),
+    extractCount(post.like_count)
+  );
+
+  const commentsLength = Array.isArray(post.comments) ? post.comments.length : 0;
+  const commentsCount = Math.max(
+    commentsLength,
+    extractCount(post.commentCount),
+    extractCount(post.commentsCount),
+    extractCount(post.comments),
+    extractCount(post.comments_count),
+    extractCount(post.comment_count)
+  );
+
+  return {
+    likesCount,
+    commentsCount
+  };
+}
+
 function renderPostComments(post, postIndex, postUrl) {
   const comments = Array.isArray(post.comments) ? post.comments : [];
-  const commentCount = post.commentCount || 0;
+  const { likesCount, commentsCount } = getPostEngagementCounts(post);
 
   const visibleComments = comments.slice(0, 3);
   const commentsHtml = visibleComments.map(comment => `
@@ -995,7 +1044,7 @@ function renderPostComments(post, postIndex, postUrl) {
     </div>
   `).join('');
 
-  const hiddenCount = Math.max(commentCount - visibleComments.length, 0);
+  const hiddenCount = Math.max(commentsCount - visibleComments.length, 0);
 
   const commentInputHtml = `
     <div class="comment-input-form">
@@ -1006,13 +1055,14 @@ function renderPostComments(post, postIndex, postUrl) {
 
   return `
     <div class="post-comments-section">
+      <div class="post-engagement-summary">
+        <span>${likesCount} like${likesCount !== 1 ? 's' : ''}</span>
+        <span>${commentsCount} comment${commentsCount !== 1 ? 's' : ''}</span>
+      </div>
       <div class="post-actions-row">
         <button class="comment-action-btn" type="button">Like</button>
         <button class="comment-action-btn comment-focus-btn" type="button" data-post-index="${postIndex}">Comment</button>
         <a class="comment-action-link" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">Share</a>
-      </div>
-      <div class="post-comments-header">
-        <span>${commentCount} comment${commentCount !== 1 ? 's' : ''}</span>
       </div>
       ${hiddenCount > 0 ? `<p class="more-comments-note">View ${hiddenCount} more on Facebook</p>` : ''}
       ${commentsHtml}
