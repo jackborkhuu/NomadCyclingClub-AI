@@ -9,6 +9,30 @@ const DONATE_CASH_TAG = '$NomadCyclingClub';
 const DONATE_URL = `https://cash.app/${encodeURIComponent(DONATE_CASH_TAG)}`;
 const DONATE_QR_URL = 'assets/donate-qr.png';
 
+function ensureDonateLinks() {
+  const navGroups = document.querySelectorAll('.tabs, .site-nav');
+  navGroups.forEach((group) => {
+    if (group.querySelector('.donate-trigger')) {
+      return;
+    }
+
+    const donateLink = document.createElement('a');
+    donateLink.href = '#donate';
+    donateLink.className = group.classList.contains('tabs') ? 'tab donate-trigger' : 'donate-trigger';
+    donateLink.setAttribute('aria-label', 'Donate to Nomad Cycling Club');
+    donateLink.textContent = 'Donate';
+
+    const links = [...group.querySelectorAll('a')];
+    const contactLink = links.find((link) => (link.getAttribute('href') || '').includes('contact.html'));
+
+    if (contactLink && contactLink.parentNode === group) {
+      contactLink.insertAdjacentElement('afterend', donateLink);
+    } else {
+      group.appendChild(donateLink);
+    }
+  });
+}
+
 function initDonateModal() {
   const donateLinks = document.querySelectorAll('.donate-trigger');
   if (donateLinks.length === 0) {
@@ -76,6 +100,7 @@ function initDonateModal() {
   });
 }
 
+ensureDonateLinks();
 initDonateModal();
 
 const facebookPhotos = [
