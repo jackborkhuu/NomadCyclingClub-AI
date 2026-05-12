@@ -164,12 +164,15 @@ img {
   overflow: hidden;
   position: relative;
   background: var(--facebook-gray);
+  margin: 12px 12px 0;
+  border-radius: 16px;
 }
 
 .banner-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 16px;
 }
 
 .profile-header {
@@ -221,6 +224,9 @@ img {
 .nav-tabs {
   background: #ffffff;
   border-bottom: 1px solid var(--facebook-border);
+  position: sticky;
+  top: 0;
+  z-index: 35;
 }
 
 .tabs {
@@ -521,7 +527,7 @@ img {
 .gallery-grid img {
   width: 100%;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .photos-grid img {
@@ -598,6 +604,7 @@ img {
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
+  border-radius: 12px;
 }
 
 .home-feed-video video {
@@ -674,6 +681,7 @@ img {
   width: 100%;
   max-height: 360px;
   object-fit: cover;
+  border-radius: 12px;
 }
 
 .home-feed-footer {
@@ -1455,6 +1463,7 @@ body.lightbox-open {
   height: 100%;
   object-fit: cover;
   display: block;
+  border-radius: 12px;
 }
 
 .fb-event-info {
