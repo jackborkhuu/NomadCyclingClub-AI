@@ -2,6 +2,8 @@ import { app } from '@azure/functions';
 
 const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 50;
+let cachedAccessToken = null;
+let cachedAccessTokenExpiresAt = 0;
 
 function corsHeaders() {
   return {
@@ -20,6 +22,55 @@ function jsonResponse(body, status = 200) {
       ...corsHeaders()
     }
   };
+}
+
+async function getUsableAccessToken() {
+  const staticToken = (process.env.STRAVA_ACCESS_TOKEN || '').trim();
+  if (staticToken) {
+    return staticToken;
+  }
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (cachedAccessToken && cachedAccessTokenExpiresAt - 60 > nowSec) {
+    return cachedAccessToken;
+  }
+
+  const clientId = (process.env.STRAVA_CLIENT_ID || '').trim();
+  const clientSecret = (process.env.STRAVA_CLIENT_SECRET || '').trim();
+  const refreshToken = (process.env.STRAVA_REFRESH_TOKEN || '').trim();
+
+  if (!clientId || !clientSecret || !refreshToken) {
+    return '';
+  }
+
+  const tokenResponse = await fetch('https://www.strava.com/oauth/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken
+    })
+  });
+
+  if (!tokenResponse.ok) {
+    return '';
+  }
+
+  const tokenPayload = await tokenResponse.json().catch(() => ({}));
+  const nextToken = typeof tokenPayload?.access_token === 'string' ? tokenPayload.access_token.trim() : '';
+  const expiresAt = Number(tokenPayload?.expires_at);
+
+  if (!nextToken) {
+    return '';
+  }
+
+  cachedAccessToken = nextToken;
+  cachedAccessTokenExpiresAt = Number.isFinite(expiresAt) ? expiresAt : (nowSec + 1800);
+  return cachedAccessToken;
 }
 
 function normalizeActivity(activity) {
@@ -84,13 +135,13 @@ app.http('strava-feed', {
     }
 
     const clubId = process.env.STRAVA_CLUB_ID || '303983';
-    const accessToken = (process.env.STRAVA_ACCESS_TOKEN || '').trim();
 
     const limitParam = Number(request.query.get('limit'));
     const limit = Number.isFinite(limitParam)
       ? Math.max(1, Math.min(MAX_LIMIT, limitParam))
       : DEFAULT_LIMIT;
 
+    const accessToken = await getUsableAccessToken();
     if (!accessToken) {
       return jsonResponse({
         error: 'Strava access token not configured.',
