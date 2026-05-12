@@ -1559,7 +1559,7 @@ async function renderApiHomeFeedPosts(container) {
   const clubAvatar = 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/434604830_1029036748669316_4381808470709969180_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=wq6mCRo7vpIQ7kNvwHIVhPS&_nc_oc=Ado4Ht_3AIz3aO1db-EVOdfN-qkfL3TCPq8taQVZkyQ7dVnBfr7e9iDzd4ak1kjYHAg&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=42QPR6HS6egX18UFG_KD8g&_nc_ss=7b2a8&oh=00_Af7ow7NgPBFrQEn-u9g6Gon4xNzTwNI_Mn4qC4PcXEMyPA&oe=6A080E03';
   const lightboxPhotos = [];
 
-  container.innerHTML = apiPosts.slice(0, 10).map((post, postIndex) => {
+  const renderPostCard = (post, postIndex) => {
     const postUrl = post.permalinkUrl || post.permalink_url || 'https://www.facebook.com/nomadcyclingclub';
     const message = post.message || post.story || `Facebook post ${postIndex + 1}`;
     const postedAt = formatDateTime(post.createdTime || post.created_time);
@@ -1691,35 +1691,101 @@ async function renderApiHomeFeedPosts(container) {
         </div>
       </article>
     `;
-  }).join('');
+  };
 
-  const triggers = container.querySelectorAll('.feed-media-trigger[data-lightbox-index]');
-  triggers.forEach((trigger) => {
-    trigger.addEventListener('click', () => {
-      const index = Number(trigger.getAttribute('data-lightbox-index'));
-      if (Number.isNaN(index)) {
+  container.innerHTML = '';
+  const pageSize = 10;
+  let renderedCount = 0;
+  let status = container.parentElement?.querySelector('.home-feed-live-status') || null;
+  if (!status && container.parentElement) {
+    status = document.createElement('p');
+    status.className = 'home-feed-live-status';
+    container.insertAdjacentElement('afterend', status);
+  }
+
+  const bindFeedMediaTriggers = () => {
+    const triggers = container.querySelectorAll('.feed-media-trigger[data-lightbox-index]:not(.feed-media-bound)');
+    triggers.forEach((trigger) => {
+      trigger.classList.add('feed-media-bound');
+      trigger.addEventListener('click', () => {
+        const index = Number(trigger.getAttribute('data-lightbox-index'));
+        if (Number.isNaN(index)) {
+          return;
+        }
+
+        galleryPhotosForView = lightboxPhotos;
+        ensureGalleryLightbox();
+        openLightbox(index);
+      });
+    });
+  };
+
+  const renderNextChunk = () => {
+    const nextPosts = apiPosts.slice(renderedCount, renderedCount + pageSize);
+    if (nextPosts.length === 0) {
+      return false;
+    }
+
+    const html = nextPosts.map((post, index) => renderPostCard(post, renderedCount + index)).join('');
+    container.insertAdjacentHTML('beforeend', html);
+    renderedCount += nextPosts.length;
+
+    bindFeedMediaTriggers();
+    setupCommentLoginHandlers();
+    setupCommentFocusHandlers();
+
+    if (window.FB) {
+      FB.getLoginStatus((response) => {
+        if (response.status === 'connected') {
+          showCommentForms();
+        } else {
+          hideCommentForms();
+        }
+      });
+    }
+
+    if (status) {
+      status.textContent = renderedCount < apiPosts.length
+        ? `Live feed active. Loaded ${renderedCount} of ${apiPosts.length} posts. Scroll for more...`
+        : `Live feed active. Showing ${renderedCount} posts.`;
+    }
+
+    return renderedCount < apiPosts.length;
+  };
+
+  const hasMoreAfterFirstRender = renderNextChunk();
+  if (!hasMoreAfterFirstRender) {
+    return true;
+  }
+
+  const existingSentinel = container.parentElement?.querySelector('.home-feed-live-sentinel');
+  if (existingSentinel) {
+    existingSentinel.remove();
+  }
+
+  const sentinel = document.createElement('div');
+  sentinel.className = 'home-feed-live-sentinel';
+  sentinel.style.height = '1px';
+  container.insertAdjacentElement('afterend', sentinel);
+
+  let loading = false;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting || loading) {
         return;
       }
 
-      galleryPhotosForView = lightboxPhotos;
-      ensureGalleryLightbox();
-      openLightbox(index);
-    });
-  });
-
-  // Check if user is logged in and show/hide comment forms accordingly
-  if (window.FB) {
-    FB.getLoginStatus((response) => {
-      if (response.status === 'connected') {
-        showCommentForms();
-      } else {
-        hideCommentForms();
+      loading = true;
+      const hasMore = renderNextChunk();
+      if (!hasMore) {
+        observer.disconnect();
+        sentinel.remove();
       }
+      loading = false;
     });
-  }
+  }, { rootMargin: '800px 0px' });
 
-  setupCommentLoginHandlers();
-  setupCommentFocusHandlers();
+  observer.observe(sentinel);
 
   return true;
 }
@@ -1797,6 +1863,11 @@ async function renderHomeFeedPosts() {
   const container = document.getElementById('homeFeedPosts');
   if (!container) {
     return;
+  }
+
+  const parent = container.parentElement;
+  if (parent) {
+    parent.querySelectorAll('.home-feed-live-status, .home-feed-live-sentinel').forEach((node) => node.remove());
   }
 
   const sourceBanner = document.getElementById('homeFeedSourceStatus');
