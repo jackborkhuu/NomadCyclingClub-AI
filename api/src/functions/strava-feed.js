@@ -219,6 +219,43 @@ async function fetchActivityPhotos(accessToken, activityId, maxPhotos = 4) {
   }
 }
 
+async function fetchAthleteActivities(accessToken, limit) {
+  try {
+    const url = new URL('https://www.strava.com/api/v3/athlete/activities');
+    url.searchParams.set('per_page', String(limit));
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        'User-Agent': 'NomadCyclingClubApi/1.0'
+      }
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = await response.json().catch(() => []);
+    return Array.isArray(payload) ? payload : [];
+  } catch {
+    return [];
+  }
+}
+
+function hasUsableTimestamp(post) {
+  if (!post || !post.createdTime) {
+    return false;
+  }
+
+  const date = new Date(post.createdTime);
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  return date.getTime() > 0;
+}
+
 function normalizeActivity(activity, details = null, photos = []) {
   if (!activity || typeof activity !== 'object') {
     return null;
@@ -363,10 +400,34 @@ app.http('strava-feed', {
           return rightTime - leftTime;
         });
 
+      const timestampedPostCount = posts.filter((post) => hasUsableTimestamp(post)).length;
+      let finalPosts = posts;
+      let fallbackSource = null;
+
+      // If the club feed has no usable timestamps, try athlete activities with the same token.
+      if (timestampedPostCount === 0) {
+        const athleteActivities = await fetchAthleteActivities(accessToken, limit);
+        const athletePosts = athleteActivities
+          .map((activity) => normalizeActivity(activity, null, []))
+          .filter((activity) => activity !== null)
+          .sort((left, right) => {
+            const leftTime = new Date(left.createdTime || '').getTime();
+            const rightTime = new Date(right.createdTime || '').getTime();
+            return rightTime - leftTime;
+          });
+
+        const athleteTimestampedCount = athletePosts.filter((post) => hasUsableTimestamp(post)).length;
+        if (athleteTimestampedCount > 0) {
+          finalPosts = athletePosts;
+          fallbackSource = 'athlete';
+        }
+      }
+
       return jsonResponse({
-        posts,
+        posts: finalPosts,
         nextCursor: null,
-        source: 'strava'
+        source: 'strava',
+        fallbackSource
       });
     } catch (error) {
       return jsonResponse({
