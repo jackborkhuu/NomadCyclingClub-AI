@@ -688,6 +688,27 @@ function setupGalleryLightbox() {
   });
 }
 
+function setupGalleryCaptionToggles(gallery) {
+  if (!gallery) {
+    return;
+  }
+
+  const toggles = gallery.querySelectorAll('.gallery-caption-toggle');
+  toggles.forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const caption = toggle.closest('.gallery-media-caption');
+      if (!caption) {
+        return;
+      }
+
+      const isExpanded = caption.classList.toggle('is-expanded');
+      caption.classList.toggle('is-clamped', !isExpanded);
+      toggle.textContent = isExpanded ? 'Less' : 'More';
+      toggle.setAttribute('aria-expanded', String(isExpanded));
+    });
+  });
+}
+
 async function renderGallery() {
   const gallery = document.getElementById('randomGallery');
   if (!gallery) {
@@ -711,7 +732,8 @@ async function renderGallery() {
         .map((media) => ({
           type: String(media.type || '').toLowerCase(),
           imageUrl: media.imageUrl || media.image_url || media.previewUrl || media.preview_url || '',
-          videoUrl: media.videoUrl || media.video_url || media.sourceUrl || media.source_url || ''
+          videoUrl: media.videoUrl || media.video_url || media.sourceUrl || media.source_url || '',
+          targetUrl: media.targetUrl || media.target_url || ''
         }))
         .filter((media) => media.imageUrl || media.videoUrl);
 
@@ -758,18 +780,28 @@ async function renderGallery() {
         return true;
       }).filter((media) => Boolean(media.imageUrl || media.videoUrl));
 
-      const mediaHtml = displayMedia.map((media, mediaIndex) => {
+      const hasVideo = displayMedia.some((media) => media.type === 'video' && media.videoUrl);
+      const finalDisplayMedia = hasVideo
+        ? displayMedia.filter((media) => media.type === 'video' && media.videoUrl)
+        : displayMedia.filter((media) => media.type === 'photo' || media.type === 'video');
+
+      const mediaHtml = finalDisplayMedia.map((media, mediaIndex) => {
         const isReel = /\/reel\//i.test(postUrl) || /reel/i.test(media.type) || /\/reel\//i.test(media.targetUrl || '');
         const mediaAlt = escapeHtml(message || `Post media ${mediaIndex + 1}`);
+        const hasLongMessage = String(message || '').length > 140;
+        const mediaMessageHtml = `<figcaption class="gallery-media-caption${hasLongMessage ? ' is-clamped' : ''}"><a class="home-feed-text-link" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">${escapeHtml(message)}</a>${hasLongMessage ? '<button class="gallery-caption-toggle" type="button" aria-expanded="false">More</button>' : ''}</figcaption>`;
 
         if (media.type === 'video' && media.videoUrl) {
           return `
-            <div class="gallery-post-video${isReel ? ' gallery-post-video-reel' : ''}">
-              <video controls preload="metadata" ${media.imageUrl ? `poster="${escapeHtml(media.imageUrl)}"` : ''}>
-                <source src="${escapeHtml(media.videoUrl)}" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-            </div>
+            <figure class="gallery-media-item">
+              <div class="gallery-post-video${isReel ? ' gallery-post-video-reel' : ''}">
+                <video controls preload="metadata" ${media.imageUrl ? `poster="${escapeHtml(media.imageUrl)}"` : ''}>
+                  <source src="${escapeHtml(media.videoUrl)}" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+              ${mediaMessageHtml}
+            </figure>
           `;
         }
 
@@ -785,9 +817,12 @@ async function renderGallery() {
         });
 
         return `
-          <button class="gallery-trigger gallery-media-trigger" type="button" data-photo-index="${lightboxIndex}" aria-label="Open photo ${mediaIndex + 1}">
-            <img src="${escapeHtml(media.imageUrl)}" alt="${mediaAlt}" loading="lazy" />
-          </button>
+          <figure class="gallery-media-item">
+            <button class="gallery-trigger gallery-media-trigger" type="button" data-photo-index="${lightboxIndex}" aria-label="Open photo ${mediaIndex + 1}">
+              <img src="${escapeHtml(media.imageUrl)}" alt="${mediaAlt}" loading="lazy" />
+            </button>
+            ${mediaMessageHtml}
+          </figure>
         `;
       }).join('');
 
@@ -814,6 +849,7 @@ async function renderGallery() {
     galleryPhotosForView = lightboxPhotos;
     gallery.innerHTML = html;
     setupGalleryLightbox();
+    setupGalleryCaptionToggles(gallery);
     return;
   }
 
