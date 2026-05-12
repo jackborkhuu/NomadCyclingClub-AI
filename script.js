@@ -719,11 +719,16 @@ async function renderGallery() {
   const postsWithMedia = apiPosts.filter((post) => Array.isArray(post.media) && post.media.length > 0);
 
   if (postsWithMedia.length > 0) {
-    gallery.classList.remove('gallery-grid', 'gallery-grid-large');
-    gallery.classList.add('gallery-feed-grid');
+    gallery.classList.add('gallery-grid', 'gallery-grid-large');
+    gallery.classList.remove('gallery-feed-grid');
 
+    const seenImages = new Set();
+    const seenVideos = new Set();
+    const seenVideoPosters = new Set();
     const lightboxPhotos = [];
-    const html = postsWithMedia.map((post, postIndex) => {
+    const tiles = [];
+
+    postsWithMedia.forEach((post, postIndex) => {
       const postUrl = post.permalinkUrl || post.permalink_url || 'https://www.facebook.com/nomadcyclingclub';
       const message = post.message || post.story || `Facebook post ${postIndex + 1}`;
       const postedAt = formatDateTime(post.createdTime || post.created_time);
@@ -737,74 +742,72 @@ async function renderGallery() {
         }))
         .filter((media) => media.imageUrl || media.videoUrl);
 
-      // Original deduplication: avoid duplicate videos and images
-      const seenUrls = new Set();
-      const videoPosterSet = new Set();
+      const seenPostMedia = new Set();
+      const postVideoPosters = new Set();
       const dedupedMedia = [];
 
       for (const media of normalizedMedia) {
         const videoKey = `video:${media.videoUrl}`;
-        const imageKey = `image:${extractImageId(media.imageUrl)}`;
+        const imageId = extractImageId(media.imageUrl);
+        const imageKey = `image:${imageId}`;
 
         if (media.type === 'video' && media.videoUrl) {
-          // Add video if not already seen
-          if (!seenUrls.has(videoKey)) {
+          if (!seenPostMedia.has(videoKey)) {
             dedupedMedia.push(media);
-            seenUrls.add(videoKey);
-            if (media.imageUrl) {
-              videoPosterSet.add(extractImageId(media.imageUrl));
+            seenPostMedia.add(videoKey);
+            if (imageId) {
+              postVideoPosters.add(imageId);
             }
           }
-        } else if (media.imageUrl) {
-          // Add photo/album if not already seen AND not a video poster
-          if (!seenUrls.has(imageKey) && !videoPosterSet.has(extractImageId(media.imageUrl))) {
-            dedupedMedia.push(media);
-            seenUrls.add(imageKey);
-          }
+        } else if (imageId && !seenPostMedia.has(imageKey) && !postVideoPosters.has(imageId)) {
+          dedupedMedia.push(media);
+          seenPostMedia.add(imageKey);
         }
       }
 
-      // Additional filter: remove album types if photos with same image exist
-      const photoImageUrls = new Set();
-      dedupedMedia.forEach((m) => {
-        if (m.type === 'photo' && m.imageUrl) {
-          photoImageUrls.add(extractImageId(m.imageUrl));
-        }
-      });
-
-      const displayMedia = dedupedMedia.filter((media) => {
-        // Remove album if it has same image as a photo
-        if (media.type === 'album' && photoImageUrls.has(extractImageId(media.imageUrl))) {
-          return false;
-        }
-        return true;
-      }).filter((media) => Boolean(media.imageUrl || media.videoUrl));
-
-      const hasVideo = displayMedia.some((media) => media.type === 'video' && media.videoUrl);
+      const hasVideo = dedupedMedia.some((media) => media.type === 'video' && media.videoUrl);
       const finalDisplayMedia = hasVideo
-        ? displayMedia.filter((media) => media.type === 'video' && media.videoUrl)
-        : displayMedia.filter((media) => media.type === 'photo' || media.type === 'video');
+        ? dedupedMedia.filter((media) => media.type === 'video' && media.videoUrl)
+        : dedupedMedia.filter((media) => media.type === 'photo' || media.type === 'video');
 
-      const mediaHtml = finalDisplayMedia.map((media, mediaIndex) => {
+      finalDisplayMedia.forEach((media, mediaIndex) => {
+        const mediaAlt = escapeHtml(message || `Gallery media ${mediaIndex + 1}`);
+        const imageId = extractImageId(media.imageUrl);
         const isReel = /\/reel\//i.test(postUrl) || /reel/i.test(media.type) || /\/reel\//i.test(media.targetUrl || '');
-        const mediaAlt = escapeHtml(message || `Post media ${mediaIndex + 1}`);
-        const hasLongMessage = String(message || '').length > 140;
-        const mediaMessageHtml = `<figcaption class="gallery-media-caption${hasLongMessage ? ' is-clamped' : ''}"><a class="home-feed-text-link" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">${escapeHtml(message)}</a>${hasLongMessage ? '<button class="gallery-caption-toggle" type="button" aria-expanded="false">More</button>' : ''}</figcaption>`;
 
         if (media.type === 'video' && media.videoUrl) {
-          return `
-            <figure class="gallery-media-item">
+          const videoKey = `video:${media.videoUrl}`;
+          if (seenVideos.has(videoKey)) {
+            return;
+          }
+
+          seenVideos.add(videoKey);
+          if (imageId) {
+            seenVideoPosters.add(imageId);
+          }
+
+          tiles.push(`
+            <article class="gallery-card gallery-card-video">
               <div class="gallery-post-video${isReel ? ' gallery-post-video-reel' : ''}">
-                <video controls preload="metadata" ${media.imageUrl ? `poster="${escapeHtml(media.imageUrl)}"` : ''}>
+                <video controls preload="metadata" playsinline ${media.imageUrl ? `poster="${escapeHtml(media.imageUrl)}"` : ''}>
                   <source src="${escapeHtml(media.videoUrl)}" type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
               </div>
-              ${mediaMessageHtml}
-            </figure>
-          `;
+              <div class="gallery-card-copy">
+                <p>${escapeHtml(postedAt)}</p>
+                <p class="gallery-caption-note"><a class="home-feed-text-link" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">Open post</a></p>
+              </div>
+            </article>
+          `);
+          return;
         }
 
+        if (!media.imageUrl || !imageId || seenImages.has(imageId) || seenVideoPosters.has(imageId)) {
+          return;
+        }
+
+        seenImages.add(imageId);
         const lightboxIndex = lightboxPhotos.length;
         lightboxPhotos.push({
           src: media.imageUrl,
@@ -816,40 +819,27 @@ async function renderGallery() {
           candidateSrcs: [media.imageUrl]
         });
 
-        return `
-          <figure class="gallery-media-item">
-            <button class="gallery-trigger gallery-media-trigger" type="button" data-photo-index="${lightboxIndex}" aria-label="Open photo ${mediaIndex + 1}">
+        tiles.push(`
+          <article class="gallery-card">
+            <button class="gallery-trigger" type="button" data-photo-index="${lightboxIndex}" aria-label="Open photo ${lightboxIndex + 1}">
               <img src="${escapeHtml(media.imageUrl)}" alt="${mediaAlt}" loading="lazy" />
             </button>
-            ${mediaMessageHtml}
-          </figure>
-        `;
-      }).join('');
-
-      return `
-        <article class="gallery-post-card">
-          <div class="post-header">
-            <div class="post-avatar">
-              <img src="https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/434604830_1029036748669316_4381808470709969180_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=wq6mCRo7vpIQ7kNvwHIVhPS&_nc_oc=Ado4Ht_3AIz3aO1db-EVOdfN-qkfL3TCPq8taQVZkyQ7dVnBfr7e9iDzd4ak1kjYHAg&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=42QPR6HS6egX18UFG_KD8g&_nc_ss=7b2a8&oh=00_Af7ow7NgPBFrQEn-u9g6Gon4xNzTwNI_Mn4qC4PcXEMyPA&oe=6A080E03" alt="Nomad Cycling Club" loading="lazy" />
+            <div class="gallery-card-copy">
+              <p>${escapeHtml(postedAt)}</p>
+              <p class="gallery-caption-note"><a class="home-feed-text-link" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">Open post</a></p>
             </div>
-            <div class="post-info">
-              <h3>Nomad Cycling Club - USA</h3>
-              <span class="post-time">${escapeHtml(postedAt)}</span>
-            </div>
-          </div>
-          <div class="gallery-post-body">
-            <p class="gallery-post-message"><a class="home-feed-text-link" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">${escapeHtml(message)}</a></p>
-            ${mediaHtml ? `<div class="gallery-post-media-grid">${mediaHtml}</div>` : ''}
-            <p class="gallery-post-footer"><a href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">Open original Facebook post</a></p>
-          </div>
-        </article>
-      `;
-    }).join('');
+          </article>
+        `);
+      });
+    });
 
     galleryPhotosForView = lightboxPhotos;
-    gallery.innerHTML = html;
+    gallery.innerHTML = tiles.join('');
+    if (!tiles.length) {
+      gallery.innerHTML = '<p class="gallery-note">No Facebook media is currently available.</p>';
+    }
+
     setupGalleryLightbox();
-    setupGalleryCaptionToggles(gallery);
     return;
   }
 
@@ -992,21 +982,20 @@ async function fetchApiFeedPosts() {
   }
 }
 
-function renderPostComments(post, postIndex) {
+function renderPostComments(post, postIndex, postUrl) {
   const comments = Array.isArray(post.comments) ? post.comments : [];
   const commentCount = post.commentCount || 0;
 
-  if (comments.length === 0 && commentCount === 0) {
-    return '';
-  }
-
-  const commentsHtml = comments.map(comment => `
+  const visibleComments = comments.slice(0, 3);
+  const commentsHtml = visibleComments.map(comment => `
     <div class="comment-item">
       <div class="comment-author">${escapeHtml(comment.from || 'User')}</div>
       <p class="comment-text">${escapeHtml(comment.message || '')}</p>
       <div class="comment-time">${formatDateTime(comment.createdTime)}</div>
     </div>
   `).join('');
+
+  const hiddenCount = Math.max(commentCount - visibleComments.length, 0);
 
   const commentInputHtml = `
     <div class="comment-input-form">
@@ -1017,36 +1006,24 @@ function renderPostComments(post, postIndex) {
 
   return `
     <div class="post-comments-section">
+      <div class="post-actions-row">
+        <button class="comment-action-btn" type="button">Like</button>
+        <button class="comment-action-btn comment-focus-btn" type="button" data-post-index="${postIndex}">Comment</button>
+        <a class="comment-action-link" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">Share</a>
+      </div>
       <div class="post-comments-header">
         <span>${commentCount} comment${commentCount !== 1 ? 's' : ''}</span>
       </div>
+      ${hiddenCount > 0 ? `<p class="more-comments-note">View ${hiddenCount} more on Facebook</p>` : ''}
       ${commentsHtml}
       <div id="loginToComment-${postIndex}" class="login-to-comment">
-        Log in to comment
+        <button class="comment-login-trigger" type="button" data-post-index="${postIndex}">Log in with Facebook to comment</button>
       </div>
       <div id="commentForm-${postIndex}" style="display: none;">
         ${commentInputHtml}
       </div>
     </div>
   `;
-}
-
-async function fetchApiFeedPosts() {
-  try {
-    const response = await fetch('data/facebook-feed.json', { cache: 'no-store' });
-    if (!response.ok) {
-      return [];
-    }
-
-    const payload = await response.json();
-    if (!payload || !Array.isArray(payload.posts)) {
-      return [];
-    }
-
-    return payload.posts;
-  } catch {
-    return [];
-  }
 }
 
 async function renderApiHomeFeedPosts(container) {
@@ -1186,7 +1163,7 @@ async function renderApiHomeFeedPosts(container) {
           <p class="home-feed-text"><a class="home-feed-text-link" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">${escapeHtml(message)}</a></p>
           ${mediaHtml ? `<div class="home-feed-photo-grid ${hasVideo ? 'home-feed-photo-grid-video' : ''}">${mediaHtml}</div>` : ''}
           <div class="home-feed-footer"><a href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">Open original Facebook post</a></div>
-          ${renderPostComments(post, postIndex)}
+          ${renderPostComments(post, postIndex, postUrl)}
         </div>
       </article>
     `;
@@ -1216,6 +1193,9 @@ async function renderApiHomeFeedPosts(container) {
       }
     });
   }
+
+  setupCommentLoginHandlers();
+  setupCommentFocusHandlers();
 
   return true;
 }
@@ -1369,6 +1349,7 @@ function showCommentForms() {
   });
 
   setupCommentSubmitHandlers();
+  setupCommentFocusHandlers();
 }
 
 function hideCommentForms() {
@@ -1381,6 +1362,54 @@ function hideCommentForms() {
 
   loginToCommentElems.forEach(elem => {
     elem.style.display = 'block';
+  });
+
+  setupCommentLoginHandlers();
+  setupCommentFocusHandlers();
+}
+
+function setupCommentLoginHandlers() {
+  const loginButtons = document.querySelectorAll('.comment-login-trigger');
+  loginButtons.forEach((button) => {
+    if (button.classList.contains('comment-login-listener-attached')) {
+      return;
+    }
+
+    button.classList.add('comment-login-listener-attached');
+    button.addEventListener('click', () => {
+      if (!window.FB) {
+        return;
+      }
+
+      FB.login((response) => {
+        handleLoginStatusChange(response);
+      }, { scope: 'public_profile,pages_read_engagement,pages_manage_posts,pages_manage_engagement' });
+    });
+  });
+}
+
+function setupCommentFocusHandlers() {
+  const focusButtons = document.querySelectorAll('.comment-focus-btn');
+  focusButtons.forEach((button) => {
+    if (button.classList.contains('comment-focus-listener-attached')) {
+      return;
+    }
+
+    button.classList.add('comment-focus-listener-attached');
+    button.addEventListener('click', () => {
+      const postIndex = button.getAttribute('data-post-index');
+      const textarea = document.querySelector(`.comment-textarea[data-post-index="${postIndex}"]`);
+      const loginTrigger = document.querySelector(`.comment-login-trigger[data-post-index="${postIndex}"]`);
+
+      if (textarea && textarea.offsetParent !== null) {
+        textarea.focus();
+        return;
+      }
+
+      if (loginTrigger) {
+        loginTrigger.click();
+      }
+    });
   });
 }
 
@@ -1430,7 +1459,7 @@ function setupCommentSubmitHandlers() {
 document.getElementById('fbLoginBtn')?.addEventListener('click', function() {
   FB.login(function(response) {
     handleLoginStatusChange(response);
-  }, { scope: 'public_profile,pages_manage_posts,pages_read_engagement' });
+  }, { scope: 'public_profile,pages_read_engagement,pages_manage_posts,pages_manage_engagement' });
 });
 
 document.getElementById('fbLogoutBtn')?.addEventListener('click', function() {

@@ -500,7 +500,8 @@ img {
   gap: 12px;
   margin: 16px 0;
   padding: 16px;
-  background: var(--facebook-light-blue);
+  background: #ffffff;
+  border: 1px solid var(--facebook-border);
   border-radius: 12px;
 }
 
@@ -679,6 +680,11 @@ img {
   object-fit: cover;
 }
 
+.gallery-card-video .gallery-post-video {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
 .gallery-media-caption {
   --gallery-caption-lines: 3;
   margin: 0;
@@ -725,7 +731,8 @@ img {
 .fb-login-section {
   margin-bottom: 16px;
   padding: 16px;
-  background: var(--facebook-light-blue);
+  background: #ffffff;
+  border: 1px solid var(--facebook-border);
   border-radius: 10px;
   text-align: center;
 }
@@ -864,12 +871,44 @@ img {
   border-top: 1px solid var(--facebook-border);
 }
 
+.post-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--facebook-border);
+}
+
+.comment-action-btn,
+.comment-action-link {
+  border: 0;
+  background: transparent;
+  color: var(--facebook-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 2px;
+}
+
+.comment-action-btn:hover,
+.comment-action-link:hover {
+  color: var(--facebook-blue);
+  text-decoration: none;
+}
+
 .post-comments-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   font-size: 0.9rem;
+  color: var(--facebook-text-secondary);
+}
+
+.more-comments-note {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
   color: var(--facebook-text-secondary);
 }
 
@@ -951,8 +990,21 @@ img {
 .login-to-comment {
   text-align: center;
   padding: 10px;
-  color: var(--facebook-text-secondary);
-  font-size: 0.9rem;
+}
+
+.comment-login-trigger {
+  border: 1px solid var(--facebook-border);
+  background: #ffffff;
+  color: var(--facebook-blue);
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.comment-login-trigger:hover {
+  background: var(--facebook-gray);
 }
 
 .gallery-card {
