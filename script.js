@@ -1452,6 +1452,38 @@ async function fetchApiFeedPosts() {
 fetchApiFeedPosts.promise = null;
 fetchApiFeedPosts.source = 'unknown';
 
+async function fetchStravaPosts() {
+  try {
+    const params = new URLSearchParams({ limit: '30' });
+    const response = await fetch(`/api/strava-feed?${params.toString()}`, { cache: 'no-store' });
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = await response.json();
+    return Array.isArray(payload?.posts) ? payload.posts : [];
+  } catch (error) {
+    console.warn('Strava feed fetch failed:', error instanceof Error ? error.message : String(error));
+    return [];
+  }
+}
+
+async function fetchMergedFeedPosts() {
+  const [fbPosts, stravaPosts] = await Promise.all([
+    fetchApiFeedPosts(),
+    fetchStravaPosts()
+  ]);
+
+  const allPosts = [...fbPosts, ...stravaPosts];
+  allPosts.sort((left, right) => {
+    const leftTime = new Date(left.createdTime || left.created_time || '').getTime();
+    const rightTime = new Date(right.createdTime || right.created_time || '').getTime();
+    return rightTime - leftTime;
+  });
+
+  return allPosts;
+}
+
 function getFeedSource() {
   return fetchApiFeedPosts.source || 'unknown';
 }
@@ -1594,6 +1626,111 @@ function renderPostComments(post, postIndex, postUrl) {
       </div>
     </div>
   `;
+}
+
+async function renderMergedHomeFeedPosts(container) {
+  try {
+    const allPosts = await fetchMergedFeedPosts();
+    if (allPosts.length === 0) {
+      return false;
+    }
+
+    const clubAvatar = 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/434604830_1029036748669316_4381808470709969180_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=wq6mCRo7vpIQ7kNvwHIVhPS&_nc_oc=Ado4Ht_3AIz3aO1db-EVOdfN-qkfL3TCPq8taQVZkyQ7dVnBfr7e9iDzd4ak1kjYHAg&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=42QPR6HS6egX18UFG_KD8g&_nc_ss=7b2a8&oh=00_Af7ow7NgPBFrQEn-u9g6Gon4xNzTwNI_Mn4qC4PcXEMyPA&oe=6A080E03';
+
+    const postsHtml = allPosts.slice(0, 12).map((post, index) => {
+      const isStrava = post.source === 'strava';
+      const isFacebook = !isStrava;
+
+      if (isStrava) {
+        const athleteName = post.athlete?.name || 'Athlete';
+        const athleteUrl = post.athlete?.profileUrl || '';
+        const activityUrl = post.permalinkUrl || '#';
+        const activityType = post.type || 'Activity';
+        const stats = post.stats || {};
+        const distanceKm = stats.distance || 0;
+        const elevation = stats.elevationGain || 0;
+        const movingTime = stats.movingMinutes || 0;
+
+        const athleteLink = athleteUrl
+          ? `<a href="${escapeHtml(athleteUrl)}" target="_blank" rel="noreferrer" class="strava-athlete-link">${escapeHtml(athleteName)}</a>`
+          : escapeHtml(athleteName);
+
+        return `
+          <article class="home-feed-post strava-activity-post">
+            <div class="post-header">
+              <div class="post-avatar">
+                <svg class="strava-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M15.387 17.944c-2.089-1.312-4.753-3.927-5.5-6.524.788-1.959 2.067-4.613 4.27-5.07 1.157-.231 2.367.231 2.88 1.316.31-.399.788-1.157.788-1.812 0-.915-.527-1.745-1.316-2.199-1.034-.631-2.346-.536-3.457.185-3.332 2.199-5.501 7.981-5.501 7.981s-2.169-5.782-5.501-7.981c-1.111-.72-2.423-.816-3.457-.185-.789.454-1.316 1.284-1.316 2.199 0 .655.478 1.413.788 1.812.513-1.085 1.723-1.547 2.88-1.316 2.203.457 3.482 3.111 4.27 5.07-.747 2.597-3.411 5.212-5.5 6.524-1.034.631-1.745 1.745-1.745 3.005 0 1.934 1.567 3.501 3.501 3.501 1.257 0 2.371-.662 3.005-1.651.634.989 1.748 1.651 3.005 1.651 1.934 0 3.501-1.567 3.501-3.501 0-1.26-.711-2.374-1.745-3.005z"/>
+                </svg>
+              </div>
+              <div class="post-info">
+                <h3>${escapeHtml(post.name || 'Strava Activity')}</h3>
+                <div class="post-meta">
+                  <span class="source-badge strava-badge">Strava</span>
+                  <span class="post-time">${formatDateTime(post.createdTime)}</span>
+                </div>
+              </div>
+            </div>
+            <div class="home-feed-body">
+              <p class="activity-athlete">by ${athleteLink}</p>
+              <p class="activity-stats">
+                <span class="activity-stat">
+                  <strong>${distanceKm.toFixed(1)}</strong> km
+                </span>
+                <span class="activity-stat">
+                  <strong>${movingTime}</strong> min
+                </span>
+                ${elevation > 0 ? `<span class="activity-stat"><strong>${elevation.toFixed(0)}</strong> m↑</span>` : ''}
+              </p>
+              <p class="activity-link">
+                <a href="${escapeHtml(activityUrl)}" target="_blank" rel="noreferrer">View on Strava →</a>
+              </p>
+            </div>
+          </article>
+        `;
+      }
+
+      // Facebook post rendering
+      const postUrl = post.permalinkUrl || post.permalink_url || 'https://www.facebook.com/nomadcyclingclub';
+      const message = post.message || post.story || `Facebook post ${index + 1}`;
+      const postedAt = formatDateTime(post.createdTime || post.created_time);
+
+      return `
+        <article class="home-feed-post facebook-post">
+          <div class="post-header">
+            <div class="post-avatar">
+              <img src="${clubAvatar}" alt="Nomad Cycling Club" loading="lazy" />
+            </div>
+            <div class="post-info">
+              <h3>Nomad Cycling Club - USA</h3>
+              <div class="post-meta">
+                <span class="source-badge facebook-badge">Facebook</span>
+                <span class="post-time">${postedAt}</span>
+              </div>
+            </div>
+          </div>
+          <div class="home-feed-body">
+            <p class="home-feed-text">
+              <a class="home-feed-text-link" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">${escapeHtml(message.slice(0, 150))}${message.length > 150 ? '…' : ''}</a>
+            </p>
+            <p class="feed-action-link">
+              <a href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">View on Facebook →</a>
+            </p>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <p class="home-feed-merged-note">Combined feed: Facebook posts and Strava activities from the club.</p>
+      <div class="home-feed-merged-list">${postsHtml}</div>
+    `;
+
+    return true;
+  } catch (error) {
+    console.warn('Merged feed render failed:', error instanceof Error ? error.message : String(error));
+    return false;
+  }
 }
 
 async function renderApiHomeFeedPosts(container) {
@@ -2028,6 +2165,13 @@ async function renderHomeFeedPosts() {
     parent.querySelectorAll('.home-feed-live-status, .home-feed-live-sentinel').forEach((node) => node.remove());
   }
 
+  // Try merged feed (Facebook + Strava) first
+  const renderedMerged = await renderMergedHomeFeedPosts(container);
+  if (renderedMerged) {
+    return;
+  }
+
+  // Fallback to Facebook-only API feed
   const renderedApiFeed = await renderApiHomeFeedPosts(container);
   if (!renderedApiFeed) {
     await renderFallbackHomeFeedPosts(container);

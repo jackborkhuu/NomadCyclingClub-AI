@@ -1947,6 +1947,133 @@ body.lightbox-open {
   width: 100%;
 }
 
+/* Merged Feed Styles */
+.home-feed-merged-note {
+  padding: 12px;
+  margin: 0 0 16px;
+  background: #f0f9ff;
+  color: #0369a1;
+  border-left: 4px solid #0284c7;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.home-feed-merged-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Source Badge Styles */
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.source-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.facebook-badge {
+  background: #eef4ff;
+  color: var(--facebook-blue);
+}
+
+.strava-badge {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.post-time {
+  font-size: 0.85rem;
+  color: var(--facebook-text-secondary);
+}
+
+/* Strava Activity Card */
+.strava-activity-post {
+  border: 1px solid var(--facebook-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.strava-activity-post .post-avatar {
+  background: linear-gradient(135deg, #ff5722 0%, #ff7043 100%);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.strava-icon {
+  width: 24px;
+  height: 24px;
+  color: #ffffff;
+}
+
+.activity-athlete {
+  margin: 0 0 10px;
+  color: var(--facebook-text);
+  font-size: 0.95rem;
+}
+
+.strava-athlete-link {
+  color: #ff5722;
+  font-weight: 600;
+}
+
+.strava-athlete-link:hover {
+  text-decoration: underline;
+}
+
+.activity-stats {
+  margin: 10px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: var(--facebook-text);
+}
+
+.activity-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.activity-stat strong {
+  color: #ff5722;
+  font-weight: 700;
+}
+
+.activity-link,
+.feed-action-link {
+  margin: 10px 0 0;
+  color: var(--facebook-blue);
+}
+
+.activity-link a,
+.feed-action-link a {
+  color: var(--facebook-blue);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.activity-link a:hover,
+.feed-action-link a:hover {
+  text-decoration: underline;
+}
+
 .site-footer {
   background: #0f172a;
   color: #e2e8f0;
