@@ -5,6 +5,10 @@ const STRAVA_API_BASE = 'https://www.strava.com/api/v3';
 const DEFAULT_CLUB_ID = '303983';
 const DAYS_WINDOW = 30;
 
+let cachedAccessToken = '';
+let cachedAccessTokenExpiresAt = 0;
+let cachedRefreshToken = '';
+
 function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
@@ -72,6 +76,21 @@ async function refreshAccessToken(clientId, clientSecret, refreshToken) {
     refreshToken: payload.refresh_token || refreshToken,
     expiresAt: payload.expires_at || null
   };
+}
+
+async function getValidAccessToken(clientId, clientSecret, envRefreshToken) {
+  const now = Math.floor(Date.now() / 1000);
+  const refreshToken = cachedRefreshToken || envRefreshToken;
+
+  if (cachedAccessToken && cachedAccessTokenExpiresAt > now + 120) {
+    return cachedAccessToken;
+  }
+
+  const auth = await refreshAccessToken(clientId, clientSecret, refreshToken);
+  cachedAccessToken = auth.accessToken;
+  cachedAccessTokenExpiresAt = Number(auth.expiresAt) || now + 300;
+  cachedRefreshToken = auth.refreshToken || refreshToken;
+  return cachedAccessToken;
 }
 
 async function fetchClubActivities(accessToken, clubId) {
@@ -182,8 +201,8 @@ app.http('strava-club', {
     }
 
     try {
-      const auth = await refreshAccessToken(clientId, clientSecret, refreshToken);
-      const activities = await fetchClubActivities(auth.accessToken, clubId);
+      const accessToken = await getValidAccessToken(clientId, clientSecret, refreshToken);
+      const activities = await fetchClubActivities(accessToken, clubId);
       const leaderboard = buildLeaderboard(activities);
 
       return jsonResponse({
