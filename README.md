@@ -36,3 +36,14 @@ git push -u origin main
 ## Azure deployment
 After pushing to GitHub, use Azure Static Web Apps to deploy from this repo.
 Set the app location to `/` and the output location to blank.
+
+## Live gallery API (Option 1)
+This project now includes an Azure Functions API under `api/` for live Facebook gallery pagination.
+
+Add these application settings in Azure Static Web Apps:
+
+- `FB_PAGE_ID` - Facebook Page ID
+- `FB_PAGE_TOKEN` - long-lived page access token
+- `FB_GRAPH_VERSION` - optional (defaults to `v23.0`)
+
+The gallery frontend calls `/api/facebook-gallery` first and falls back to `data/facebook-feed.json` when live API data is unavailable.

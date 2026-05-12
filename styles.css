@@ -1854,6 +1854,18 @@ body.lightbox-open {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+.gallery-live-status {
+  margin: 1rem 0 0;
+  color: #4f556f;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+}
+
+.gallery-live-sentinel {
+  width: 100%;
+  height: 1px;
+}
+
 .site-footer {
   background: #0f172a;
   color: #e2e8f0;

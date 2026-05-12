@@ -1,0 +1,11 @@
+{
+  "name": "nomad-cycling-club-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Azure Functions API for live Facebook gallery feed",
+  "main": "src/functions/*.js",
+  "type": "module",
+  "dependencies": {
+    "@azure/functions": "^4.5.0"
+  }
+}

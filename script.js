@@ -734,6 +734,11 @@ function setupGalleryLightbox() {
 
   const triggers = gallery.querySelectorAll('.gallery-trigger');
   triggers.forEach((trigger) => {
+    if (trigger.classList.contains('gallery-trigger-listener-attached')) {
+      return;
+    }
+
+    trigger.classList.add('gallery-trigger-listener-attached');
     trigger.addEventListener('click', () => {
       const index = Number(trigger.getAttribute('data-photo-index'));
       if (Number.isNaN(index)) {
@@ -755,9 +760,26 @@ function setupGalleryLightbox() {
     });
   });
 
-  closeButton?.addEventListener('click', closeLightbox);
-  previousButton?.addEventListener('click', () => updateLightboxPhoto(activePhotoIndex - 1));
-  nextButton?.addEventListener('click', () => updateLightboxPhoto(activePhotoIndex + 1));
+  if (!closeButton?.classList.contains('gallery-lightbox-listener-attached')) {
+    closeButton?.classList.add('gallery-lightbox-listener-attached');
+    closeButton?.addEventListener('click', closeLightbox);
+  }
+
+  if (!previousButton?.classList.contains('gallery-lightbox-listener-attached')) {
+    previousButton?.classList.add('gallery-lightbox-listener-attached');
+    previousButton?.addEventListener('click', () => updateLightboxPhoto(activePhotoIndex - 1));
+  }
+
+  if (!nextButton?.classList.contains('gallery-lightbox-listener-attached')) {
+    nextButton?.classList.add('gallery-lightbox-listener-attached');
+    nextButton?.addEventListener('click', () => updateLightboxPhoto(activePhotoIndex + 1));
+  }
+
+  if (lightbox.classList.contains('gallery-lightbox-listener-attached')) {
+    return;
+  }
+
+  lightbox.classList.add('gallery-lightbox-listener-attached');
 
   lightbox.addEventListener('click', (event) => {
     if (event.target === lightbox) {
@@ -807,9 +829,176 @@ function setupGalleryCaptionToggles(gallery) {
   });
 }
 
+async function fetchLiveGalleryPage(afterCursor = '', limit = 18) {
+  const params = new URLSearchParams({
+    limit: String(limit)
+  });
+
+  if (afterCursor) {
+    params.set('after', afterCursor);
+  }
+
+  const response = await fetch(`/api/facebook-gallery?${params.toString()}`, { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`Live gallery API failed (${response.status})`);
+  }
+
+  const payload = await response.json();
+  if (!payload || !Array.isArray(payload.items)) {
+    throw new Error('Live gallery API returned invalid payload');
+  }
+
+  return payload;
+}
+
+async function renderLiveGallery(gallery) {
+  let firstPage;
+  try {
+    firstPage = await fetchLiveGalleryPage('', 20);
+  } catch {
+    return false;
+  }
+
+  if (!Array.isArray(firstPage.items) || firstPage.items.length === 0) {
+    return false;
+  }
+
+  gallery.classList.add('gallery-grid', 'gallery-grid-large');
+  gallery.classList.remove('gallery-feed-grid');
+  gallery.innerHTML = '';
+  galleryPhotosForView = [];
+
+  const seenMedia = new Set();
+  const state = {
+    nextCursor: firstPage.nextCursor || null,
+    loading: false,
+    hasMore: Boolean(firstPage.nextCursor)
+  };
+
+  const appendItems = (items) => {
+    const chunks = [];
+
+    items.forEach((item) => {
+      const mediaKey = String(item.mediaKey || `${item.postId || ''}-${item.imageUrl || item.videoUrl || Math.random()}`);
+      if (seenMedia.has(mediaKey)) {
+        return;
+      }
+      seenMedia.add(mediaKey);
+
+      const postUrl = escapeHtml(item.postUrl || 'https://www.facebook.com/nomadcyclingclub');
+      const postedAt = escapeHtml(formatDateTime(item.createdTime));
+      const message = escapeHtml(item.message || item.story || 'Facebook post');
+
+      if (item.type === 'video' && item.videoUrl) {
+        chunks.push(`
+          <article class="gallery-card gallery-card-video">
+            <div class="gallery-post-video${item.isReel ? ' gallery-post-video-reel' : ''}">
+              <video controls preload="metadata" playsinline ${item.imageUrl ? `poster="${escapeHtml(item.imageUrl)}"` : ''}>
+                <source src="${escapeHtml(item.videoUrl)}" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+            <div class="gallery-card-copy">
+              <p>${postedAt}</p>
+              <p class="gallery-caption-note"><a class="home-feed-text-link" href="${postUrl}" target="_blank" rel="noreferrer">Open post</a></p>
+            </div>
+          </article>
+        `);
+        return;
+      }
+
+      if (!item.imageUrl) {
+        return;
+      }
+
+      const lightboxIndex = galleryPhotosForView.length;
+      galleryPhotosForView.push({
+        src: item.imageUrl,
+        bestSrc: item.imageUrl,
+        alt: item.title || item.message || `Gallery image ${lightboxIndex + 1}`,
+        title: item.title || 'Facebook post',
+        date: (item.createdTime || '').slice(0, 10) || null,
+        postText: item.message || item.story || '',
+        candidateSrcs: [item.imageUrl]
+      });
+
+      chunks.push(`
+        <article class="gallery-card">
+          <button class="gallery-trigger" type="button" data-photo-index="${lightboxIndex}" aria-label="Open photo ${lightboxIndex + 1}">
+            <img src="${escapeHtml(item.imageUrl)}" alt="${message}" loading="lazy" />
+          </button>
+          <div class="gallery-card-copy">
+            <p>${postedAt}</p>
+            <p class="gallery-caption-note"><a class="home-feed-text-link" href="${postUrl}" target="_blank" rel="noreferrer">Open post</a></p>
+          </div>
+        </article>
+      `);
+    });
+
+    if (chunks.length > 0) {
+      gallery.insertAdjacentHTML('beforeend', chunks.join(''));
+      setupGalleryLightbox();
+    }
+  };
+
+  appendItems(firstPage.items);
+
+  const status = document.createElement('p');
+  status.className = 'gallery-live-status';
+  status.textContent = state.hasMore ? 'Scroll to load more posts...' : 'Showing latest live Facebook media.';
+  gallery.insertAdjacentElement('afterend', status);
+
+  if (!state.hasMore) {
+    return true;
+  }
+
+  const sentinel = document.createElement('div');
+  sentinel.className = 'gallery-live-sentinel';
+  gallery.insertAdjacentElement('afterend', sentinel);
+
+  const loadMore = async () => {
+    if (!state.hasMore || state.loading) {
+      return;
+    }
+
+    state.loading = true;
+    status.textContent = 'Loading more Facebook media...';
+
+    try {
+      const page = await fetchLiveGalleryPage(state.nextCursor || '', 20);
+      appendItems(page.items || []);
+      state.nextCursor = page.nextCursor || null;
+      state.hasMore = Boolean(state.nextCursor);
+      status.textContent = state.hasMore
+        ? 'Scroll to load more posts...'
+        : 'Reached the end of available live Facebook media.';
+    } catch {
+      state.hasMore = false;
+      status.textContent = 'Could not load more live media right now.';
+    } finally {
+      state.loading = false;
+    }
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    const hit = entries.some((entry) => entry.isIntersecting);
+    if (hit) {
+      loadMore();
+    }
+  }, { rootMargin: '800px 0px' });
+
+  observer.observe(sentinel);
+  return true;
+}
+
 async function renderGallery() {
   const gallery = document.getElementById('randomGallery');
   if (!gallery) {
+    return;
+  }
+
+  const renderedLiveGallery = await renderLiveGallery(gallery);
+  if (renderedLiveGallery) {
     return;
   }
 
