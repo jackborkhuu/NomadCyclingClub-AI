@@ -8,6 +8,7 @@ navToggle?.addEventListener('click', () => {
 const DONATE_CASH_TAG = '$NomadCyclingClub';
 const DONATE_URL = `https://cash.app/${encodeURIComponent(DONATE_CASH_TAG)}`;
 const DONATE_QR_URL = 'assets/donate-qr.png';
+let liveFeedDebugReason = '';
 
 function ensureDonateLinks() {
   const navGroups = document.querySelectorAll('.tabs, .site-nav');
@@ -840,7 +841,15 @@ async function fetchLiveGalleryPage(afterCursor = '', limit = 18) {
 
   const response = await fetch(`/api/facebook-gallery?${params.toString()}`, { cache: 'no-store' });
   if (!response.ok) {
-    throw new Error(`Live gallery API failed (${response.status})`);
+    let details = '';
+    try {
+      const payload = await response.json();
+      details = payload?.details || payload?.error || '';
+    } catch {
+      details = '';
+    }
+
+    throw new Error(`Live gallery API failed (${response.status})${details ? `: ${details}` : ''}`);
   }
 
   const payload = await response.json();
@@ -878,7 +887,8 @@ async function renderLiveGallery(gallery) {
   let firstPage;
   try {
     firstPage = await fetchLiveGalleryPage('', 20);
-  } catch {
+  } catch (error) {
+    liveFeedDebugReason = error instanceof Error ? error.message : 'Unknown live gallery error';
     return false;
   }
 
@@ -1029,7 +1039,8 @@ async function renderGallery() {
     return;
   }
 
-  setGallerySourceStatus(gallery, 'Live feed is currently unavailable. Showing cached archive media.', 'warning');
+  const galleryReason = liveFeedDebugReason ? ` (${liveFeedDebugReason})` : '';
+  setGallerySourceStatus(gallery, `Live feed is currently unavailable. Showing cached archive media.${galleryReason}`, 'warning');
 
   const apiPosts = await fetchApiFeedPosts();
   const postsWithMedia = apiPosts.filter((post) => Array.isArray(post.media) && post.media.length > 0);
@@ -1389,7 +1400,15 @@ async function fetchApiFeedPosts() {
 
         const response = await fetch(`/api/facebook-feed?${params.toString()}`, { cache: 'no-store' });
         if (!response.ok) {
-          throw new Error(`Live feed API failed (${response.status})`);
+          let details = '';
+          try {
+            const payload = await response.json();
+            details = payload?.details || payload?.error || '';
+          } catch {
+            details = '';
+          }
+
+          throw new Error(`Live feed API failed (${response.status})${details ? `: ${details}` : ''}`);
         }
 
         const payload = await response.json();
@@ -1413,9 +1432,11 @@ async function fetchApiFeedPosts() {
 
       if (posts.length > 0) {
         fetchApiFeedPosts.source = 'live';
+        liveFeedDebugReason = '';
         return posts;
       }
-    } catch {
+    } catch (error) {
+      liveFeedDebugReason = error instanceof Error ? error.message : 'Unknown live feed error';
       // Fallback to cached JSON below.
     }
 
@@ -1803,7 +1824,8 @@ async function renderHomeFeedPosts() {
   if (source === 'live') {
     addSourceBanner('Home feed source: Live Facebook API.', 'info');
   } else if (source === 'cached') {
-    addSourceBanner('Home feed source: Cached archive (live API unavailable).', 'warning');
+    const reason = liveFeedDebugReason ? ` Reason: ${liveFeedDebugReason}` : '';
+    addSourceBanner(`Home feed source: Cached archive (live API unavailable).${reason}`, 'warning');
   }
 }
 
