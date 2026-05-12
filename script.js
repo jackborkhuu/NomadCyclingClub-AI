@@ -1557,18 +1557,18 @@ function formatCountdownLabel(startDate) {
   const seconds = totalSeconds % 60;
 
   if (days > 0) {
-    return `${days}d ${hours}h ${minutes}m`;
+    return `${days}d ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
   }
 
   if (hours > 0) {
-    return `${hours}h ${minutes}m ${seconds}s`;
+    return `${hours}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
   }
 
   if (minutes > 0) {
-    return `${minutes}m ${seconds}s`;
+    return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
   }
 
-  return `${seconds}s`;
+  return `${String(seconds).padStart(2, '0')}s`;
 }
 
 async function renderPinnedUpcomingEvent() {
