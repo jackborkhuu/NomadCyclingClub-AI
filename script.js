@@ -1497,7 +1497,30 @@ function selectMixedTopPosts(allPosts, maxCount = 12, minPerSource = 3) {
   const stravaPosts = normalized.filter((post) => post.source === 'strava');
   const facebookPosts = normalized.filter((post) => post.source === 'facebook');
 
+  const hasReliableTimestamp = (post) => {
+    const raw = post?.createdTime || post?.created_time || '';
+    if (typeof raw !== 'string' || !raw.trim()) {
+      return false;
+    }
+
+    // Strava club feed entries can come back without true activity timestamps.
+    // Treat epoch fallback values as unknown so they do not skew feed ordering.
+    if (raw.startsWith('1970-01-01')) {
+      return false;
+    }
+
+    const time = new Date(raw).getTime();
+    return Number.isFinite(time);
+  };
+
+  const reliableStravaPosts = stravaPosts.filter((post) => hasReliableTimestamp(post));
+
   if (stravaPosts.length === 0 || facebookPosts.length === 0) {
+    return normalized.slice(0, maxCount);
+  }
+
+  // If Strava timestamps are unavailable, preserve pure chronological ordering.
+  if (reliableStravaPosts.length === 0) {
     return normalized.slice(0, maxCount);
   }
 
@@ -1522,10 +1545,10 @@ function selectMixedTopPosts(allPosts, maxCount = 12, minPerSource = 3) {
     }
   };
 
-  const baselineStrava = Math.min(minPerSource, stravaPosts.length);
+  const baselineStrava = Math.min(minPerSource, reliableStravaPosts.length);
   const baselineFacebook = Math.min(minPerSource, facebookPosts.length);
-  takeFrom(stravaPosts, baselineStrava);
   takeFrom(facebookPosts, baselineFacebook);
+  takeFrom(reliableStravaPosts, baselineStrava);
 
   for (const post of normalized) {
     if (picked.length >= maxCount) {
