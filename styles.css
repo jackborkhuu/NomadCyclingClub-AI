@@ -690,11 +690,7 @@ img {
 
 /* Plugin comparison mode: give native embeds a full-width lane so FB renders desktop layout. */
 body.plugin-feed-mode .content-grid {
-  grid-template-columns: 1fr;
-}
-
-body.plugin-feed-mode .sidebar {
-  display: none;
+  grid-template-columns: 280px minmax(0, 1fr);
 }
 
 .home-feed-photo-grid {
