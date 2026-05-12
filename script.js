@@ -1738,7 +1738,15 @@ async function renderMergedHomeFeedPosts(container) {
       .filter((post, index) => !renderedKeys.has(getPostKey(post, index)))
       .slice(0, 3);
 
-    const postsToRender = [...feedPosts, ...extraStravaPosts];
+    let postsToRender = [...feedPosts];
+    if (extraStravaPosts.length > 0) {
+      const insertionIndex = Math.min(3, postsToRender.length);
+      postsToRender = [
+        ...postsToRender.slice(0, insertionIndex),
+        ...extraStravaPosts,
+        ...postsToRender.slice(insertionIndex)
+      ];
+    }
 
     const postsHtml = postsToRender.map((post, index) => {
       const isStrava = post.source === 'strava';
