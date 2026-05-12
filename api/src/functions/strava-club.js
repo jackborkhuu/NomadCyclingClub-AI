@@ -139,6 +139,102 @@ async function fetchClubActivities(accessToken, clubId, daysWindow = DEFAULT_DAY
   });
 }
 
+async function fetchClubMembers(accessToken, clubId) {
+  const members = [];
+
+  for (let page = 1; page <= 3; page += 1) {
+    const url = new URL(`${STRAVA_API_BASE}/clubs/${clubId}/members`);
+    url.searchParams.set('page', String(page));
+    url.searchParams.set('per_page', '200');
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json'
+      }
+    });
+
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload?.message || 'Could not fetch club members');
+    }
+
+    const pageMembers = Array.isArray(payload) ? payload : [];
+    if (pageMembers.length === 0) {
+      break;
+    }
+
+    members.push(...pageMembers);
+    if (pageMembers.length < 200) {
+      break;
+    }
+  }
+
+  return members;
+}
+
+async function fetchAthleteStats(accessToken, athleteId) {
+  const response = await fetch(`${STRAVA_API_BASE}/athletes/${athleteId}/stats`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: 'application/json'
+    }
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload?.message || `Could not fetch stats for athlete ${athleteId}`);
+  }
+
+  return payload;
+}
+
+async function buildLeaderboardFromMemberStats(accessToken, clubId) {
+  const members = await fetchClubMembers(accessToken, clubId);
+  const candidates = members
+    .map((member) => ({
+      athleteId: member?.id,
+      name: toDisplayName(member),
+      profile: member?.profile_medium || member?.profile || null
+    }))
+    .filter((member) => member.athleteId)
+    .slice(0, 60);
+
+  const rows = [];
+  for (const member of candidates) {
+    try {
+      const stats = await fetchAthleteStats(accessToken, member.athleteId);
+      const distanceMeters = Number(stats?.recent_ride_totals?.distance) || 0;
+      const rideCount = Number(stats?.recent_ride_totals?.count) || 0;
+      if (distanceMeters <= 0 && rideCount <= 0) {
+        continue;
+      }
+
+      rows.push({
+        athleteId: member.athleteId,
+        name: member.name,
+        profile: member.profile,
+        distanceMeters,
+        rideCount
+      });
+    } catch {
+      // Some athlete profiles can block stats access; skip those entries.
+    }
+  }
+
+  return rows
+    .sort((left, right) => right.distanceMeters - left.distanceMeters)
+    .slice(0, 10)
+    .map((item, index) => ({
+      rank: index + 1,
+      athleteId: item.athleteId,
+      name: item.name,
+      profile: item.profile,
+      rideCount: item.rideCount,
+      distanceKm: km(item.distanceMeters)
+    }));
+}
+
 function buildLeaderboard(activities) {
   const byAthlete = new Map();
 
@@ -207,6 +303,7 @@ app.http('strava-club', {
       let leaderboard = buildLeaderboard(initialActivities);
       let activitiesUsed = initialActivities;
       let windowDaysUsed = DEFAULT_DAYS_WINDOW;
+      let mode = 'club-activities';
 
       if (leaderboard.length === 0) {
         const fallbackActivities = await fetchClubActivities(accessToken, clubId, FALLBACK_DAYS_WINDOW);
@@ -218,8 +315,16 @@ app.http('strava-club', {
         }
       }
 
+      if (leaderboard.length === 0) {
+        const memberStatsLeaderboard = await buildLeaderboardFromMemberStats(accessToken, clubId);
+        if (memberStatsLeaderboard.length > 0) {
+          leaderboard = memberStatsLeaderboard;
+          mode = 'member-stats';
+        }
+      }
+
       const note = leaderboard.length === 0
-        ? 'No visible club activities were returned by Strava for this token. Ensure the connected athlete has access to club activities and re-authorize with activity:read_all scope if needed.'
+        ? 'Strava returned no visible club activities and no accessible member stats for ranking. This can happen with strict athlete privacy settings.'
         : null;
 
       return jsonResponse({
@@ -229,6 +334,7 @@ app.http('strava-club', {
         activitiesCount: activitiesUsed.length,
         leaderboard,
         note,
+        mode,
         source: 'strava-api'
       });
     } catch (error) {
