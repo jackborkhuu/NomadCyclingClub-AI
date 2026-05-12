@@ -149,8 +149,7 @@ async function fetchPosts() {
     'permalink_url',
     'full_picture',
     'attachments{media_type,media,url,target,title,description,subattachments}',
-    'comments.limit(5){id,message,created_time,from{name}}',
-    'comments.limit(0).summary(true){total_count}'
+    'comments.limit(5).summary(true){id,message,created_time,from{name},total_count}'
   ].join(',');
 
   const params = new URLSearchParams({
