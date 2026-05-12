@@ -3,7 +3,8 @@ import { app } from '@azure/functions';
 const STRAVA_OAUTH_URL = 'https://www.strava.com/oauth/token';
 const STRAVA_API_BASE = 'https://www.strava.com/api/v3';
 const DEFAULT_CLUB_ID = '303983';
-const DAYS_WINDOW = 30;
+const DEFAULT_DAYS_WINDOW = 30;
+const FALLBACK_DAYS_WINDOW = 365;
 
 let cachedAccessToken = '';
 let cachedAccessTokenExpiresAt = 0;
@@ -93,10 +94,10 @@ async function getValidAccessToken(clientId, clientSecret, envRefreshToken) {
   return cachedAccessToken;
 }
 
-async function fetchClubActivities(accessToken, clubId) {
+async function fetchClubActivities(accessToken, clubId, daysWindow = DEFAULT_DAYS_WINDOW) {
   const all = [];
   const now = Date.now();
-  const oldestAllowed = now - DAYS_WINDOW * 24 * 60 * 60 * 1000;
+  const oldestAllowed = now - daysWindow * 24 * 60 * 60 * 1000;
 
   for (let page = 1; page <= 6; page += 1) {
     const url = new URL(`${STRAVA_API_BASE}/clubs/${clubId}/activities`);
@@ -202,14 +203,32 @@ app.http('strava-club', {
 
     try {
       const accessToken = await getValidAccessToken(clientId, clientSecret, refreshToken);
-      const activities = await fetchClubActivities(accessToken, clubId);
-      const leaderboard = buildLeaderboard(activities);
+      const initialActivities = await fetchClubActivities(accessToken, clubId, DEFAULT_DAYS_WINDOW);
+      let leaderboard = buildLeaderboard(initialActivities);
+      let activitiesUsed = initialActivities;
+      let windowDaysUsed = DEFAULT_DAYS_WINDOW;
+
+      if (leaderboard.length === 0) {
+        const fallbackActivities = await fetchClubActivities(accessToken, clubId, FALLBACK_DAYS_WINDOW);
+        const fallbackLeaderboard = buildLeaderboard(fallbackActivities);
+        if (fallbackLeaderboard.length > 0) {
+          leaderboard = fallbackLeaderboard;
+          activitiesUsed = fallbackActivities;
+          windowDaysUsed = FALLBACK_DAYS_WINDOW;
+        }
+      }
+
+      const note = leaderboard.length === 0
+        ? 'No visible club activities were returned by Strava for this token. Ensure the connected athlete has access to club activities and re-authorize with activity:read_all scope if needed.'
+        : null;
 
       return jsonResponse({
         clubId,
-        windowDays: DAYS_WINDOW,
+        windowDays: windowDaysUsed,
         generatedAt: new Date().toISOString(),
+        activitiesCount: activitiesUsed.length,
         leaderboard,
+        note,
         source: 'strava-api'
       });
     } catch (error) {

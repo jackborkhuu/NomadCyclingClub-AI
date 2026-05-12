@@ -2482,8 +2482,10 @@ async function loadStravaLeaderboard() {
     const leaderboard = Array.isArray(payload?.leaderboard) ? payload.leaderboard : [];
 
     if (leaderboard.length === 0) {
+      const note = payload?.note ? `<p class="leaderboard-note">${payload.note}</p>` : '';
       container.innerHTML = `
         <p class="leaderboard-loading">No leaderboard data available.</p>
+        ${note}
         <a href="https://www.strava.com/clubs/303983/leaderboard" target="_blank" rel="noreferrer" class="leaderboard-cta">View on Strava -></a>
       `;
       return;
