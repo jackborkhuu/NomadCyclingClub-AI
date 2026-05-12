@@ -616,6 +616,59 @@ img {
   gap: 12px;
 }
 
+.home-feed-plugin-note {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--facebook-border);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--facebook-text-secondary);
+  font-size: 0.9rem;
+}
+
+.home-feed-plugin-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.home-feed-plugin-card {
+  border: 1px solid var(--facebook-border);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.home-feed-plugin-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.home-feed-plugin-head h3 {
+  margin: 0;
+  color: var(--facebook-text);
+  font-size: 0.98rem;
+}
+
+.fb-plugin-frame-wrap {
+  border: 1px solid var(--facebook-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--facebook-gray);
+  margin-top: 10px;
+}
+
+.fb-plugin-post-frame,
+.fb-plugin-comments-frame {
+  display: block;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
 .home-feed-photo-grid {
   display: grid;
   gap: 8px;

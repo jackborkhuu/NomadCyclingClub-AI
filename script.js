@@ -2023,15 +2023,68 @@ async function renderHomeFeedPosts() {
     return;
   }
 
-  const parent = container.parentElement;
-  if (parent) {
-    parent.querySelectorAll('.home-feed-live-status, .home-feed-live-sentinel').forEach((node) => node.remove());
+  const posts = await fetchApiFeedPosts();
+  const pluginReadyPosts = posts
+    .map((post) => ({
+      permalinkUrl: post?.permalinkUrl || post?.permalink_url || '',
+      createdTime: post?.createdTime || post?.created_time || '',
+      message: post?.message || post?.story || ''
+    }))
+    .filter((post) => typeof post.permalinkUrl === 'string' && post.permalinkUrl.startsWith('http'))
+    .slice(0, 6);
+
+  if (pluginReadyPosts.length === 0) {
+    await renderFallbackHomeFeedPosts(container);
+    return;
   }
 
-  const renderedApiFeed = await renderApiHomeFeedPosts(container);
-  if (!renderedApiFeed) {
-    await renderFallbackHomeFeedPosts(container);
-  }
+  const cardsHtml = pluginReadyPosts.map((post) => {
+    const postHref = encodeURIComponent(post.permalinkUrl);
+    const postPluginUrl = `https://www.facebook.com/plugins/post.php?href=${postHref}&show_text=true&width=500`;
+    const commentsPluginUrl = `https://www.facebook.com/plugins/comments.php?href=${postHref}&numposts=5&order_by=reverse_time&width=500`;
+
+    return `
+      <article class="home-feed-plugin-card">
+        <div class="home-feed-plugin-head">
+          <h3>Facebook Post</h3>
+          <a href="${escapeHtml(post.permalinkUrl)}" target="_blank" rel="noreferrer">Open on Facebook</a>
+        </div>
+        <div class="fb-plugin-frame-wrap">
+          <iframe
+            class="fb-plugin-post-frame"
+            src="${postPluginUrl}"
+            width="500"
+            height="690"
+            style="border:none;overflow:hidden"
+            scrolling="no"
+            frameborder="0"
+            allowfullscreen="true"
+            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+            title="Facebook post embed"
+          ></iframe>
+        </div>
+        <div class="fb-plugin-frame-wrap">
+          <iframe
+            class="fb-plugin-comments-frame"
+            src="${commentsPluginUrl}"
+            width="500"
+            height="420"
+            style="border:none;overflow:hidden"
+            scrolling="no"
+            frameborder="0"
+            allowfullscreen="true"
+            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+            title="Facebook comments embed"
+          ></iframe>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <p class="home-feed-plugin-note">Plugin mode: rendering native Facebook posts and comments for comparison on this branch.</p>
+    <div class="home-feed-plugin-stack">${cardsHtml}</div>
+  `;
 }
 
 let pinnedEventCountdownInterval = null;
