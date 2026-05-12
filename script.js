@@ -1199,7 +1199,7 @@ function renderPostComments(post, postIndex, postUrl) {
       ${hiddenCount > 0 ? `<p class="more-comments-note">View ${hiddenCount} more on Facebook</p>` : ''}
       ${commentsHtml}
       <div id="loginToComment-${postIndex}" class="login-to-comment">
-        <button class="comment-login-trigger" type="button" data-post-index="${postIndex}">Log in with Facebook to comment</button>
+        <button class="comment-login-trigger" type="button" data-post-index="${postIndex}" data-post-url="${escapeHtml(postUrl)}">Log in with Facebook to comment</button>
       </div>
       <div id="commentForm-${postIndex}" style="display: none;">
         ${commentInputHtml}
@@ -1707,8 +1707,19 @@ if (contactForm) {
 // Facebook SDK and Interactive Posting
 const FB_APP_ID = '514212502254865';
 const FB_PAGE_ID = '514212502254865';
+const FB_LOGIN_ENABLED = /^\d{6,}$/.test(FB_APP_ID) && FB_APP_ID !== FB_PAGE_ID;
+
+function openFacebookCommentFallback(postUrl) {
+  const targetUrl = postUrl || 'https://www.facebook.com/nomadcyclingclub';
+  window.open(targetUrl, '_blank', 'noopener');
+}
 
 window.fbAsyncInit = function() {
+  if (!FB_LOGIN_ENABLED) {
+    hideCommentForms();
+    return;
+  }
+
   FB.init({
     appId: FB_APP_ID,
     xfbml: true,
@@ -1779,9 +1790,17 @@ function setupCommentLoginHandlers() {
       return;
     }
 
+    if (!FB_LOGIN_ENABLED) {
+      button.textContent = 'Comment on Facebook';
+    }
+
     button.classList.add('comment-login-listener-attached');
-    button.addEventListener('click', () => {
-      if (!window.FB) {
+    button.addEventListener('click', (event) => {
+      const postUrl = button.getAttribute('data-post-url') || 'https://www.facebook.com/nomadcyclingclub';
+
+      if (!FB_LOGIN_ENABLED || !window.FB) {
+        event.preventDefault();
+        openFacebookCommentFallback(postUrl);
         return;
       }
 
@@ -1861,6 +1880,11 @@ function setupCommentSubmitHandlers() {
 }
 
 document.getElementById('fbLoginBtn')?.addEventListener('click', function() {
+  if (!FB_LOGIN_ENABLED || !window.FB) {
+    openFacebookCommentFallback('https://www.facebook.com/nomadcyclingclub');
+    return;
+  }
+
   FB.login(function(response) {
     handleLoginStatusChange(response);
   }, { scope: 'public_profile,pages_read_engagement,pages_manage_posts,pages_manage_engagement' });
@@ -1873,6 +1897,11 @@ document.getElementById('fbLogoutBtn')?.addEventListener('click', function() {
 });
 
 document.getElementById('submitPostBtn')?.addEventListener('click', function() {
+  if (!FB_LOGIN_ENABLED || !window.FB) {
+    alert('Facebook app login is not configured yet. Please post directly on the Facebook page.');
+    return;
+  }
+
   const message = document.getElementById('postMessage')?.value || '';
   const statusEl = document.getElementById('postStatus');
   const submitBtn = document.getElementById('submitPostBtn');
@@ -1908,6 +1937,7 @@ document.getElementById('submitPostBtn')?.addEventListener('click', function() {
 });
 
 (function(d, s, id) {
+  if (!FB_LOGIN_ENABLED) return;
   var js, fjs = d.getElementsByTagName(s)[0];
   if (d.getElementById(id)) return;
   js = d.createElement(s); js.id = id;
