@@ -2046,9 +2046,12 @@ async function renderHomeFeedPosts() {
   const fallbackLinkPosts = normalizedPosts.filter((post) => !isEmbeddablePostUrl(post.permalinkUrl)).slice(0, 6);
 
   if (pluginReadyPosts.length === 0) {
+    document.body.classList.remove('plugin-feed-mode');
     await renderFallbackHomeFeedPosts(container);
     return;
   }
+
+  document.body.classList.add('plugin-feed-mode');
 
   const cardsHtml = pluginReadyPosts.map((post) => {
     const postHref = encodeURIComponent(post.permalinkUrl);

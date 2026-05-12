@@ -666,7 +666,7 @@ img {
 .fb-plugin-post-frame,
 .fb-plugin-comments-frame {
   display: block;
-  width: 100%;
+  width: 500px;
   max-width: 500px;
   margin: 0 auto;
 }
@@ -686,6 +686,15 @@ img {
 
 .home-feed-plugin-link-list li {
   margin-bottom: 6px;
+}
+
+/* Plugin comparison mode: give native embeds a full-width lane so FB renders desktop layout. */
+body.plugin-feed-mode .content-grid {
+  grid-template-columns: 1fr;
+}
+
+body.plugin-feed-mode .sidebar {
+  display: none;
 }
 
 .home-feed-photo-grid {
