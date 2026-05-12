@@ -1694,6 +1694,44 @@ async function renderMergedHomeFeedPosts(container) {
       const postUrl = post.permalinkUrl || post.permalink_url || 'https://www.facebook.com/nomadcyclingclub';
       const message = post.message || post.story || `Facebook post ${index + 1}`;
       const postedAt = formatDateTime(post.createdTime || post.created_time);
+      const mediaList = Array.isArray(post.media) ? post.media : [];
+      const normalizedMedia = mediaList
+        .map((media) => ({
+          type: String(media?.type || '').toLowerCase(),
+          imageUrl: media?.imageUrl || media?.image_url || media?.previewUrl || media?.preview_url || '',
+          videoUrl: media?.videoUrl || media?.video_url || media?.sourceUrl || media?.source_url || ''
+        }))
+        .filter((media) => media.imageUrl || media.videoUrl)
+        .slice(0, 4);
+
+      const hasVideo = normalizedMedia.some((media) => media.type === 'video' && media.videoUrl);
+      const mediaHtml = normalizedMedia.map((media, mediaIndex) => {
+        const mediaType = media.type;
+        const imageUrl = media.imageUrl;
+        const videoUrl = media.videoUrl;
+        const mediaAlt = escapeHtml(message || `Post media ${mediaIndex + 1}`);
+
+        if (mediaType === 'video' && videoUrl) {
+          return `
+            <div class="home-feed-video">
+              <video controls preload="metadata" ${imageUrl ? `poster="${escapeHtml(imageUrl)}"` : ''}>
+                <source src="${escapeHtml(videoUrl)}" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          `;
+        }
+
+        if (!imageUrl) {
+          return '';
+        }
+
+        return `
+          <a class="home-feed-photo" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">
+            <img src="${escapeHtml(imageUrl)}" alt="${mediaAlt}" loading="lazy" />
+          </a>
+        `;
+      }).join('');
 
       return `
         <article class="home-feed-post facebook-post">
@@ -1713,6 +1751,7 @@ async function renderMergedHomeFeedPosts(container) {
             <p class="home-feed-text">
               <a class="home-feed-text-link" href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">${escapeHtml(message.slice(0, 150))}${message.length > 150 ? '…' : ''}</a>
             </p>
+            ${mediaHtml ? `<div class="home-feed-photo-grid ${hasVideo ? 'home-feed-photo-grid-video' : ''}">${mediaHtml}</div>` : ''}
             <p class="feed-action-link">
               <a href="${escapeHtml(postUrl)}" target="_blank" rel="noreferrer">View on Facebook →</a>
             </p>
