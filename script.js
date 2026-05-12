@@ -2438,14 +2438,21 @@ async function renderFbEvents() {
 }
 
 async function initializeDynamicSections() {
-  await Promise.all([
-    renderPinnedUpcomingEvent(),
-    renderGallery(),
-    renderHomePreview(),
-    renderOnThisDay(),
-    renderHomeFeedPosts(),
-    renderFbEvents()
-  ]);
+  const tasks = [
+    ['renderPinnedUpcomingEvent', renderPinnedUpcomingEvent],
+    ['renderGallery', renderGallery],
+    ['renderHomePreview', renderHomePreview],
+    ['renderOnThisDay', renderOnThisDay],
+    ['renderHomeFeedPosts', renderHomeFeedPosts],
+    ['renderFbEvents', renderFbEvents]
+  ];
+
+  const results = await Promise.allSettled(tasks.map(([, task]) => task()));
+  results.forEach((result, index) => {
+    if (result.status === 'rejected') {
+      console.warn(`${tasks[index][0]} failed:`, result.reason);
+    }
+  });
 }
 
 initializeDynamicSections();
