@@ -1937,6 +1937,89 @@ body.lightbox-open {
   width: 100%;
 }
 
+.strava-leaderboard-card {
+  background: #ffffff;
+  border: 1px solid var(--facebook-border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.strava-leaderboard-card h2 {
+  margin: 0 0 12px;
+  color: var(--facebook-text);
+  font-size: 1.25rem;
+}
+
+.strava-leaderboard-embed {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.leaderboard-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--facebook-border);
+  font-size: 0.9rem;
+  color: var(--facebook-text);
+}
+
+.leaderboard-item:last-child {
+  border-bottom: none;
+}
+
+.leaderboard-rank {
+  min-width: 30px;
+  font-weight: 700;
+  color: var(--facebook-text-secondary);
+  margin-right: 10px;
+}
+
+.leaderboard-name {
+  flex: 1;
+  color: var(--facebook-blue);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.leaderboard-distance {
+  min-width: 60px;
+  text-align: right;
+  color: var(--facebook-text-secondary);
+  font-size: 0.85rem;
+}
+
+.leaderboard-loading {
+  margin: 0;
+  color: var(--facebook-text-secondary);
+  font-size: 0.9rem;
+}
+
+.leaderboard-cta {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--facebook-blue);
+  color: #ffffff;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.leaderboard-cta:hover {
+  background: #166fe5;
+  text-decoration: none;
+}
+
 .site-footer {
   background: #0f172a;
   color: #e2e8f0;

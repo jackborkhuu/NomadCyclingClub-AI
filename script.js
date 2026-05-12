@@ -2461,6 +2461,82 @@ document.getElementById('submitPostBtn')?.addEventListener('click', function() {
   });
 });
 
+async function loadStravaLeaderboard() {
+  const container = document.getElementById('stravaLeaderboard');
+  if (!container) return;
+
+  try {
+    // Fetch club members from Strava API
+    // Note: This requires STRAVA_API_TOKEN environment variable
+    const token = document.documentElement.getAttribute('data-strava-token');
+    
+    if (!token) {
+      // Fallback: Show link to view leaderboard on Strava
+      container.innerHTML = `
+        <p class="leaderboard-loading">Club leaderboard available on Strava.</p>
+        <a href="https://www.strava.com/clubs/303983/leaderboard" target="_blank" rel="noreferrer" class="leaderboard-cta">View Full Leaderboard →</a>
+      `;
+      return;
+    }
+
+    const response = await fetch('https://www.strava.com/api/v3/clubs/303983/members', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch leaderboard');
+    }
+
+    const members = await response.json();
+    
+    if (!Array.isArray(members) || members.length === 0) {
+      container.innerHTML = `
+        <p class="leaderboard-loading">No leaderboard data available.</p>
+        <a href="https://www.strava.com/clubs/303983/leaderboard" target="_blank" rel="noreferrer" class="leaderboard-cta">View on Strava →</a>
+      `;
+      return;
+    }
+
+    // Sort by monthly stats (assuming 'stats' property exists)
+    const sorted = members
+      .sort((a, b) => (b.stats?.months[0]?.distance || 0) - (a.stats?.months[0]?.distance || 0))
+      .slice(0, 10);
+
+    const listHTML = sorted
+      .map((member, index) => {
+        const distance = (member.stats?.months[0]?.distance || 0) / 1000; // Convert to km
+        return `
+          <div class="leaderboard-item">
+            <span class="leaderboard-rank">#${index + 1}</span>
+            <span class="leaderboard-name">${member.firstname} ${member.lastname}</span>
+            <span class="leaderboard-distance">${distance.toFixed(1)} km</span>
+          </div>
+        `;
+      })
+      .join('');
+
+    container.innerHTML = `
+      <div class="leaderboard-list">${listHTML}</div>
+      <a href="https://www.strava.com/clubs/303983/leaderboard" target="_blank" rel="noreferrer" class="leaderboard-cta">View Full Leaderboard →</a>
+    `;
+  } catch (error) {
+    console.error('Error loading Strava leaderboard:', error);
+    container.innerHTML = `
+      <p class="leaderboard-loading">Club leaderboard available on Strava.</p>
+      <a href="https://www.strava.com/clubs/303983/leaderboard" target="_blank" rel="noreferrer" class="leaderboard-cta">View Full Leaderboard →</a>
+    `;
+  }
+}
+
+// Initialize leaderboard on page load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadStravaLeaderboard);
+} else {
+  loadStravaLeaderboard();
+}
+
 (function(d, s, id) {
   if (!FB_LOGIN_ENABLED) return;
   var js, fjs = d.getElementsByTagName(s)[0];
