@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap");
+
 :root {
   --facebook-blue: #1877f2;
   --facebook-light-blue: #e7f3ff;
@@ -215,6 +217,8 @@ img {
   color: var(--facebook-text);
   font-size: clamp(1.9rem, 4vw, 2.5rem);
   font-weight: 700;
+  font-family: "Bebas Neue", sans-serif;
+  letter-spacing: 0.03em;
 }
 
 .profile-stats {
