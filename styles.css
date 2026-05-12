@@ -33,6 +33,10 @@ body {
   background: var(--facebook-gray);
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 a {
   color: var(--facebook-blue);
   text-decoration: none;
@@ -85,6 +89,19 @@ img {
 .site-nav a {
   color: var(--muted);
   font-weight: 600;
+}
+
+.site-nav .donate-trigger {
+  background: #16a34a;
+  color: #ffffff;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+}
+
+.site-nav .donate-trigger:hover {
+  background: #15803d;
+  color: #ffffff;
+  text-decoration: none;
 }
 
 .nav-toggle {
@@ -209,6 +226,7 @@ img {
 .tabs {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.25rem;
   padding: 0 16px;
 }
@@ -230,6 +248,21 @@ img {
 .tab.active {
   color: var(--facebook-blue);
   border-bottom-color: var(--facebook-blue);
+}
+
+.tab.donate-trigger {
+  background: #16a34a;
+  color: #ffffff;
+  border-bottom-color: #15803d;
+  border-radius: 999px;
+  padding: 8px 14px;
+  margin: 8px 0;
+}
+
+.tab.donate-trigger:hover {
+  background: #15803d;
+  color: #ffffff;
+  text-decoration: none;
 }
 
 .main-content {
@@ -386,8 +419,30 @@ img {
 }
 
 .on-this-day-card .memory-grid {
-  grid-template-columns: 1fr;
-  gap: 12px;
+  display: block;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 4px 6px 10px 2px;
+}
+
+.on-this-day-stack-item {
+  margin-top: -88px;
+  position: relative;
+  background: #ffffff;
+  border: 1px solid var(--facebook-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+}
+
+.on-this-day-stack-item:first-child {
+  margin-top: 0;
+}
+
+.on-this-day-card .memory-item img,
+.on-this-day-card .memory-item-no-image {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
 }
 
 .memory-delta {
@@ -1533,6 +1588,74 @@ body.lightbox-open {
   color: #93c5fd;
 }
 
+.donate-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.62);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.donate-modal.open {
+  display: flex;
+}
+
+.donate-modal-card {
+  position: relative;
+  width: min(440px, 100%);
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #dbeafe;
+  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.25);
+  padding: 1rem 1rem 1.15rem;
+  text-align: center;
+}
+
+.donate-modal-card h3 {
+  margin: 0.1rem 0 0.35rem;
+  font-size: 1.2rem;
+  color: var(--ink);
+}
+
+.donate-modal-card p {
+  margin: 0;
+}
+
+.donate-modal-close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  border: 0;
+  background: transparent;
+  color: #334155;
+  font-size: 1.7rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.donate-qr-image {
+  width: min(360px, 100%);
+  border-radius: 10px;
+  margin: 0.85rem auto 0.5rem;
+  border: 1px solid #e2e8f0;
+  display: block;
+}
+
+.donate-cashtag {
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-top: 0.2rem;
+}
+
+.donate-open-link {
+  margin-top: 0.8rem;
+  display: inline-flex;
+}
+
 @media (max-width: 900px) {
   .content-grid,
   .split,
@@ -1576,6 +1699,7 @@ body.lightbox-open {
 
   .tabs {
     overflow-x: auto;
+    flex-wrap: nowrap;
     padding: 0 8px;
   }
 

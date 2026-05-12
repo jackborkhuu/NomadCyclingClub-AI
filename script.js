@@ -966,8 +966,6 @@ async function renderOnThisDay() {
   }
 
   const today = new Date();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
   const memoryDate = new Intl.DateTimeFormat('en-US', {
     month: 'long',
     day: 'numeric'
@@ -994,7 +992,20 @@ async function renderOnThisDay() {
 
       const targetDate = new Date(createdDate.getFullYear(), today.getMonth(), today.getDate());
       const postDateOnly = new Date(createdDate.getFullYear(), createdDate.getMonth(), createdDate.getDate());
-      const dayDelta = Math.round((postDateOnly.getTime() - targetDate.getTime()) / 86400000);
+      const daysInYear = new Date(createdDate.getFullYear(), 1, 29).getMonth() === 1 ? 366 : 365;
+      let dayDelta = Math.round((postDateOnly.getTime() - targetDate.getTime()) / 86400000);
+
+      // Wrap near year boundaries so Dec/Jan posts can still count as close matches.
+      if (dayDelta > daysInYear / 2) {
+        dayDelta -= daysInYear;
+      } else if (dayDelta < -daysInYear / 2) {
+        dayDelta += daysInYear;
+      }
+
+      const absDayDelta = Math.abs(dayDelta);
+      if (absDayDelta > 7) {
+        return null;
+      }
 
       const firstMedia = Array.isArray(post.media) ? post.media.find((media) => media && (media.imageUrl || media.image_url || media.previewUrl || media.preview_url)) : null;
       const imageUrl = firstMedia ? (firstMedia.imageUrl || firstMedia.image_url || firstMedia.previewUrl || firstMedia.preview_url) : '';
@@ -1005,7 +1016,7 @@ async function renderOnThisDay() {
         date: createdDate,
         year: createdDate.getFullYear(),
         dayDelta,
-        absDayDelta: Math.abs(dayDelta),
+        absDayDelta,
         permalinkUrl: post.permalinkUrl || post.permalink_url || 'https://www.facebook.com/nomadcyclingclub',
         imageUrl,
         alt: firstMedia?.title || 'Facebook post image'
@@ -1023,13 +1034,13 @@ async function renderOnThisDay() {
       }
       return right.date.getTime() - left.date.getTime();
     })
-    .slice(0, 6);
+    .slice(0, 24);
 
   if (matches.length === 0) {
     section.innerHTML = `
       <div class="archive-empty">
-        <strong>No archived club photos for ${memoryDate} yet.</strong>
-        <p>As more Facebook photos are added, nearby dates from past years will appear here automatically.</p>
+        <strong>No archived posts within +/- 7 days of ${memoryDate} yet.</strong>
+        <p>When more historical posts are available around today's date, they will appear here.</p>
       </div>
     `;
     return;
@@ -1037,16 +1048,16 @@ async function renderOnThisDay() {
 
   const hasExactMatch = matches.some((item) => item.dayDelta === 0);
   if (label) {
-    label.textContent = `${hasExactMatch ? 'On this day' : 'Closest to today'} · ${memoryDate}`;
+    label.textContent = `${hasExactMatch ? 'On this day' : 'Within +/- 7 days'} · ${memoryDate}`;
   }
 
-  section.innerHTML = matches.map((item) => {
+  section.innerHTML = matches.map((item, index) => {
     const deltaLabel = item.dayDelta === 0
       ? 'Exact day match'
       : `${item.dayDelta > 0 ? '+' : ''}${item.dayDelta} day${Math.abs(item.dayDelta) === 1 ? '' : 's'} from ${memoryDate}`;
 
     return `
-    <article class="memory-item">
+    <article class="memory-item on-this-day-stack-item" style="z-index:${matches.length - index};">
       ${item.imageUrl
         ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.alt)}" loading="lazy" />`
         : '<div class="memory-item-no-image">Post</div>'}
