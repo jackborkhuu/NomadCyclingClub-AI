@@ -89,6 +89,7 @@ function normalizeActivity(activity) {
   const athleteProfileUrl = athleteId ? `https://www.strava.com/athletes/${athleteId}` : null;
 
   const activityUrl = activity.id ? `https://www.strava.com/activities/${activity.id}` : null;
+  const activityTimestamp = activity.start_date || activity.start_date_local || '1970-01-01T00:00:00.000Z';
 
   const summary = `${distanceKm.toFixed(1)} km • ${movingMinutes} min`;
   const elevationStr = elevationM > 0 ? ` • ${elevationM.toFixed(0)}m elevation` : '';
@@ -100,8 +101,8 @@ function normalizeActivity(activity) {
     name: activity.name || 'Unnamed Activity',
     message,
     summary,
-    createdTime: activity.start_date || new Date().toISOString(),
-    created_time: activity.start_date || new Date().toISOString(),
+    createdTime: activityTimestamp,
+    created_time: activityTimestamp,
     permalinkUrl: activityUrl,
     permalink_url: activityUrl,
     source: 'strava',
