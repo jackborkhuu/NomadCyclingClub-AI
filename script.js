@@ -2465,23 +2465,12 @@ async function loadStravaLeaderboard() {
   const container = document.getElementById('stravaLeaderboard');
   if (!container) return;
 
-  try {
-    // Fetch club members from Strava API
-    // Note: This requires STRAVA_API_TOKEN environment variable
-    const token = document.documentElement.getAttribute('data-strava-token');
-    
-    if (!token) {
-      // Fallback: Show link to view leaderboard on Strava
-      container.innerHTML = `
-        <p class="leaderboard-loading">Club leaderboard available on Strava.</p>
-        <a href="https://www.strava.com/clubs/303983/leaderboard" target="_blank" rel="noreferrer" class="leaderboard-cta">View Full Leaderboard →</a>
-      `;
-      return;
-    }
+  container.innerHTML = '<p class="leaderboard-loading">Loading club leaderboard...</p>';
 
-    const response = await fetch('https://www.strava.com/api/v3/clubs/303983/members', {
+  try {
+    const response = await fetch('/api/strava-club', {
       headers: {
-        'Authorization': `Bearer ${token}`
+        Accept: 'application/json'
       }
     });
 
@@ -2489,43 +2478,52 @@ async function loadStravaLeaderboard() {
       throw new Error('Failed to fetch leaderboard');
     }
 
-    const members = await response.json();
-    
-    if (!Array.isArray(members) || members.length === 0) {
+    const payload = await response.json();
+    const leaderboard = Array.isArray(payload?.leaderboard) ? payload.leaderboard : [];
+
+    if (leaderboard.length === 0) {
       container.innerHTML = `
         <p class="leaderboard-loading">No leaderboard data available.</p>
-        <a href="https://www.strava.com/clubs/303983/leaderboard" target="_blank" rel="noreferrer" class="leaderboard-cta">View on Strava →</a>
+        <a href="https://www.strava.com/clubs/303983/leaderboard" target="_blank" rel="noreferrer" class="leaderboard-cta">View on Strava -></a>
       `;
       return;
     }
 
-    // Sort by monthly stats (assuming 'stats' property exists)
-    const sorted = members
-      .sort((a, b) => (b.stats?.months[0]?.distance || 0) - (a.stats?.months[0]?.distance || 0))
-      .slice(0, 10);
+    const listHTML = leaderboard
+      .map((member) => {
+        const name = member?.name || 'Unknown rider';
+        const rides = Number(member?.rideCount) || 0;
+        const distance = Number(member?.distanceKm) || 0;
+        const avatar = member?.profile
+          ? `<img src="${member.profile}" alt="${name}" class="leaderboard-avatar" loading="lazy" />`
+          : '<span class="leaderboard-avatar leaderboard-avatar-fallback">R</span>';
 
-    const listHTML = sorted
-      .map((member, index) => {
-        const distance = (member.stats?.months[0]?.distance || 0) / 1000; // Convert to km
         return `
           <div class="leaderboard-item">
-            <span class="leaderboard-rank">#${index + 1}</span>
-            <span class="leaderboard-name">${member.firstname} ${member.lastname}</span>
+            <span class="leaderboard-rank">#${member.rank}</span>
+            ${avatar}
+            <div class="leaderboard-athlete">
+              <span class="leaderboard-name">${name}</span>
+              <span class="leaderboard-metrics">${rides} rides</span>
+            </div>
             <span class="leaderboard-distance">${distance.toFixed(1)} km</span>
           </div>
         `;
       })
       .join('');
 
+    const windowDays = Number(payload?.windowDays) || 30;
+
     container.innerHTML = `
       <div class="leaderboard-list">${listHTML}</div>
-      <a href="https://www.strava.com/clubs/303983/leaderboard" target="_blank" rel="noreferrer" class="leaderboard-cta">View Full Leaderboard →</a>
+      <p class="leaderboard-note">Leaderboard is based on club activities from the last ${windowDays} days.</p>
+      <a href="https://www.strava.com/clubs/303983/leaderboard" target="_blank" rel="noreferrer" class="leaderboard-cta">View full leaderboard -></a>
     `;
   } catch (error) {
     console.error('Error loading Strava leaderboard:', error);
     container.innerHTML = `
-      <p class="leaderboard-loading">Club leaderboard available on Strava.</p>
-      <a href="https://www.strava.com/clubs/303983/leaderboard" target="_blank" rel="noreferrer" class="leaderboard-cta">View Full Leaderboard →</a>
+      <p class="leaderboard-loading">Leaderboard is temporarily unavailable.</p>
+      <a href="https://www.strava.com/clubs/303983/leaderboard" target="_blank" rel="noreferrer" class="leaderboard-cta">Open on Strava -></a>
     `;
   }
 }

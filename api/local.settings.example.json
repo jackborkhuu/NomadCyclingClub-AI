@@ -1,0 +1,11 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "STRAVA_CLIENT_ID": "YOUR_STRAVA_CLIENT_ID",
+    "STRAVA_CLIENT_SECRET": "YOUR_STRAVA_CLIENT_SECRET",
+    "STRAVA_REFRESH_TOKEN": "YOUR_STRAVA_REFRESH_TOKEN",
+    "STRAVA_CLUB_ID": "303983"
+  }
+}
