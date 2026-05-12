@@ -24,6 +24,17 @@ function jsonResponse(body, status = 200) {
   };
 }
 
+function parseActivityId(activity, details) {
+  const rawId = activity?.id ?? activity?.activity_id ?? details?.id;
+  if (typeof rawId === 'number' && Number.isFinite(rawId)) {
+    return rawId;
+  }
+  if (typeof rawId === 'string' && rawId.trim()) {
+    return rawId.trim();
+  }
+  return null;
+}
+
 async function getUsableAccessToken() {
   const staticToken = (process.env.STRAVA_ACCESS_TOKEN || '').trim();
   if (staticToken) {
@@ -73,32 +84,104 @@ async function getUsableAccessToken() {
   return cachedAccessToken;
 }
 
-function normalizeActivity(activity) {
+async function fetchActivityDetails(accessToken, activityId) {
+  try {
+    const response = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        'User-Agent': 'NomadCyclingClubApi/1.0'
+      }
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = await response.json().catch(() => null);
+    return payload && typeof payload === 'object' ? payload : null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchActivityPhotos(accessToken, activityId, maxPhotos = 4) {
+  try {
+    const url = new URL(`https://www.strava.com/api/v3/activities/${activityId}/photos`);
+    url.searchParams.set('size', '600');
+    url.searchParams.set('photo_sources', 'true');
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        'User-Agent': 'NomadCyclingClubApi/1.0'
+      }
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = await response.json().catch(() => []);
+    if (!Array.isArray(payload)) {
+      return [];
+    }
+
+    return payload
+      .map((photo) => {
+        const urls = photo?.urls || {};
+        const imageUrl = urls['600'] || urls['500'] || urls['400'] || urls['100'] || '';
+        if (!imageUrl) {
+          return null;
+        }
+
+        return {
+          type: 'photo',
+          imageUrl,
+          source: 'strava'
+        };
+      })
+      .filter((item) => item !== null)
+      .slice(0, maxPhotos);
+  } catch {
+    return [];
+  }
+}
+
+function normalizeActivity(activity, details = null, photos = []) {
   if (!activity || typeof activity !== 'object') {
     return null;
   }
 
-  const distanceKm = (activity.distance || 0) / 1000;
-  const movingMinutes = Math.round((activity.moving_time || 0) / 60);
-  const elevationM = activity.total_elevation_gain || 0;
-  const athleteName = activity.athlete?.firstname && activity.athlete?.lastname
-    ? `${activity.athlete.firstname} ${activity.athlete.lastname}`
-    : activity.athlete?.firstname || 'Athlete';
+  const activityId = parseActivityId(activity, details);
+  const source = details && typeof details === 'object' ? details : activity;
 
-  const athleteId = activity.athlete?.id;
+  const distanceKm = (Number(source.distance) || 0) / 1000;
+  const movingMinutes = Math.round((Number(source.moving_time) || 0) / 60);
+  const elevationM = Number(source.total_elevation_gain) || 0;
+  const athleteName = source.athlete?.firstname && source.athlete?.lastname
+    ? `${source.athlete.firstname} ${source.athlete.lastname}`
+    : source.athlete?.firstname || activity.athlete?.firstname || 'Athlete';
+
+  const athleteId = source.athlete?.id || activity.athlete?.id;
   const athleteProfileUrl = athleteId ? `https://www.strava.com/athletes/${athleteId}` : null;
 
-  const activityUrl = activity.id ? `https://www.strava.com/activities/${activity.id}` : null;
-  const activityTimestamp = activity.start_date || activity.start_date_local || '1970-01-01T00:00:00.000Z';
+  const activityUrl = activityId ? `https://www.strava.com/activities/${activityId}` : null;
+  const activityTimestamp = source.start_date || source.start_date_local || activity.start_date || activity.start_date_local || '1970-01-01T00:00:00.000Z';
+
+  const map = source.map && typeof source.map === 'object' ? source.map : null;
+  const mapSummaryPolyline = typeof map?.summary_polyline === 'string' ? map.summary_polyline : '';
+  const totalPhotoCount = Number(source.total_photo_count) || Number(source.photo_count) || 0;
 
   const summary = `${distanceKm.toFixed(1)} km • ${movingMinutes} min`;
   const elevationStr = elevationM > 0 ? ` • ${elevationM.toFixed(0)}m elevation` : '';
-  const message = `${activity.name}${elevationStr}`;
+  const message = `${source.name || activity.name || 'Activity'}${elevationStr}`;
 
   return {
-    id: activity.id ? `strava-${activity.id}` : null,
-    type: activity.type || 'Activity',
-    name: activity.name || 'Unnamed Activity',
+    id: activityId ? `strava-${activityId}` : null,
+    type: source.type || activity.type || 'Activity',
+    name: source.name || activity.name || 'Unnamed Activity',
     message,
     summary,
     createdTime: activityTimestamp,
@@ -111,14 +194,22 @@ function normalizeActivity(activity) {
       id: athleteId,
       profileUrl: athleteProfileUrl
     },
+    map: {
+      summaryPolyline: mapSummaryPolyline,
+      hasMap: Boolean(mapSummaryPolyline),
+      startLatLng: Array.isArray(source.start_latlng) ? source.start_latlng : null,
+      endLatLng: Array.isArray(source.end_latlng) ? source.end_latlng : null
+    },
+    media: Array.isArray(photos) ? photos : [],
     stats: {
       distance: distanceKm,
-      distanceM: activity.distance || 0,
-      movingTime: activity.moving_time || 0,
+      distanceM: Number(source.distance) || 0,
+      movingTime: Number(source.moving_time) || 0,
       movingMinutes,
       elevationGain: elevationM,
-      avgSpeed: activity.average_speed || 0,
-      avgSpeedKph: (activity.average_speed || 0) * 3.6
+      avgSpeed: Number(source.average_speed) || 0,
+      avgSpeedKph: (Number(source.average_speed) || 0) * 3.6,
+      photoCount: totalPhotoCount
     }
   };
 }
@@ -179,8 +270,22 @@ app.http('strava-feed', {
       const rawActivities = await response.json();
       const activities = Array.isArray(rawActivities) ? rawActivities : [];
 
-      const posts = activities
-        .map((activity) => normalizeActivity(activity))
+      const enrichedActivities = await Promise.all(activities.map(async (activity) => {
+        const activityId = parseActivityId(activity, null);
+        if (!activityId) {
+          return { activity, details: null, photos: [] };
+        }
+
+        const [details, photos] = await Promise.all([
+          fetchActivityDetails(accessToken, activityId),
+          fetchActivityPhotos(accessToken, activityId, 4)
+        ]);
+
+        return { activity, details, photos };
+      }));
+
+      const posts = enrichedActivities
+        .map(({ activity, details, photos }) => normalizeActivity(activity, details, photos))
         .filter((activity) => activity !== null)
         .sort((left, right) => {
           const leftTime = new Date(left.createdTime || '').getTime();

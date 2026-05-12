@@ -1650,10 +1650,24 @@ async function renderMergedHomeFeedPosts(container) {
         const distanceKm = stats.distance || 0;
         const elevation = stats.elevationGain || 0;
         const movingTime = stats.movingMinutes || 0;
+        const photoCount = Number(stats.photoCount) || 0;
+        const mediaList = Array.isArray(post.media) ? post.media : [];
+        const photoMedia = mediaList
+          .filter((media) => media && media.type === 'photo' && media.imageUrl)
+          .slice(0, 4);
+        const createdRaw = post.createdTime || post.created_time || '';
+        const hasReliableDate = createdRaw && !createdRaw.startsWith('1970-01-01');
+        const createdLabel = hasReliableDate ? formatDateTime(createdRaw) : 'Date unavailable from Strava API';
 
         const athleteLink = athleteUrl
           ? `<a href="${escapeHtml(athleteUrl)}" target="_blank" rel="noreferrer" class="strava-athlete-link">${escapeHtml(athleteName)}</a>`
           : escapeHtml(athleteName);
+
+        const photoHtml = photoMedia.map((media, mediaIndex) => `
+          <a class="home-feed-photo" href="${escapeHtml(activityUrl)}" target="_blank" rel="noreferrer">
+            <img src="${escapeHtml(media.imageUrl)}" alt="${escapeHtml(`${post.name || 'Strava activity'} photo ${mediaIndex + 1}`)}" loading="lazy" />
+          </a>
+        `).join('');
 
         return `
           <article class="home-feed-post strava-activity-post">
@@ -1667,12 +1681,13 @@ async function renderMergedHomeFeedPosts(container) {
                 <h3>${escapeHtml(post.name || 'Strava Activity')}</h3>
                 <div class="post-meta">
                   <span class="source-badge strava-badge">Strava</span>
-                  <span class="post-time">${formatDateTime(post.createdTime)}</span>
+                  <span class="post-time">${escapeHtml(createdLabel)}</span>
                 </div>
               </div>
             </div>
             <div class="home-feed-body">
               <p class="activity-athlete">by ${athleteLink}</p>
+              <p class="activity-type">${escapeHtml(activityType)}</p>
               <p class="activity-stats">
                 <span class="activity-stat">
                   <strong>${distanceKm.toFixed(1)}</strong> km
@@ -1681,7 +1696,9 @@ async function renderMergedHomeFeedPosts(container) {
                   <strong>${movingTime}</strong> min
                 </span>
                 ${elevation > 0 ? `<span class="activity-stat"><strong>${elevation.toFixed(0)}</strong> m↑</span>` : ''}
+                ${photoCount > 0 ? `<span class="activity-stat"><strong>${photoCount}</strong> photo${photoCount !== 1 ? 's' : ''}</span>` : ''}
               </p>
+              ${photoHtml ? `<div class="home-feed-photo-grid">${photoHtml}</div>` : ''}
               <p class="activity-link">
                 <a href="${escapeHtml(activityUrl)}" target="_blank" rel="noreferrer">View on Strava →</a>
               </p>
