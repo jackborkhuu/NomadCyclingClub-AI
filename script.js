@@ -1039,9 +1039,6 @@ async function renderGallery() {
     return;
   }
 
-  const galleryReason = liveFeedDebugReason ? ` (${liveFeedDebugReason})` : '';
-  setGallerySourceStatus(gallery, `Live feed is currently unavailable. Showing cached archive media.${galleryReason}`, 'warning');
-
   const apiPosts = await fetchApiFeedPosts();
   const postsWithMedia = apiPosts.filter((post) => Array.isArray(post.media) && post.media.length > 0);
 
@@ -1823,9 +1820,6 @@ async function renderHomeFeedPosts() {
   const source = getFeedSource();
   if (source === 'live') {
     addSourceBanner('Home feed source: Live Facebook API.', 'info');
-  } else if (source === 'cached') {
-    const reason = liveFeedDebugReason ? ` Reason: ${liveFeedDebugReason}` : '';
-    addSourceBanner(`Home feed source: Cached archive (live API unavailable).${reason}`, 'warning');
   }
 }
 
