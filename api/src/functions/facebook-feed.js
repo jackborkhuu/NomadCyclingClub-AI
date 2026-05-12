@@ -218,6 +218,14 @@ app.http('facebook-feed', {
       const payload = await response.json();
 
       if (!response.ok) {
+        // Graph API failed (e.g. expired token) — fall back to synced JSON
+        const syncedPosts = await fetchSyncedPostsFromStaticData(request);
+        if (syncedPosts.length > 0) {
+          const offset = Number.isFinite(Number(after)) ? Math.max(0, Number(after)) : 0;
+          const posts = syncedPosts.slice(offset, offset + limit);
+          const nextCursor = offset + limit < syncedPosts.length ? String(offset + limit) : null;
+          return jsonResponse({ posts, nextCursor, source: 'synced-json-fallback' });
+        }
         return jsonResponse({
           error: 'Facebook Graph API request failed.',
           details: payload?.error?.message || response.statusText,
@@ -236,6 +244,14 @@ app.http('facebook-feed', {
         source: 'graph'
       });
     } catch (error) {
+      // Network/unexpected error — fall back to synced JSON
+      const syncedPosts = await fetchSyncedPostsFromStaticData(request);
+      if (syncedPosts.length > 0) {
+        const offset = Number.isFinite(Number(after)) ? Math.max(0, Number(after)) : 0;
+        const posts = syncedPosts.slice(offset, offset + limit);
+        const nextCursor = offset + limit < syncedPosts.length ? String(offset + limit) : null;
+        return jsonResponse({ posts, nextCursor, source: 'synced-json-fallback' });
+      }
       return jsonResponse({
         error: 'Unexpected error calling Facebook Graph API.',
         details: error instanceof Error ? error.message : String(error)
