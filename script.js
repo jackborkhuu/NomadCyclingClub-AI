@@ -1819,21 +1819,64 @@ async function renderMergedHomeFeedPosts(container) {
         .map((media) => ({
           type: String(media?.type || '').toLowerCase(),
           imageUrl: media?.imageUrl || media?.image_url || media?.previewUrl || media?.preview_url || '',
-          videoUrl: media?.videoUrl || media?.video_url || media?.sourceUrl || media?.source_url || ''
+          videoUrl: media?.videoUrl || media?.video_url || media?.sourceUrl || media?.source_url || '',
+          targetUrl: media?.targetUrl || media?.target_url || ''
         }))
-        .filter((media) => media.imageUrl || media.videoUrl)
-        .slice(0, 4);
+        .filter((media) => media.imageUrl || media.videoUrl);
 
-      const hasVideo = normalizedMedia.some((media) => media.type === 'video' && media.videoUrl);
-      const mediaHtml = normalizedMedia.map((media, mediaIndex) => {
+      const seenUrls = new Set();
+      const videoPosterSet = new Set();
+      const dedupedMedia = [];
+
+      for (const media of normalizedMedia) {
+        const videoKey = `video:${media.videoUrl}`;
+        const imageKey = `image:${extractImageId(media.imageUrl)}`;
+
+        if (media.type === 'video' && media.videoUrl) {
+          if (!seenUrls.has(videoKey)) {
+            dedupedMedia.push(media);
+            seenUrls.add(videoKey);
+            if (media.imageUrl) {
+              videoPosterSet.add(extractImageId(media.imageUrl));
+            }
+          }
+        } else if (media.imageUrl) {
+          if (!seenUrls.has(imageKey) && !videoPosterSet.has(extractImageId(media.imageUrl))) {
+            dedupedMedia.push(media);
+            seenUrls.add(imageKey);
+          }
+        }
+      }
+
+      const photoImageUrls = new Set();
+      dedupedMedia.forEach((media) => {
+        if (media.type === 'photo' && media.imageUrl) {
+          photoImageUrls.add(extractImageId(media.imageUrl));
+        }
+      });
+
+      const displayMedia = dedupedMedia.filter((media) => {
+        if (media.type === 'album' && photoImageUrls.has(extractImageId(media.imageUrl))) {
+          return false;
+        }
+        return true;
+      });
+
+      const hasVideo = displayMedia.some((media) => media.type === 'video' && media.videoUrl);
+      const finalDisplayMedia = hasVideo
+        ? displayMedia.filter((media) => media.type === 'video' && media.videoUrl)
+        : displayMedia.filter((media) => media.type === 'photo' || media.type === 'video');
+
+      const mediaHtml = finalDisplayMedia.slice(0, 4).map((media, mediaIndex) => {
         const mediaType = media.type;
         const imageUrl = media.imageUrl;
         const videoUrl = media.videoUrl;
+        const isReel = /\/reel\//i.test(postUrl) || /reel/i.test(mediaType) || /\/reel\//i.test(media.targetUrl || '');
         const mediaAlt = escapeHtml(message || `Post media ${mediaIndex + 1}`);
 
         if (mediaType === 'video' && videoUrl) {
           return `
-            <div class="home-feed-video">
+            <div class="home-feed-video${isReel ? ' home-feed-video-reel' : ''}">
               <video controls preload="metadata" ${imageUrl ? `poster="${escapeHtml(imageUrl)}"` : ''}>
                 <source src="${escapeHtml(videoUrl)}" type="video/mp4" />
                 Your browser does not support the video tag.
