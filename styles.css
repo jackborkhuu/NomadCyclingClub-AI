@@ -1911,30 +1911,18 @@ body.lightbox-open {
   height: 1px;
 }
 
-.strava-club-card {
+.strava-rides-card {
   background: #ffffff;
-  border: 1px solid #fed7aa;
+  border: 1px solid var(--facebook-border);
   border-radius: var(--border-radius);
-  box-shadow: 0 10px 24px rgba(249, 115, 22, 0.15);
+  box-shadow: var(--shadow);
   padding: 16px;
 }
 
-.strava-club-card h2 {
+.strava-rides-card h2 {
   margin: 0 0 12px;
-  color: #c2410c;
+  color: var(--facebook-text);
   font-size: 1.25rem;
-}
-
-.strava-section {
-  margin-top: 12px;
-}
-
-.strava-section h3 {
-  margin: 0 0 10px;
-  font-size: 0.95rem;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: #9a3412;
 }
 
 .strava-embed {
@@ -1947,115 +1935,6 @@ body.lightbox-open {
   border-radius: 10px;
   display: block;
   width: 100%;
-}
-
-.strava-leaderboard-embed {
-  max-height: 360px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.leaderboard-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.leaderboard-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 0;
-  border-bottom: 1px solid #ffedd5;
-  font-size: 0.9rem;
-  color: var(--facebook-text);
-}
-
-.leaderboard-item:last-child {
-  border-bottom: none;
-}
-
-.leaderboard-rank {
-  min-width: 30px;
-  font-weight: 700;
-  color: #9a3412;
-}
-
-.leaderboard-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.leaderboard-avatar-fallback {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #fed7aa;
-  color: #9a3412;
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.leaderboard-athlete {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.leaderboard-name {
-  color: #7c2d12;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.leaderboard-metrics {
-  font-size: 0.78rem;
-  color: #9a3412;
-}
-
-.leaderboard-distance {
-  min-width: 68px;
-  text-align: right;
-  color: #7c2d12;
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.leaderboard-loading {
-  margin: 0;
-  color: #7c2d12;
-  font-size: 0.9rem;
-}
-
-.leaderboard-note {
-  margin: 10px 0 0;
-  font-size: 0.78rem;
-  color: #9a3412;
-}
-
-.leaderboard-cta {
-  display: inline-block;
-  margin-top: 12px;
-  padding: 8px 12px;
-  background: #f97316;
-  color: #ffffff;
-  border-radius: 999px;
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: background-color 0.2s ease;
-}
-
-.leaderboard-cta:hover {
-  background: #ea580c;
-  text-decoration: none;
 }
 
 .site-footer {
