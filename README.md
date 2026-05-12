@@ -1,4 +1,4 @@
-# River City Cycling Club Website
+# Nomad Cycling Club Website
 
 This is a static website scaffold for the cycling club.
 
