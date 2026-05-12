@@ -4,6 +4,19 @@ const DEFAULT_GRAPH_VERSION = 'v23.0';
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 40;
 
+function sanitizeToken(token) {
+  if (!token) {
+    return '';
+  }
+
+  const trimmed = String(token).trim();
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    return trimmed.slice(1, -1).trim();
+  }
+
+  return trimmed;
+}
+
 function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
@@ -83,6 +96,27 @@ function normalizeMediaItem(post) {
   };
 
   attachments.forEach((attachment) => walk(attachment, post.message || post.story || ''));
+
+  if (results.length === 0 && post.full_picture) {
+    const postId = post.id || '';
+    const postPermalink = post.permalink_url || '';
+    const normalizedPostUrl = postPermalink || (postId ? `https://www.facebook.com/${postId.replace('_', '/posts/')}` : 'https://www.facebook.com/nomadcyclingclub');
+
+    results.push({
+      mediaKey: `${postId}-full-picture`,
+      postId,
+      postUrl: normalizedPostUrl,
+      createdTime: post.created_time || null,
+      message: post.message || post.story || '',
+      story: post.story || '',
+      title: '',
+      type: 'image',
+      isReel: false,
+      imageUrl: post.full_picture,
+      videoUrl: null
+    });
+  }
+
   return results;
 }
 
@@ -98,9 +132,11 @@ app.http('facebook-gallery', {
       };
     }
 
-    const pageId = process.env.FB_PAGE_ID;
-    const pageToken = process.env.FB_PAGE_TOKEN;
-    const graphVersion = process.env.FB_GRAPH_VERSION || DEFAULT_GRAPH_VERSION;
+    const pageId = process.env.FB_PAGE_ID || process.env.FACEBOOK_PAGE_ID || '';
+    const pageToken = sanitizeToken(
+      process.env.FB_PAGE_TOKEN || process.env.FACEBOOK_PAGE_TOKEN || process.env.FACEBOOK_ACCESS_TOKEN || ''
+    );
+    const graphVersion = process.env.FB_GRAPH_VERSION || process.env.GRAPH_VERSION || DEFAULT_GRAPH_VERSION;
 
     if (!pageId || !pageToken) {
       return jsonResponse({
@@ -115,7 +151,7 @@ app.http('facebook-gallery', {
       ? Math.max(1, Math.min(MAX_LIMIT, limitParam))
       : DEFAULT_LIMIT;
 
-    url.searchParams.set('fields', 'id,message,story,created_time,permalink_url,attachments{type,title,url,target,media,subattachments}');
+    url.searchParams.set('fields', 'id,message,story,created_time,permalink_url,full_picture,attachments{type,title,url,target,media,subattachments}');
     url.searchParams.set('limit', String(limit));
     url.searchParams.set('access_token', pageToken);
     if (after) {

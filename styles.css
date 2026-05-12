@@ -1861,6 +1861,19 @@ body.lightbox-open {
   letter-spacing: 0.01em;
 }
 
+.gallery-source-status {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+}
+
+.gallery-source-status-warning {
+  color: #9a3412;
+}
+
+.gallery-source-status-info {
+  color: #1d4ed8;
+}
+
 .gallery-live-sentinel {
   width: 100%;
   height: 1px;

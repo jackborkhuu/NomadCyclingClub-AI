@@ -851,6 +851,29 @@ async function fetchLiveGalleryPage(afterCursor = '', limit = 18) {
   return payload;
 }
 
+function clearGalleryRuntimeStatus(gallery) {
+  const parent = gallery?.parentElement;
+  if (!parent) {
+    return;
+  }
+
+  parent.querySelectorAll('.gallery-live-status, .gallery-live-sentinel, .gallery-source-status').forEach((node) => {
+    node.remove();
+  });
+}
+
+function setGallerySourceStatus(gallery, message, tone = 'warning') {
+  const parent = gallery?.parentElement;
+  if (!parent) {
+    return;
+  }
+
+  const status = document.createElement('p');
+  status.className = `gallery-source-status gallery-source-status-${tone}`;
+  status.textContent = message;
+  gallery.insertAdjacentElement('afterend', status);
+}
+
 async function renderLiveGallery(gallery) {
   let firstPage;
   try {
@@ -945,7 +968,9 @@ async function renderLiveGallery(gallery) {
 
   const status = document.createElement('p');
   status.className = 'gallery-live-status';
-  status.textContent = state.hasMore ? 'Scroll to load more posts...' : 'Showing latest live Facebook media.';
+  status.textContent = state.hasMore
+    ? 'Live feed active. Scroll to load more posts...'
+    : 'Live feed active. Showing latest Facebook media.';
   gallery.insertAdjacentElement('afterend', status);
 
   if (!state.hasMore) {
@@ -970,7 +995,7 @@ async function renderLiveGallery(gallery) {
       state.nextCursor = page.nextCursor || null;
       state.hasMore = Boolean(state.nextCursor);
       status.textContent = state.hasMore
-        ? 'Scroll to load more posts...'
+        ? 'Live feed active. Scroll to load more posts...'
         : 'Reached the end of available live Facebook media.';
     } catch {
       state.hasMore = false;
@@ -997,10 +1022,14 @@ async function renderGallery() {
     return;
   }
 
+  clearGalleryRuntimeStatus(gallery);
+
   const renderedLiveGallery = await renderLiveGallery(gallery);
   if (renderedLiveGallery) {
     return;
   }
+
+  setGallerySourceStatus(gallery, 'Live feed is currently unavailable. Showing cached archive media.', 'warning');
 
   const apiPosts = await fetchApiFeedPosts();
   const postsWithMedia = apiPosts.filter((post) => Array.isArray(post.media) && post.media.length > 0);
