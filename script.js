@@ -1982,27 +1982,9 @@ async function renderHomeFeedPosts() {
     parent.querySelectorAll('.home-feed-live-status, .home-feed-live-sentinel').forEach((node) => node.remove());
   }
 
-  const sourceBanner = document.getElementById('homeFeedSourceStatus');
-  if (sourceBanner) {
-    sourceBanner.remove();
-  }
-
-  const addSourceBanner = (text, tone = 'warning') => {
-    const banner = document.createElement('p');
-    banner.id = 'homeFeedSourceStatus';
-    banner.className = `gallery-source-status gallery-source-status-${tone}`;
-    banner.textContent = text;
-    container.insertAdjacentElement('beforebegin', banner);
-  };
-
   const renderedApiFeed = await renderApiHomeFeedPosts(container);
   if (!renderedApiFeed) {
     await renderFallbackHomeFeedPosts(container);
-  }
-
-  const source = getFeedSource();
-  if (source === 'live') {
-    addSourceBanner('Home feed source: Live Facebook API.', 'info');
   }
 }
 
