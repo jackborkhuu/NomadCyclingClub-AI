@@ -1722,7 +1722,25 @@ async function renderMergedHomeFeedPosts(container) {
 
     const feedPosts = selectMixedTopPosts(allPosts, 12, 3);
 
-    const postsHtml = feedPosts.map((post, index) => {
+    const getPostKey = (post, index) => `${post.source || 'facebook'}:${post.id || post.permalinkUrl || post.permalink_url || post.name || index}`;
+    const renderedKeys = new Set(feedPosts.map((post, index) => getPostKey(post, index)));
+
+    const undatedStravaPosts = allPosts.filter((post) => {
+      if (post.source !== 'strava') {
+        return false;
+      }
+
+      const raw = post.createdTime || post.created_time || '';
+      return !raw || String(raw).startsWith('1970-01-01');
+    });
+
+    const extraStravaPosts = undatedStravaPosts
+      .filter((post, index) => !renderedKeys.has(getPostKey(post, index)))
+      .slice(0, 3);
+
+    const postsToRender = [...feedPosts, ...extraStravaPosts];
+
+    const postsHtml = postsToRender.map((post, index) => {
       const isStrava = post.source === 'strava';
       const isFacebook = !isStrava;
 
