@@ -1351,21 +1351,91 @@ function formatDateTime(value) {
 }
 
 async function fetchApiFeedPosts() {
+  if (fetchApiFeedPosts.promise) {
+    return fetchApiFeedPosts.promise;
+  }
+
+  const loadLiveFirst = async () => {
+    const loadCached = async () => {
+      try {
+        const response = await fetch('data/facebook-feed.json', { cache: 'no-store' });
+        if (!response.ok) {
+          return [];
+        }
+
+        const payload = await response.json();
+        if (!payload || !Array.isArray(payload.posts)) {
+          return [];
+        }
+
+        fetchApiFeedPosts.source = 'cached';
+        return payload.posts;
+      } catch {
+        return [];
+      }
+    };
+
+    try {
+      const posts = [];
+      const seenIds = new Set();
+      let nextCursor = '';
+      const maxPosts = 180;
+
+      for (let page = 0; page < 6 && posts.length < maxPosts; page += 1) {
+        const params = new URLSearchParams({ limit: '30' });
+        if (nextCursor) {
+          params.set('after', nextCursor);
+        }
+
+        const response = await fetch(`/api/facebook-feed?${params.toString()}`, { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`Live feed API failed (${response.status})`);
+        }
+
+        const payload = await response.json();
+        const pagePosts = Array.isArray(payload?.posts) ? payload.posts : [];
+
+        pagePosts.forEach((post) => {
+          const key = String(post?.id || `${post?.createdTime || post?.created_time || ''}-${posts.length}`);
+          if (seenIds.has(key)) {
+            return;
+          }
+
+          seenIds.add(key);
+          posts.push(post);
+        });
+
+        nextCursor = payload?.nextCursor || '';
+        if (!nextCursor) {
+          break;
+        }
+      }
+
+      if (posts.length > 0) {
+        fetchApiFeedPosts.source = 'live';
+        return posts;
+      }
+    } catch {
+      // Fallback to cached JSON below.
+    }
+
+    return loadCached();
+  };
+
+  fetchApiFeedPosts.promise = loadLiveFirst();
+
   try {
-    const response = await fetch('data/facebook-feed.json', { cache: 'no-store' });
-    if (!response.ok) {
-      return [];
-    }
-
-    const payload = await response.json();
-    if (!payload || !Array.isArray(payload.posts)) {
-      return [];
-    }
-
-    return payload.posts;
+    return await fetchApiFeedPosts.promise;
   } catch {
     return [];
   }
+}
+
+fetchApiFeedPosts.promise = null;
+fetchApiFeedPosts.source = 'unknown';
+
+function getFeedSource() {
+  return fetchApiFeedPosts.source || 'unknown';
 }
 
 function extractCount(value) {
@@ -1711,9 +1781,29 @@ async function renderHomeFeedPosts() {
     return;
   }
 
+  const sourceBanner = document.getElementById('homeFeedSourceStatus');
+  if (sourceBanner) {
+    sourceBanner.remove();
+  }
+
+  const addSourceBanner = (text, tone = 'warning') => {
+    const banner = document.createElement('p');
+    banner.id = 'homeFeedSourceStatus';
+    banner.className = `gallery-source-status gallery-source-status-${tone}`;
+    banner.textContent = text;
+    container.insertAdjacentElement('beforebegin', banner);
+  };
+
   const renderedApiFeed = await renderApiHomeFeedPosts(container);
   if (!renderedApiFeed) {
     await renderFallbackHomeFeedPosts(container);
+  }
+
+  const source = getFeedSource();
+  if (source === 'live') {
+    addSourceBanner('Home feed source: Live Facebook API.', 'info');
+  } else if (source === 'cached') {
+    addSourceBanner('Home feed source: Cached archive (live API unavailable).', 'warning');
   }
 }
 
