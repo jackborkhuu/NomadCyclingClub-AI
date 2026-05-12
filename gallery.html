@@ -26,13 +26,25 @@
 
   <main>
     <section class="section container">
-      <div class="page-intro">
-        <p class="eyebrow">Facebook archive</p>
-        <h1>Club Gallery</h1>
-        <p>A clean media wall of club photos and reels from Facebook, rendered as tiles.</p>
+      <div class="content-grid">
+        <aside class="sidebar">
+          <article class="about-card sidebar-footer-card">
+            <h2>Quick Links</h2>
+            <p class="footer-mission-note">Mission: Build an inclusive cycling community rooted in Mongolian heritage. Values: Community, Cultural Pride, Inclusivity, Wellness, Adventure, and Respect.</p>
+            <p class="footer-quick-links"><a href="join.html">Join</a> • <a href="contact.html">Contact</a> • <a href="https://www.facebook.com/nomadcyclingclub" target="_blank" rel="noreferrer">Facebook</a></p>
+          </article>
+        </aside>
+
+        <div class="feed">
+          <div class="page-intro">
+            <p class="eyebrow">Facebook archive</p>
+            <h1>Club Gallery</h1>
+            <p>A clean media wall of club photos and reels from Facebook, rendered as tiles.</p>
+          </div>
+          <div id="randomGallery" class="gallery-grid gallery-grid-large"></div>
+          <p class="gallery-note">Click photos to open the lightbox. Videos play directly in the gallery.</p>
+        </div>
       </div>
-      <div id="randomGallery" class="gallery-grid gallery-grid-large"></div>
-      <p class="gallery-note">Click photos to open the lightbox. Videos play directly in the gallery.</p>
 
       <div class="gallery-lightbox" id="galleryLightbox" aria-hidden="true" role="dialog" aria-label="Gallery photo viewer">
         <button class="lightbox-close" id="lightboxClose" aria-label="Close photo viewer">&times;</button>
@@ -52,8 +64,6 @@
   <footer class="site-footer">
     <div class="container footer-inner">
       <p>© 2026 Nomad Cycling Club. All rights reserved.</p>
-      <p class="footer-mission-note">Mission: Build an inclusive cycling community rooted in Mongolian heritage. Values: Community, Cultural Pride, Inclusivity, Wellness, Adventure, and Respect.</p>
-      <p><a href="join.html">Join</a> • <a href="contact.html">Contact</a> • <a href="https://www.facebook.com/nomadcyclingclub" target="_blank" rel="noreferrer">Facebook</a></p>
     </div>
   </footer>
 
