@@ -154,6 +154,9 @@ function normalizePost(post) {
           id: comment.id || null,
           message: comment.message || null,
           from: comment.from?.name || 'Anonymous',
+          fromName: comment.from?.name || 'Anonymous',
+          fromId: comment.from?.id || null,
+          profileUrl: comment.from?.id ? `https://www.facebook.com/${comment.from.id}` : null,
           createdTime: comment.created_time || null
         }))
       : [],
@@ -200,7 +203,7 @@ app.http('facebook-feed', {
     const url = new URL(`https://graph.facebook.com/${graphVersion}/${pageId}/posts`);
     url.searchParams.set(
       'fields',
-      'id,message,story,created_time,permalink_url,full_picture,attachments{media_type,media,url,target,title,description,subattachments},comments.limit(5).summary(true){id,message,created_time,from{name},total_count}'
+      'id,message,story,created_time,permalink_url,full_picture,attachments{media_type,media,url,target,title,description,subattachments},comments.limit(5).summary(true){id,message,created_time,from{id,name},total_count}'
     );
     url.searchParams.set('limit', String(limit));
     url.searchParams.set('access_token', pageToken);

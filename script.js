@@ -1505,6 +1505,46 @@ function getPostEngagementCounts(post) {
   };
 }
 
+function getCommentAuthorName(comment) {
+  if (!comment || typeof comment !== 'object') {
+    return 'Anonymous';
+  }
+
+  if (typeof comment.fromName === 'string' && comment.fromName.trim()) {
+    return comment.fromName.trim();
+  }
+
+  if (typeof comment.from === 'string' && comment.from.trim()) {
+    return comment.from.trim();
+  }
+
+  if (comment.from && typeof comment.from === 'object' && typeof comment.from.name === 'string' && comment.from.name.trim()) {
+    return comment.from.name.trim();
+  }
+
+  return 'Anonymous';
+}
+
+function getCommentAuthorProfileUrl(comment) {
+  if (!comment || typeof comment !== 'object') {
+    return '';
+  }
+
+  if (typeof comment.profileUrl === 'string' && comment.profileUrl.trim()) {
+    return comment.profileUrl.trim();
+  }
+
+  if (typeof comment.fromId === 'string' && comment.fromId.trim()) {
+    return `https://www.facebook.com/${comment.fromId.trim()}`;
+  }
+
+  if (comment.from && typeof comment.from === 'object' && typeof comment.from.id === 'string' && comment.from.id.trim()) {
+    return `https://www.facebook.com/${comment.from.id.trim()}`;
+  }
+
+  return '';
+}
+
 function renderPostComments(post, postIndex, postUrl) {
   const comments = Array.isArray(post.comments) ? post.comments : [];
   const { likesCount, commentsCount } = getPostEngagementCounts(post);
@@ -1512,7 +1552,13 @@ function renderPostComments(post, postIndex, postUrl) {
   const visibleComments = comments.slice(0, 3);
   const commentsHtml = visibleComments.map(comment => `
     <div class="comment-item">
-      <div class="comment-author">${escapeHtml(comment.from || 'User')}</div>
+      <div class="comment-author">${(() => {
+        const authorName = escapeHtml(getCommentAuthorName(comment));
+        const profileUrl = escapeHtml(getCommentAuthorProfileUrl(comment));
+        return profileUrl
+          ? `<a class="comment-author-link" href="${profileUrl}" target="_blank" rel="noreferrer">${authorName}</a>`
+          : authorName;
+      })()}</div>
       <p class="comment-text">${escapeHtml(comment.message || '')}</p>
       <div class="comment-time">${formatDateTime(comment.createdTime)}</div>
     </div>

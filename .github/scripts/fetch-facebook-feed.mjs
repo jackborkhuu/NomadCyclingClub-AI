@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 const pageId = process.env.FB_PAGE_ID;
 const rawPageToken = process.env.FB_PAGE_TOKEN;
 const graphVersion = process.env.FB_GRAPH_VERSION || 'v23.0';
+const requestPageLimit = Math.max(10, Math.min(50, Number(process.env.FB_GRAPH_PAGE_LIMIT || '25')));
 
 function sanitizeToken(token) {
   if (!token) {
@@ -134,6 +135,9 @@ function normalizePost(post) {
       id: comment.id || null,
       message: comment.message || null,
       from: comment.from?.name || 'Anonymous',
+      fromName: comment.from?.name || 'Anonymous',
+      fromId: comment.from?.id || null,
+      profileUrl: comment.from?.id ? `https://www.facebook.com/${comment.from.id}` : null,
       createdTime: comment.created_time || null
     })) : [],
     commentCount: post?.comments?.summary?.total_count || 0
@@ -149,12 +153,12 @@ async function fetchPosts() {
     'permalink_url',
     'full_picture',
     'attachments{media_type,media,url,target,title,description,subattachments}',
-    'comments.limit(5).summary(true){id,message,created_time,from{name},total_count}'
+    'comments.limit(5).summary(true){id,message,created_time,from{id,name},total_count}'
   ].join(',');
 
   const params = new URLSearchParams({
     fields,
-    limit: '100',
+    limit: String(requestPageLimit),
     access_token: pageToken
   });
 

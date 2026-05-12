@@ -1196,6 +1196,16 @@ img {
   font-size: 0.9rem;
 }
 
+.comment-author-link {
+  color: var(--facebook-blue);
+  text-decoration: none;
+}
+
+.comment-author-link:hover,
+.comment-author-link:focus-visible {
+  text-decoration: underline;
+}
+
 .comment-text {
   color: var(--facebook-text);
   margin: 0 0 6px;
