@@ -2045,6 +2045,9 @@ async function renderHomeFeedPosts() {
   const pluginReadyPosts = normalizedPosts.filter((post) => isEmbeddablePostUrl(post.permalinkUrl)).slice(0, 6);
   const fallbackLinkPosts = normalizedPosts.filter((post) => !isEmbeddablePostUrl(post.permalinkUrl)).slice(0, 6);
 
+  const containerWidth = Math.round((container.getBoundingClientRect?.().width || 500) - 28);
+  const pluginWidth = Math.max(350, Math.min(750, containerWidth));
+
   if (pluginReadyPosts.length === 0) {
     document.body.classList.remove('plugin-feed-mode');
     await renderFallbackHomeFeedPosts(container);
@@ -2055,8 +2058,8 @@ async function renderHomeFeedPosts() {
 
   const cardsHtml = pluginReadyPosts.map((post) => {
     const postHref = encodeURIComponent(post.permalinkUrl);
-    const postPluginUrl = `https://www.facebook.com/plugins/post.php?href=${postHref}&show_text=true&width=500`;
-    const commentsPluginUrl = `https://www.facebook.com/plugins/comments.php?href=${postHref}&numposts=5&order_by=reverse_time&width=500`;
+    const postPluginUrl = `https://www.facebook.com/plugins/post.php?href=${postHref}&show_text=true&width=${pluginWidth}`;
+    const commentsPluginUrl = `https://www.facebook.com/plugins/comments.php?href=${postHref}&numposts=5&order_by=reverse_time&width=${pluginWidth}`;
 
     return `
       <article class="home-feed-plugin-card">
@@ -2068,7 +2071,7 @@ async function renderHomeFeedPosts() {
           <iframe
             class="fb-plugin-post-frame"
             src="${postPluginUrl}"
-            width="500"
+            width="${pluginWidth}"
             height="690"
             style="border:none;overflow:hidden"
             scrolling="no"
@@ -2082,7 +2085,7 @@ async function renderHomeFeedPosts() {
           <iframe
             class="fb-plugin-comments-frame"
             src="${commentsPluginUrl}"
-            width="500"
+            width="${pluginWidth}"
             height="420"
             style="border:none;overflow:hidden"
             scrolling="no"

@@ -637,8 +637,7 @@ img {
   border-radius: 12px;
   background: #ffffff;
   padding: 12px;
-  max-width: 560px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .home-feed-plugin-head {
@@ -666,8 +665,8 @@ img {
 .fb-plugin-post-frame,
 .fb-plugin-comments-frame {
   display: block;
-  width: 500px;
-  max-width: 500px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
 }
 
