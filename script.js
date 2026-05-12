@@ -2023,15 +2023,26 @@ async function renderHomeFeedPosts() {
     return;
   }
 
+  const isEmbeddablePostUrl = (url) => {
+    if (typeof url !== 'string' || !url.startsWith('http')) {
+      return false;
+    }
+
+    // Facebook post/comments plugins are most reliable on canonical post URLs.
+    return /facebook\.com\/.+\/posts\//i.test(url) || /facebook\.com\/\d+\/posts\//i.test(url);
+  };
+
   const posts = await fetchApiFeedPosts();
-  const pluginReadyPosts = posts
+  const normalizedPosts = posts
     .map((post) => ({
       permalinkUrl: post?.permalinkUrl || post?.permalink_url || '',
       createdTime: post?.createdTime || post?.created_time || '',
       message: post?.message || post?.story || ''
     }))
-    .filter((post) => typeof post.permalinkUrl === 'string' && post.permalinkUrl.startsWith('http'))
-    .slice(0, 6);
+    .filter((post) => typeof post.permalinkUrl === 'string' && post.permalinkUrl.startsWith('http'));
+
+  const pluginReadyPosts = normalizedPosts.filter((post) => isEmbeddablePostUrl(post.permalinkUrl)).slice(0, 6);
+  const fallbackLinkPosts = normalizedPosts.filter((post) => !isEmbeddablePostUrl(post.permalinkUrl)).slice(0, 6);
 
   if (pluginReadyPosts.length === 0) {
     await renderFallbackHomeFeedPosts(container);
@@ -2081,9 +2092,23 @@ async function renderHomeFeedPosts() {
     `;
   }).join('');
 
+  const fallbackLinksHtml = fallbackLinkPosts.length > 0
+    ? `
+      <article class="home-feed-plugin-card">
+        <div class="home-feed-plugin-head">
+          <h3>More Facebook Items</h3>
+        </div>
+        <p class="home-feed-plugin-note">Some items (events/reels) cannot be embedded with the post plugin. Open them directly on Facebook:</p>
+        <ul class="home-feed-plugin-link-list">
+          ${fallbackLinkPosts.map((post, index) => `<li><a href="${escapeHtml(post.permalinkUrl)}" target="_blank" rel="noreferrer">Open item ${index + 1} on Facebook</a></li>`).join('')}
+        </ul>
+      </article>
+    `
+    : '';
+
   container.innerHTML = `
     <p class="home-feed-plugin-note">Plugin mode: rendering native Facebook posts and comments for comparison on this branch.</p>
-    <div class="home-feed-plugin-stack">${cardsHtml}</div>
+    <div class="home-feed-plugin-stack">${cardsHtml}${fallbackLinksHtml}</div>
   `;
 }
 

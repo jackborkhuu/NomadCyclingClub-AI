@@ -669,6 +669,15 @@ img {
   margin: 0 auto;
 }
 
+.home-feed-plugin-link-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.home-feed-plugin-link-list li {
+  margin-bottom: 6px;
+}
+
 .home-feed-photo-grid {
   display: grid;
   gap: 8px;
