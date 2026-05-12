@@ -904,39 +904,51 @@ async function renderOnThisDay() {
     label.textContent = `On this day · ${memoryDate}`;
   }
 
-  const displayPhotos = await getDisplayPhotos();
-  const validPhotos = displayPhotos
-    .filter((photo) => photo.date)
-    .map((photo) => ({
-      photo,
-      date: new Date(photo.date),
-      year: Number(photo.date.slice(0, 4))
-    }))
-    .filter((item) => !Number.isNaN(item.date.getTime()));
+  const apiPosts = await fetchApiFeedPosts();
+  const currentYear = today.getFullYear();
 
-  const byYear = new Map();
-  validPhotos.forEach((item) => {
-    const targetDate = new Date(item.date.getFullYear(), Number(month) - 1, Number(day));
-    const currentDate = new Date(item.date.getFullYear(), item.date.getMonth(), item.date.getDate());
-    const dayDelta = Math.round((currentDate.getTime() - targetDate.getTime()) / 86400000);
-    const candidate = {
-      ...item,
-      dayDelta,
-      absDayDelta: Math.abs(dayDelta)
-    };
+  const datedPosts = apiPosts
+    .map((post, index) => {
+      const createdRaw = post.createdTime || post.created_time;
+      const createdDate = new Date(createdRaw);
+      if (!createdRaw || Number.isNaN(createdDate.getTime())) {
+        return null;
+      }
 
-    const existing = byYear.get(item.year);
-    if (!existing || candidate.absDayDelta < existing.absDayDelta) {
-      byYear.set(item.year, candidate);
-    }
-  });
+      if (createdDate.getFullYear() >= currentYear) {
+        return null;
+      }
 
-  const matches = [...byYear.values()]
+      const targetDate = new Date(createdDate.getFullYear(), today.getMonth(), today.getDate());
+      const postDateOnly = new Date(createdDate.getFullYear(), createdDate.getMonth(), createdDate.getDate());
+      const dayDelta = Math.round((postDateOnly.getTime() - targetDate.getTime()) / 86400000);
+
+      const firstMedia = Array.isArray(post.media) ? post.media.find((media) => media && (media.imageUrl || media.image_url || media.previewUrl || media.preview_url)) : null;
+      const imageUrl = firstMedia ? (firstMedia.imageUrl || firstMedia.image_url || firstMedia.previewUrl || firstMedia.preview_url) : '';
+
+      return {
+        key: `${post.id || index}`,
+        title: post.message || post.story || firstMedia?.title || `Facebook post from ${createdDate.getFullYear()}`,
+        date: createdDate,
+        year: createdDate.getFullYear(),
+        dayDelta,
+        absDayDelta: Math.abs(dayDelta),
+        permalinkUrl: post.permalinkUrl || post.permalink_url || 'https://www.facebook.com/nomadcyclingclub',
+        imageUrl,
+        alt: firstMedia?.title || 'Facebook post image'
+      };
+    })
+    .filter(Boolean);
+
+  const matches = [...datedPosts]
     .sort((left, right) => {
       if (left.absDayDelta !== right.absDayDelta) {
         return left.absDayDelta - right.absDayDelta;
       }
-      return right.year - left.year;
+      if (left.year !== right.year) {
+        return right.year - left.year;
+      }
+      return right.date.getTime() - left.date.getTime();
     })
     .slice(0, 6);
 
@@ -962,10 +974,12 @@ async function renderOnThisDay() {
 
     return `
     <article class="memory-item">
-      <img src="${item.photo.bestSrc || item.photo.src}" alt="${item.photo.alt}" loading="lazy" />
+      ${item.imageUrl
+        ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.alt)}" loading="lazy" />`
+        : '<div class="memory-item-no-image">Post</div>'}
       <div class="memory-copy">
-        <h4>${item.photo.title}</h4>
-        <p>${formatLongDate(item.photo.date)}</p>
+        <h4><a class="home-feed-text-link" href="${escapeHtml(item.permalinkUrl)}" target="_blank" rel="noreferrer">${escapeHtml(item.title)}</a></h4>
+        <p>${formatDateTime(item.date.toISOString())}</p>
         <p class="memory-delta">${deltaLabel}</p>
       </div>
     </article>

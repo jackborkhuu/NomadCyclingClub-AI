@@ -154,30 +154,49 @@ async function fetchPosts() {
 
   const params = new URLSearchParams({
     fields,
-    limit: '25',
+    limit: '100',
     access_token: pageToken
   });
 
-  const endpoint = `https://graph.facebook.com/${graphVersion}/${encodeURIComponent(pageId)}/posts?${params.toString()}`;
-  const response = await fetch(endpoint, {
-    headers: {
-      Accept: 'application/json'
-    }
-  });
+  const maxPosts = 300;
+  const rawPosts = [];
+  const seenIds = new Set();
+  let nextUrl = `https://graph.facebook.com/${graphVersion}/${encodeURIComponent(pageId)}/posts?${params.toString()}`;
 
-  if (!response.ok) {
-    const body = await response.text();
-    let help = '';
-    if (/Cannot parse access token/i.test(body)) {
-      help = ' FB_PAGE_TOKEN appears malformed. Re-copy the page access_token from /me/accounts and replace the GitHub secret value with no quotes and no extra spaces.';
-    } else if (/User Access Token Is Not Supported/i.test(body) || /A Page access token is required/i.test(body)) {
-      help = ' FB_PAGE_TOKEN is a user token. Use the page access_token for your page from /me/accounts.';
+  while (nextUrl && rawPosts.length < maxPosts) {
+    const response = await fetch(nextUrl, {
+      headers: {
+        Accept: 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      let help = '';
+      if (/Cannot parse access token/i.test(body)) {
+        help = ' FB_PAGE_TOKEN appears malformed. Re-copy the page access_token from /me/accounts and replace the GitHub secret value with no quotes and no extra spaces.';
+      } else if (/User Access Token Is Not Supported/i.test(body) || /A Page access token is required/i.test(body)) {
+        help = ' FB_PAGE_TOKEN is a user token. Use the page access_token for your page from /me/accounts.';
+      }
+      throw new Error(`Graph API request failed (${response.status}): ${body}${help}`);
     }
-    throw new Error(`Graph API request failed (${response.status}): ${body}${help}`);
+
+    const payload = await response.json();
+    const pagePosts = Array.isArray(payload?.data) ? payload.data : [];
+    for (const post of pagePosts) {
+      const id = post?.id || `${post?.created_time || ''}-${rawPosts.length}`;
+      if (seenIds.has(id)) {
+        continue;
+      }
+      seenIds.add(id);
+      rawPosts.push(post);
+      if (rawPosts.length >= maxPosts) {
+        break;
+      }
+    }
+
+    nextUrl = payload?.paging?.next || null;
   }
-
-  const payload = await response.json();
-  const rawPosts = Array.isArray(payload?.data) ? payload.data : [];
 
   const posts = rawPosts
     .map((post) => normalizePost(post))
