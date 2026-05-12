@@ -290,6 +290,42 @@ img {
   color: var(--facebook-text);
 }
 
+.social-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--facebook-light-blue);
+  color: var(--facebook-blue);
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.social-link:hover {
+  background: #d0e7f9;
+  color: #0a66c2;
+  text-decoration: none;
+}
+
+.social-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.facebook-link {
+  color: var(--facebook-blue);
+}
+
 .card-heading {
   display: flex;
   align-items: baseline;
