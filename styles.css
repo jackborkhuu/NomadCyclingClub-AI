@@ -1911,6 +1911,32 @@ body.lightbox-open {
   height: 1px;
 }
 
+.strava-rides-card {
+  background: #ffffff;
+  border: 1px solid var(--facebook-border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.strava-rides-card h2 {
+  margin: 0 0 12px;
+  color: var(--facebook-text);
+  font-size: 1.25rem;
+}
+
+.strava-embed {
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.strava-embed iframe {
+  border: none;
+  border-radius: 10px;
+  display: block;
+  width: 100%;
+}
+
 .site-footer {
   background: #0f172a;
   color: #e2e8f0;

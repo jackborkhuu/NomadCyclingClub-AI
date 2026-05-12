@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nomad Cycling Club Title Font Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat+Alternates:wght@700&family=Oswald:wght@700&family=Sora:wght@800&family=Teko:wght@600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --border: #dbe3ea;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+      padding: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+    }
+
+    p {
+      margin: 0 0 18px;
+      color: var(--muted);
+    }
+
+    .note {
+      margin-top: -6px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+    }
+
+    .label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #2563eb;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .sample {
+      margin: 0;
+      line-height: 1.05;
+      color: #0b1324;
+      border-top: 1px dashed #d7dee8;
+      padding-top: 10px;
+      word-break: break-word;
+      font-size: clamp(1.9rem, 4vw, 2.5rem);
+      font-weight: 700;
+    }
+
+    .oswald {
+      font-family: "Oswald", sans-serif;
+      letter-spacing: 0.04em;
+    }
+
+    .bebas {
+      font-family: "Bebas Neue", sans-serif;
+      letter-spacing: 0.03em;
+    }
+
+    .sora {
+      font-family: "Sora", sans-serif;
+      letter-spacing: 0.01em;
+    }
+
+    .montserrat {
+      font-family: "Montserrat Alternates", sans-serif;
+      letter-spacing: 0.015em;
+    }
+
+    .teko {
+      font-family: "Teko", sans-serif;
+      letter-spacing: 0.03em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Title Font Preview</h1>
+  <p>Exact text shown in each style at live website title size.</p>
+  <p class="note">Only the font family changes between cards.</p>
+
+  <div class="grid">
+    <section class="card">
+      <div class="label">1. Oswald</div>
+      <p class="sample oswald">Nomad Cycling Club</p>
+    </section>
+
+    <section class="card">
+      <div class="label">2. Bebas Neue</div>
+      <p class="sample bebas">Nomad Cycling Club</p>
+    </section>
+
+    <section class="card">
+      <div class="label">3. Sora</div>
+      <p class="sample sora">Nomad Cycling Club</p>
+    </section>
+
+    <section class="card">
+      <div class="label">4. Montserrat Alternates</div>
+      <p class="sample montserrat">Nomad Cycling Club</p>
+    </section>
+
+    <section class="card">
+      <div class="label">5. Teko</div>
+      <p class="sample teko">Nomad Cycling Club</p>
+    </section>
+  </div>
+</body>
+</html>
