@@ -8,7 +8,40 @@ navToggle?.addEventListener('click', () => {
 const DONATE_CASH_TAG = '$NomadCyclingClub';
 const DONATE_URL = `https://cash.app/${encodeURIComponent(DONATE_CASH_TAG)}`;
 const DONATE_QR_URL = 'assets/donate-qr.png';
+const CLUB_AVATAR_URL = 'https://graph.facebook.com/nomadcyclingclub/picture?type=large';
+const IMAGE_FALLBACK_URL = 'assets/home-banner.jpg';
 let liveFeedDebugReason = '';
+
+function isClubAvatarImage(image) {
+  const alt = (image.getAttribute('alt') || '').toLowerCase();
+  return alt.includes('nomad cycling club') || image.closest('.profile-avatar') !== null || image.closest('.post-avatar') !== null;
+}
+
+function installImageFallbacks() {
+  document.addEventListener('error', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLImageElement)) {
+      return;
+    }
+
+    const currentSrc = target.getAttribute('src') || '';
+    if (!currentSrc) {
+      return;
+    }
+
+    const currentStage = target.dataset.fallbackStage || '0';
+    if (currentStage === '0' && isClubAvatarImage(target) && !currentSrc.includes('graph.facebook.com/nomadcyclingclub/picture')) {
+      target.dataset.fallbackStage = '1';
+      target.src = CLUB_AVATAR_URL;
+      return;
+    }
+
+    if (currentStage !== '2' && currentSrc !== IMAGE_FALLBACK_URL) {
+      target.dataset.fallbackStage = '2';
+      target.src = IMAGE_FALLBACK_URL;
+    }
+  }, true);
+}
 
 function ensureDonateLinks() {
   const navGroups = document.querySelectorAll('.tabs, .site-nav');
@@ -103,6 +136,7 @@ function initDonateModal() {
 
 ensureDonateLinks();
 initDonateModal();
+installImageFallbacks();
 
 const facebookPhotos = [
   {
@@ -1676,7 +1710,7 @@ async function renderApiHomeFeedPosts(container) {
     };
   }
 
-  const clubAvatar = 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/434604830_1029036748669316_4381808470709969180_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=wq6mCRo7vpIQ7kNvwHIVhPS&_nc_oc=Ado4Ht_3AIz3aO1db-EVOdfN-qkfL3TCPq8taQVZkyQ7dVnBfr7e9iDzd4ak1kjYHAg&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=42QPR6HS6egX18UFG_KD8g&_nc_ss=7b2a8&oh=00_Af7ow7NgPBFrQEn-u9g6Gon4xNzTwNI_Mn4qC4PcXEMyPA&oe=6A080E03';
+  const clubAvatar = CLUB_AVATAR_URL;
   const lightboxPhotos = [];
 
   const renderPostCard = (post, postIndex) => {
@@ -1949,7 +1983,7 @@ async function renderApiHomeFeedPosts(container) {
 }
 
 async function renderFallbackHomeFeedPosts(container) {
-  const clubAvatar = 'https://scontent-sea5-1.xx.fbcdn.net/v/t39.30808-6/434604830_1029036748669316_4381808470709969180_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=wq6mCRo7vpIQ7kNvwHIVhPS&_nc_oc=Ado4Ht_3AIz3aO1db-EVOdfN-qkfL3TCPq8taQVZkyQ7dVnBfr7e9iDzd4ak1kjYHAg&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&_nc_gid=42QPR6HS6egX18UFG_KD8g&_nc_ss=7b2a8&oh=00_Af7ow7NgPBFrQEn-u9g6Gon4xNzTwNI_Mn4qC4PcXEMyPA&oe=6A080E03';
+  const clubAvatar = CLUB_AVATAR_URL;
 
   const displayPhotos = await getDisplayPhotos();
   const recentFirst = [...displayPhotos].sort((left, right) => {
