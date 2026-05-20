@@ -189,6 +189,19 @@ async function signInMember() {
 
 async function setupMemberLoginPage() {
   const loginButton = document.getElementById('o365LoginBtn');
+  const isMemberLoginPage = window.location.pathname.toLowerCase().endsWith('/member-login.html')
+    || window.location.pathname.toLowerCase().endsWith('member-login.html');
+
+  if (!loginButton && isMemberLoginPage) {
+    try {
+      setAuthStatus('Redirecting to Microsoft sign-in...');
+      await signInMember();
+    } catch (error) {
+      setAuthStatus(error.message || 'Login failed. Try again.', true);
+    }
+    return;
+  }
+
   if (!loginButton) {
     return;
   }
