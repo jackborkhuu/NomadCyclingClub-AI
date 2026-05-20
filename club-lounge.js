@@ -10,8 +10,31 @@ const LOUNGE_CONFIG = {
 const GRAPH_SCOPES = ['User.Read', 'GroupMember.Read.All'];
 const AUTH_STORAGE_KEY = 'nomadClubAuthSession';
 const RACE_STORAGE_KEY = 'nomadRaceManagementEntries';
+const MSAL_BROWSER_URL = 'https://alcdn.msauth.net/browser/2.39.0/js/msal-browser.min.js';
 
 let msalClient = null;
+
+async function ensureMsalLoaded() {
+  if (window.msal && window.msal.PublicClientApplication) {
+    return;
+  }
+
+  await new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${MSAL_BROWSER_URL}"]`);
+    if (existing) {
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener('error', () => reject(new Error('Microsoft authentication library failed to load.')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = MSAL_BROWSER_URL;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Microsoft authentication library failed to load.'));
+    document.head.appendChild(script);
+  });
+}
 
 function isConfigComplete() {
   return !LOUNGE_CONFIG.clientId.startsWith('0000');
@@ -49,6 +72,7 @@ function isAllowedDomainIdentity(userDetails) {
 }
 
 async function getMsalClient() {
+  await ensureMsalLoaded();
   if (!window.msal || !window.msal.PublicClientApplication) {
     throw new Error('Microsoft authentication library failed to load.');
   }
