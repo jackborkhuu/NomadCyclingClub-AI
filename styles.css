@@ -2050,6 +2050,18 @@ body.lightbox-open {
   background: #ffffff;
 }
 
+.yammer-fallback-link {
+  margin-top: 0.75rem;
+  font-size: 0.95rem;
+  color: #1f2937;
+}
+
+.yammer-fallback-link a {
+  color: #1d4ed8;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
 .race-form {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));

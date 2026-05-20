@@ -620,8 +620,32 @@ function setupYammerFeed() {
       referrerpolicy="strict-origin-when-cross-origin"
       allow="clipboard-read; clipboard-write"
     ></iframe>
+    <p class="yammer-fallback-link">
+      If the embedded feed does not appear, <a href="${feedUrl}" target="_blank" rel="noopener">open the Nomads Yammer community in a new tab</a>.
+    </p>
   `;
-  statusNode.textContent = 'Viva Engage feed loaded. If prompted, sign in with your Microsoft organization account.';
+
+  const frame = yammerTarget.querySelector('iframe');
+  if (!frame) {
+    statusNode.textContent = 'Unable to initialize the Viva Engage embed. Use the fallback link below.';
+    return;
+  }
+
+  let loaded = false;
+  frame.addEventListener('load', () => {
+    loaded = true;
+    statusNode.textContent = 'Viva Engage feed loaded. If prompted, sign in with your Microsoft organization account.';
+  });
+
+  frame.addEventListener('error', () => {
+    statusNode.textContent = 'Embedded Viva Engage failed to load. Use the fallback link below.';
+  });
+
+  window.setTimeout(() => {
+    if (!loaded) {
+      statusNode.textContent = 'Still loading Viva Engage. If it stays blank, use the fallback link below.';
+    }
+  }, 8000);
 }
 
 function escapeHtml(value) {
