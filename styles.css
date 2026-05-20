@@ -101,6 +101,18 @@ img {
   border-radius: 999px;
 }
 
+.site-nav .member-login-link {
+  border: 1px solid #2563eb;
+  color: #1d4ed8;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+}
+
+.site-nav .member-login-link:hover {
+  background: #eff6ff;
+  text-decoration: none;
+}
+
 .site-nav .donate-trigger:hover {
   background: #15803d;
   color: #ffffff;
@@ -277,6 +289,19 @@ img {
   border-radius: 999px;
   padding: 8px 14px;
   margin: 8px 0;
+}
+
+.tab.member-login-link {
+  border: 1px solid #2563eb;
+  color: #1d4ed8;
+  border-radius: 999px;
+  padding: 8px 14px;
+  margin: 8px 0;
+}
+
+.tab.member-login-link:hover {
+  background: #eff6ff;
+  text-decoration: none;
 }
 
 .tab.donate-trigger:hover {
@@ -1947,6 +1972,208 @@ body.lightbox-open {
   width: 100%;
 }
 
+.auth-card {
+  background: #ffffff;
+  border: 1px solid var(--facebook-border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+  max-width: 760px;
+}
+
+.auth-status {
+  margin-top: 1rem;
+  color: #1e3a8a;
+  font-weight: 600;
+}
+
+.auth-status-error {
+  color: #b91c1c;
+}
+
+.auth-hints {
+  margin: 1rem 0 0;
+  padding-left: 1.25rem;
+  color: #475569;
+}
+
+.club-lounge-shell {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.lounge-heading {
+  background: linear-gradient(135deg, #dbeafe 0%, #ecfeff 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.lounge-subtitle {
+  margin: 0.5rem 0 0;
+  color: #334155;
+}
+
+.lounge-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.25rem;
+}
+
+.lounge-section-head h2 {
+  margin: 0;
+}
+
+.lounge-section-head p {
+  margin: 0.25rem 0 1rem;
+  color: #475569;
+}
+
+.yammer-feed {
+  min-height: 260px;
+  border: 1px solid #dbeafe;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  background: #f8fbff;
+}
+
+.race-form {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.race-form input,
+.race-form select {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.6rem;
+}
+
+.race-table-wrap {
+  overflow-x: auto;
+}
+
+.race-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 680px;
+}
+
+.race-table th,
+.race-table td {
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  padding: 0.7rem;
+}
+
+.race-table th {
+  color: #334155;
+  background: #f8fafc;
+}
+
+.race-delete {
+  border: 0;
+  background: transparent;
+  color: #b91c1c;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.empty-cell {
+  color: #64748b;
+}
+
+.calendar-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.calendar-controls h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.calendar-header {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #475569;
+  padding: 0.35rem;
+  text-align: center;
+}
+
+.calendar-day {
+  min-height: 76px;
+  border: 1px solid #dbeafe;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.45rem;
+  cursor: pointer;
+}
+
+.calendar-day.empty {
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
+}
+
+.calendar-day.has-event {
+  background: #eff6ff;
+}
+
+.calendar-day.selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.calendar-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #2563eb;
+}
+
+.calendar-events-panel {
+  margin-top: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.9rem;
+  background: #f8fafc;
+}
+
+.calendar-events-panel h4 {
+  margin: 0 0 0.5rem;
+}
+
+.calendar-event-list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.calendar-event-list li {
+  margin: 0.2rem 0;
+}
+
 .site-footer {
   background: #0f172a;
   color: #e2e8f0;
@@ -1968,6 +2195,15 @@ body.lightbox-open {
   .contact-grid {
     grid-template-columns: 1fr;
   }
+
+  .race-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lounge-heading {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 @media (max-width: 720px) {
@@ -1988,5 +2224,13 @@ body.lightbox-open {
 
   .site-nav.open {
     display: flex;
+  }
+
+  .race-form {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-day {
+    min-height: 62px;
   }
 }

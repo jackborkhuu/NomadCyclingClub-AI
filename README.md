@@ -1,4 +1,4 @@
-# Nomad Cycling Club Website
+# River City Cycling Club Website
 
 This is a static website scaffold for the cycling club.
 
@@ -47,3 +47,26 @@ Add these application settings in Azure Static Web Apps:
 - `FB_GRAPH_VERSION` - optional (defaults to `v23.0`)
 
 The gallery frontend calls `/api/facebook-gallery` first and falls back to `data/facebook-feed.json` when live API data is unavailable.
+
+## Member login and Club Lounge
+This site now includes:
+
+- `member-login.html` - Microsoft 365 member sign-in page
+- `club-lounge.html` - members-only lounge with Discussions, Race Management, and Calendar
+- `club-lounge.js` - O365 auth + group check + lounge UI logic
+
+Before deploying, update `club-lounge.js` with real values:
+
+- `LOUNGE_CONFIG.clientId` - Azure app registration client ID
+- `LOUNGE_CONFIG.requiredGroupId` - Microsoft 365 group object ID for authorized members
+- `LOUNGE_CONFIG.yammerGroupId` - Viva Engage (Yammer) group ID for Discussions
+
+Required Microsoft Graph delegated permissions for the app:
+
+- `User.Read`
+- `GroupMember.Read.All` (admin consent required)
+
+The login flow validates:
+
+- User is in the `nomadcyclingclub.com` tenant
+- User belongs to the configured member group
