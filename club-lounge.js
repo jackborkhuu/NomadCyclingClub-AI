@@ -4,7 +4,7 @@ const LOUNGE_CONFIG = {
   clientId: '00000000-0000-0000-0000-000000000000',
   requiredGroupId: '',
   yammerNetwork: 'nomadcyclingclub.com',
-  yammerGroupId: ''
+  yammerGroupId: '131511590912'
 };
 
 const GRAPH_SCOPES = ['User.Read', 'GroupMember.Read.All'];
