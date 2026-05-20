@@ -281,8 +281,15 @@ async function verifyClubLoungeAccessWithEasyAuth(clubGate, clubShell) {
     }
 
     const identities = await response.json();
-    const principal = Array.isArray(identities) && identities[0] ? identities[0].clientPrincipal : null;
+    const principal = Array.isArray(identities)
+      ? (identities[0] ? identities[0].clientPrincipal : null)
+      : (identities && identities.clientPrincipal ? identities.clientPrincipal : null);
     if (!principal) {
+      setAuthStatus('Please sign in with Microsoft 365 to access Club Lounge.', true);
+      return;
+    }
+
+    if (!Array.isArray(principal.userRoles) || !principal.userRoles.includes('authenticated')) {
       setAuthStatus('Please sign in with Microsoft 365 to access Club Lounge.', true);
       return;
     }
