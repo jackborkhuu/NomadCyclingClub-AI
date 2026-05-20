@@ -1,7 +1,8 @@
 const LOUNGE_CONFIG = {
   tenantIdOrDomain: 'nomadcyclingclub.com',
+  allowedDomain: 'nomadcyclingclub.com',
   clientId: '00000000-0000-0000-0000-000000000000',
-  requiredGroupId: '00000000-0000-0000-0000-000000000000',
+  requiredGroupId: '',
   yammerNetwork: 'nomadcyclingclub.com',
   yammerGroupId: ''
 };
@@ -13,7 +14,11 @@ const RACE_STORAGE_KEY = 'nomadRaceManagementEntries';
 let msalClient = null;
 
 function isConfigComplete() {
-  return !LOUNGE_CONFIG.clientId.startsWith('0000') && !LOUNGE_CONFIG.requiredGroupId.startsWith('0000');
+  return !LOUNGE_CONFIG.clientId.startsWith('0000');
+}
+
+function hasGroupRequirement() {
+  return Boolean(LOUNGE_CONFIG.requiredGroupId && !LOUNGE_CONFIG.requiredGroupId.startsWith('0000'));
 }
 
 function getAuthStatusNode() {
@@ -33,7 +38,14 @@ function isOrgUser(account) {
   if (!account || !account.username) {
     return false;
   }
-  return account.username.toLowerCase().endsWith('@nomadcyclingclub.com');
+  return account.username.toLowerCase().endsWith(`@${LOUNGE_CONFIG.allowedDomain}`);
+}
+
+function isAllowedDomainIdentity(userDetails) {
+  if (!userDetails) {
+    return false;
+  }
+  return `${userDetails}`.toLowerCase().endsWith(`@${LOUNGE_CONFIG.allowedDomain}`);
 }
 
 async function getMsalClient() {
@@ -119,8 +131,12 @@ function getSession() {
 
 async function signInMember() {
   if (!isConfigComplete()) {
-    throw new Error('Login config is incomplete. Set clientId and requiredGroupId in club-lounge.js.');
+    // SWA Easy Auth path: force Microsoft sign-in without requiring frontend app config.
+    const redirectUri = encodeURIComponent(`${window.location.origin}/club-lounge.html`);
+    window.location.assign(`/.auth/login/aad?post_login_redirect_uri=${redirectUri}`);
+    return;
   }
+
   setAuthStatus('Signing you in with Microsoft 365...');
   const client = await getMsalClient();
   const loginResponse = await client.loginPopup({
@@ -130,15 +146,16 @@ async function signInMember() {
 
   const account = loginResponse.account;
   if (!isOrgUser(account)) {
-    throw new Error('Please use your nomadcyclingclub.com Microsoft 365 account.');
+    throw new Error(`Please use your ${LOUNGE_CONFIG.allowedDomain} Microsoft 365 account.`);
   }
 
-  setAuthStatus('Checking group membership...');
-  const accessToken = await acquireGraphToken(client, account);
-  const isMember = await checkGroupMembership(accessToken);
-
-  if (!isMember) {
-    throw new Error('Your account is authenticated but not in the required Nomad member group.');
+  if (hasGroupRequirement()) {
+    setAuthStatus('Checking group membership...');
+    const accessToken = await acquireGraphToken(client, account);
+    const isMember = await checkGroupMembership(accessToken);
+    if (!isMember) {
+      throw new Error('Your account is authenticated but not in the required Nomad member group.');
+    }
   }
 
   saveSession(account);
@@ -169,8 +186,9 @@ async function verifyClubLoungeAccess() {
     return;
   }
 
+  // If no frontend app config, validate with SWA Easy Auth principal.
   if (!isConfigComplete()) {
-    setAuthStatus('Admin action required: set clientId and requiredGroupId in club-lounge.js.', true);
+    await verifyClubLoungeAccessWithEasyAuth(clubGate, clubShell);
     return;
   }
 
@@ -188,11 +206,12 @@ async function verifyClubLoungeAccess() {
     }
 
     const account = orgAccounts[0];
-    const token = await acquireGraphToken(client, account);
-    const isMember = await checkGroupMembership(token);
-
-    if (!isMember) {
-      throw new Error('This account is not in the required Nomad Cycling Club Microsoft 365 group.');
+    if (hasGroupRequirement()) {
+      const token = await acquireGraphToken(client, account);
+      const isMember = await checkGroupMembership(token);
+      if (!isMember) {
+        throw new Error('This account is not in the required Nomad Cycling Club Microsoft 365 group.');
+      }
     }
 
     saveSession(account);
@@ -214,6 +233,44 @@ async function verifyClubLoungeAccess() {
   }
 }
 
+async function verifyClubLoungeAccessWithEasyAuth(clubGate, clubShell) {
+  try {
+    const response = await fetch('/.auth/me', {
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      throw new Error('Unable to verify Microsoft sign-in session.');
+    }
+
+    const identities = await response.json();
+    const principal = Array.isArray(identities) && identities[0] ? identities[0].clientPrincipal : null;
+    if (!principal) {
+      setAuthStatus('Please sign in with Microsoft 365 to access Club Lounge.', true);
+      return;
+    }
+
+    if (!isAllowedDomainIdentity(principal.userDetails)) {
+      throw new Error(`Only ${LOUNGE_CONFIG.allowedDomain} Microsoft accounts can access Club Lounge.`);
+    }
+
+    clubGate.hidden = true;
+    clubShell.hidden = false;
+
+    const memberIdentity = document.getElementById('memberIdentity');
+    if (memberIdentity) {
+      memberIdentity.textContent = `Signed in as ${principal.userDetails}`;
+    }
+
+    setupLogoutButton();
+    setupRaceManagement();
+    await setupCalendar();
+    setupYammerFeed();
+  } catch (error) {
+    setAuthStatus(error.message || 'Unable to verify access.', true);
+  }
+}
+
 function setupLogoutButton(client, account) {
   const logoutButton = document.getElementById('logoutBtn');
   if (!logoutButton) {
@@ -221,10 +278,16 @@ function setupLogoutButton(client, account) {
   }
   logoutButton.addEventListener('click', async () => {
     clearSession();
-    await client.logoutPopup({
-      account
-    });
-    window.location.href = 'member-login.html';
+    if (client && account) {
+      await client.logoutPopup({
+        account
+      });
+      window.location.href = 'member-login.html';
+      return;
+    }
+
+    const postLogoutUri = encodeURIComponent(`${window.location.origin}/member-login.html`);
+    window.location.assign(`/.auth/logout?post_logout_redirect_uri=${postLogoutUri}`);
   });
 }
 
