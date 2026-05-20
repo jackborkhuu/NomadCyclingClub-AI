@@ -4,7 +4,8 @@ const LOUNGE_CONFIG = {
   clientId: '00000000-0000-0000-0000-000000000000',
   requiredGroupId: '',
   yammerNetwork: 'nomadcyclingclub.com',
-  yammerGroupId: '131511590912'
+  yammerGroupId: '131511590912',
+  yammerGroupToken: 'eyJfdHlwZSI6Ikdyb3VwIiwiaWQiOiIxMzE1MTE1OTA5MTIifQ'
 };
 
 const GRAPH_SCOPES = ['User.Read', 'GroupMember.Read.All'];
@@ -603,30 +604,24 @@ function setupYammerFeed() {
     return;
   }
 
-  if (!LOUNGE_CONFIG.yammerGroupId) {
-    statusNode.textContent = 'Set yammerGroupId in club-lounge.js to enable the Discussions feed.';
-    return;
-  }
-
-  if (!window.yam || !window.yam.connect || !window.yam.connect.embedFeed) {
-    statusNode.textContent = 'Yammer embed script did not load. Check network/CSP settings.';
+  if (!LOUNGE_CONFIG.yammerGroupId || !LOUNGE_CONFIG.yammerGroupToken) {
+    statusNode.textContent = 'Set yammerGroupId and yammerGroupToken in club-lounge.js to enable the Discussions feed.';
     return;
   }
 
   statusNode.textContent = 'Loading Viva Engage discussion feed...';
-  window.yam.connect.embedFeed({
-    container: '#yammerFeed',
-    network: LOUNGE_CONFIG.yammerNetwork,
-    feedType: 'group',
-    feedId: LOUNGE_CONFIG.yammerGroupId,
-    config: {
-      use_sso: true,
-      header: true,
-      footer: false,
-      showOpenGraphPreview: false,
-      defaultToCanonical: false
-    }
-  });
+  const feedUrl = `https://engage.cloud.microsoft/main/org/${encodeURIComponent(LOUNGE_CONFIG.yammerNetwork)}/groups/${LOUNGE_CONFIG.yammerGroupToken}/all`;
+  yammerTarget.innerHTML = `
+    <iframe
+      title="Viva Engage Discussions"
+      src="${feedUrl}"
+      class="yammer-feed-frame"
+      loading="lazy"
+      referrerpolicy="strict-origin-when-cross-origin"
+      allow="clipboard-read; clipboard-write"
+    ></iframe>
+  `;
+  statusNode.textContent = 'Viva Engage feed loaded. If prompted, sign in with your Microsoft organization account.';
 }
 
 function escapeHtml(value) {
