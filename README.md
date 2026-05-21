@@ -96,7 +96,7 @@ This project now includes a board-managed race system with:
 - `MS_CLIENT_ID` - app registration client ID used by API (application permissions)
 - `MS_CLIENT_SECRET` - app registration secret
 - `SP_HOSTNAME` - e.g. `nomadcyclingclub.sharepoint.com`
-- `SP_SITE_PATH` - e.g. `/sites/NomadCyclingClub`
+- `SP_SITE_PATH` - optional; defaults to `/` (root site), e.g. `/sites/NomadCyclingClub` if you want a specific site
 - `SP_RACE_LIST_NAME` - optional, defaults to `NomadRaceData`
 - `ALLOWED_MEMBER_DOMAIN` - optional, defaults to `nomadcyclingclub.com`
 - `BOARD_GROUP_OBJECT_ID` - board Microsoft 365 group object ID (required for board-only race admin)
