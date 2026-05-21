@@ -62,6 +62,59 @@ function getActiveTournament() {
   return RaceAdminState.tournaments.find((item) => item.tournamentId === RaceAdminState.activeTournamentId) || null;
 }
 
+function getActiveTournamentCategories() {
+  const tournament = getActiveTournament();
+  if (!tournament || !Array.isArray(tournament.categories) || !tournament.categories.length) {
+    return ['Under 40 Men', '40+ Men', 'Women', '50+ Men'];
+  }
+  return tournament.categories;
+}
+
+function setFormDisabled(formId, disabled) {
+  const form = raceNode(formId);
+  if (!form) {
+    return;
+  }
+
+  [...form.elements].forEach((element) => {
+    element.disabled = disabled;
+  });
+}
+
+function setTournamentEditLock() {
+  const tournament = getActiveTournament();
+  const isClosed = Boolean(tournament && tournament.status === 'closed');
+
+  setFormDisabled('stageForm', isClosed);
+  setFormDisabled('riderForm', isClosed);
+  setFormDisabled('resultForm', isClosed);
+
+  const publishButton = raceNode('publishTournamentBtn');
+  const closeButton = raceNode('closeTournamentBtn');
+  if (publishButton) {
+    publishButton.disabled = isClosed;
+  }
+  if (closeButton) {
+    closeButton.disabled = isClosed;
+  }
+
+  if (isClosed) {
+    setRaceStatus('This tournament is closed. Data entry and edits are locked.', true);
+  }
+}
+
+function renderCategoryOptions() {
+  const categorySelect = raceNode('riderCategory');
+  if (!categorySelect) {
+    return;
+  }
+
+  const categories = getActiveTournamentCategories();
+  categorySelect.innerHTML = [`<option value="">Category</option>`]
+    .concat(categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`))
+    .join('');
+}
+
 function refreshTournamentSelect() {
   const select = raceNode('activeTournament');
   if (!select) {
@@ -218,6 +271,8 @@ async function loadDataset() {
 
   const scoreboard = await raceApi(`/api/race-admin/scoreboard?tournamentId=${encodeURIComponent(RaceAdminState.activeTournamentId)}`);
   renderScoreboards(scoreboard);
+  renderCategoryOptions();
+  setTournamentEditLock();
 }
 
 async function loadTournaments() {
@@ -263,7 +318,7 @@ function setupRaceForms() {
       method: 'POST',
       body: JSON.stringify({
         name,
-        slug: getFormValue('tournamentSlug').trim()
+        categories: getFormValue('tournamentCategories').trim().split(',').map((item) => item.trim()).filter(Boolean)
       })
     });
 
@@ -276,6 +331,10 @@ function setupRaceForms() {
     event.preventDefault();
     if (!RaceAdminState.activeTournamentId) {
       setRaceStatus('Create and select a tournament first.', true);
+      return;
+    }
+    if (getActiveTournament()?.status === 'closed') {
+      setRaceStatus('This tournament is closed. No additional stage edits are allowed.', true);
       return;
     }
 
@@ -302,6 +361,10 @@ function setupRaceForms() {
       setRaceStatus('Create and select a tournament first.', true);
       return;
     }
+    if (getActiveTournament()?.status === 'closed') {
+      setRaceStatus('This tournament is closed. No additional rider registration is allowed.', true);
+      return;
+    }
 
     setRaceStatus('Registering rider...');
     await raceApi('/api/race-admin/registerRider', {
@@ -326,6 +389,10 @@ function setupRaceForms() {
     event.preventDefault();
     if (!RaceAdminState.activeTournamentId) {
       setRaceStatus('Create and select a tournament first.', true);
+      return;
+    }
+    if (getActiveTournament()?.status === 'closed') {
+      setRaceStatus('This tournament is closed. No additional result edits are allowed.', true);
       return;
     }
 
@@ -378,7 +445,7 @@ function setupRaceForms() {
       })
     });
     await loadTournaments();
-    setRaceStatus('Tournament closed and archived.');
+    setRaceStatus('Tournament closed and archived. Data entry and edits are now disabled.');
   });
 }
 

@@ -63,16 +63,16 @@
           <div id="raceAdminApp" class="race-admin-app" hidden>
             <div class="race-admin-grid">
               <section class="race-admin-card">
-                <h3>Create Tournament</h3>
+                <h3>Tournament Setup</h3>
                 <form id="tournamentForm" class="race-form race-form-2col">
                   <input type="text" id="tournamentName" placeholder="Tournament name" required />
-                  <input type="text" id="tournamentSlug" placeholder="URL slug (optional)" />
+                  <input type="text" id="tournamentCategories" placeholder="Categories (comma-separated, e.g. Under 40 Men, 40+ Men, Women, 50+ Men)" required />
                   <button class="button button-primary" type="submit">Create Tournament</button>
                 </form>
               </section>
 
               <section class="race-admin-card">
-                <h3>Select Tournament</h3>
+                <h3>Tournament Config</h3>
                 <form id="activeTournamentForm" class="race-form race-form-2col">
                   <select id="activeTournament" required></select>
                   <button class="button button-secondary" id="refreshTournamentData" type="button">Refresh Data</button>
