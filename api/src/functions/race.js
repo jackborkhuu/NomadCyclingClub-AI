@@ -315,6 +315,36 @@ function buildScoreboards(dataset, tournamentId) {
   };
 }
 
+function getTournamentById(dataset, tournamentId) {
+  return dataset.tournaments.find((item) => item.tournamentId === tournamentId) || null;
+}
+
+function ensureTournamentEditable(tournament) {
+  if (!tournament) {
+    throw new Error('Tournament not found.');
+  }
+
+  if (tournament.status === 'closed') {
+    throw new Error('Tournament is closed. Further data entry and edits are disabled.');
+  }
+}
+
+function normalizeCategories(rawCategories) {
+  const source = Array.isArray(rawCategories)
+    ? rawCategories
+    : String(rawCategories || '').split(',');
+
+  const cleaned = source
+    .map((item) => String(item || '').trim())
+    .filter(Boolean);
+
+  if (cleaned.length) {
+    return cleaned;
+  }
+
+  return ['Under 40 Men', '40+ Men', 'Women', '50+ Men'];
+}
+
 async function handleRaceAdmin(request) {
   if (request.method === 'OPTIONS') {
     return {
@@ -379,10 +409,12 @@ async function handleRaceAdmin(request) {
 
     if (action === 'createTournament') {
       const tournamentId = generateId('tour');
+      const categories = normalizeCategories(payload.categories);
       const tournament = {
         tournamentId,
         name: String(payload.name || '').trim(),
         description: String(payload.description || '').trim(),
+        categories,
         status: 'draft',
         timezone: 'America/Los_Angeles',
         createdAt: new Date().toISOString(),
@@ -421,6 +453,9 @@ async function handleRaceAdmin(request) {
         return jsonResponse({ error: 'tournamentId, stageName, stageOrder and startTimePst are required.' }, 400);
       }
 
+      const tournament = getTournamentById(dataset, tournamentId);
+      ensureTournamentEditable(tournament);
+
       const stageId = generateId('stage');
       const stage = {
         stageId,
@@ -454,6 +489,14 @@ async function handleRaceAdmin(request) {
         return jsonResponse({ error: 'tournamentId and rider name are required.' }, 400);
       }
 
+      const tournament = getTournamentById(dataset, tournamentId);
+      ensureTournamentEditable(tournament);
+      const category = String(payload.category || '').trim();
+      const allowedCategories = normalizeCategories(tournament.categories);
+      if (category && !allowedCategories.includes(category)) {
+        return jsonResponse({ error: 'Rider category is not part of this tournament configuration.' }, 400);
+      }
+
       const riderId = generateId('rider');
       const ridersInTournament = dataset.riders.filter((rider) => rider.tournamentId === tournamentId);
       const riderNumber = ridersInTournament.reduce((max, rider) => Math.max(max, Number(rider.riderNumber || 0)), 0) + 1;
@@ -467,7 +510,7 @@ async function handleRaceAdmin(request) {
         team: String(payload.team || '').trim(),
         gender: String(payload.gender || '').trim(),
         age: Number(payload.age || 0),
-        category: String(payload.category || '').trim(),
+        category,
         createdAt: new Date().toISOString()
       };
 
@@ -498,6 +541,9 @@ async function handleRaceAdmin(request) {
       if (!tournamentId || !stageId || !riderId || !finishTimestamp || !elapsedMs) {
         return jsonResponse({ error: 'tournamentId, stageId, riderId, finishTimestamp and elapsedMs are required.' }, 400);
       }
+
+      const tournament = getTournamentById(dataset, tournamentId);
+      ensureTournamentEditable(tournament);
 
       const existing = dataset.results.find((result) => result.tournamentId === tournamentId && result.stageId === stageId && result.riderId === riderId);
       if (existing) {
@@ -553,9 +599,13 @@ async function handleRaceAdmin(request) {
         return jsonResponse({ error: 'tournamentId is required.' }, 400);
       }
 
-      const tournament = dataset.tournaments.find((item) => item.tournamentId === tournamentId);
+      const tournament = getTournamentById(dataset, tournamentId);
       if (!tournament) {
         return jsonResponse({ error: 'Tournament not found.' }, 404);
+      }
+
+      if (action === 'closeTournament' && tournament.status === 'closed') {
+        return jsonResponse({ ok: true, tournament });
       }
 
       const status = action === 'publishTournament' ? 'published' : 'closed';
