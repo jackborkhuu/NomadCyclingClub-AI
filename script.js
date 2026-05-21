@@ -67,6 +67,29 @@ function ensureDonateLinks() {
   });
 }
 
+function ensureRaceResultsLinks() {
+  const navGroups = document.querySelectorAll('.tabs, .site-nav');
+  navGroups.forEach((group) => {
+    if (group.querySelector('a[href="race-results.html"]')) {
+      return;
+    }
+
+    const resultsLink = document.createElement('a');
+    resultsLink.href = 'race-results.html';
+    resultsLink.className = group.classList.contains('tabs') ? 'tab member-login-link' : 'member-login-link';
+    resultsLink.textContent = 'Race Results';
+
+    const links = [...group.querySelectorAll('a')];
+    const contactLink = links.find((link) => (link.getAttribute('href') || '').includes('contact.html'));
+
+    if (contactLink && contactLink.parentNode === group) {
+      contactLink.insertAdjacentElement('beforebegin', resultsLink);
+    } else {
+      group.appendChild(resultsLink);
+    }
+  });
+}
+
 function initDonateModal() {
   const donateLinks = document.querySelectorAll('.donate-trigger');
   if (donateLinks.length === 0) {
@@ -135,6 +158,7 @@ function initDonateModal() {
 }
 
 ensureDonateLinks();
+ensureRaceResultsLinks();
 initDonateModal();
 installImageFallbacks();
 

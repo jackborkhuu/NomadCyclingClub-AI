@@ -10,7 +10,6 @@ const LOUNGE_CONFIG = {
 
 const GRAPH_SCOPES = ['User.Read', 'GroupMember.Read.All'];
 const AUTH_STORAGE_KEY = 'nomadClubAuthSession';
-const RACE_STORAGE_KEY = 'nomadRaceManagementEntries';
 const MSAL_BROWSER_URL = 'https://alcdn.msauth.net/browser/2.39.0/js/msal-browser.min.js';
 
 let msalClient = null;
@@ -336,82 +335,22 @@ function setupLogoutButton(client, account) {
   });
 }
 
-function loadRaceEntries() {
-  try {
-    const raw = localStorage.getItem(RACE_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
-function saveRaceEntries(entries) {
-  localStorage.setItem(RACE_STORAGE_KEY, JSON.stringify(entries));
-}
-
-function renderRaceTable(entries) {
-  const tableBody = document.getElementById('raceTableBody');
-  if (!tableBody) {
-    return;
-  }
-
-  if (!entries.length) {
-    tableBody.innerHTML = '<tr><td colspan="6" class="empty-cell">No race entries yet.</td></tr>';
-    return;
-  }
-
-  tableBody.innerHTML = entries
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .map((entry) => `
-      <tr>
-        <td>${escapeHtml(entry.name)}</td>
-        <td>${escapeHtml(entry.date)}</td>
-        <td>${escapeHtml(entry.rider)}</td>
-        <td>${escapeHtml(entry.category)}</td>
-        <td>${escapeHtml(entry.status)}</td>
-        <td><button class="race-delete" type="button" data-id="${entry.id}">Delete</button></td>
-      </tr>
-    `)
-    .join('');
-
-  tableBody.querySelectorAll('.race-delete').forEach((button) => {
-    button.addEventListener('click', () => {
-      const id = button.getAttribute('data-id');
-      const nextEntries = loadRaceEntries().filter((entry) => entry.id !== id);
-      saveRaceEntries(nextEntries);
-      renderRaceTable(nextEntries);
-    });
-  });
-}
-
 function setupRaceManagement() {
-  const form = document.getElementById('raceForm');
-  if (!form) {
+  const raceSection = document.getElementById('raceSection');
+  if (!raceSection) {
     return;
   }
 
-  renderRaceTable(loadRaceEntries());
+  if (window.NomadRaceAdmin && typeof window.NomadRaceAdmin.init === 'function') {
+    window.NomadRaceAdmin.init();
+    return;
+  }
 
-  form.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const entries = loadRaceEntries();
-    const nextEntry = {
-      id: `${Date.now()}`,
-      name: document.getElementById('raceName').value.trim(),
-      date: document.getElementById('raceDate').value,
-      rider: document.getElementById('raceRider').value.trim(),
-      category: document.getElementById('raceCategory').value,
-      status: document.getElementById('raceStatus').value
-    };
-
-    entries.push(nextEntry);
-    saveRaceEntries(entries);
-    renderRaceTable(entries);
-    form.reset();
-  });
+  const statusNode = document.getElementById('raceAdminStatus');
+  if (statusNode) {
+    statusNode.textContent = 'Race management module did not load. Refresh and try again.';
+    statusNode.classList.add('auth-status-error');
+  }
 }
 
 function formatDayKey(date) {
