@@ -1,0 +1,7 @@
+# Ignore local files
+node_modules/
+.DS_Store
+.vscode/
+api/local.settings.json
+api/.env
+api/.env.*

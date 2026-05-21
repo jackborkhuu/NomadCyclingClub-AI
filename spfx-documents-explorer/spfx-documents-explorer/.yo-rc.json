@@ -1,0 +1,23 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "whichFolder": "subdir",
+    "solutionName": "spfx-documents-explorer",
+    "environment": "spo",
+    "packageManager": "npm",
+    "useGulp": false,
+    "componentType": "webpart",
+    "template": "react",
+    "componentName": "DocumentsExplorer",
+    "componentDescription": "Unified SharePoint document explorer for team libraries",
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "22.22.3",
+    "sdksVersions": {},
+    "version": "1.23.0",
+    "libraryName": "spfx-documents-explorer",
+    "libraryId": "2fb7034b-3f86-4985-8500-8915d5a0f7e8",
+    "solutionShortDescription": "spfx-documents-explorer description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false
+  }
+}

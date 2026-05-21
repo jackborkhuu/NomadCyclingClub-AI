@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Member Login · Nomad Cycling Club</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html">Nomad Cycling Club</a>
+      <button class="nav-toggle" id="navToggle" aria-label="Open navigation">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="site-nav" id="siteNav">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="events.html">Events</a>
+        <a href="gallery.html">Photos</a>
+        <a href="contact.html">Contact</a>
+        <a href="member-login.html" class="member-login-link">Member Login</a>
+        <a href="#donate" class="donate-trigger" aria-label="Donate to Nomad Cycling Club">Donate</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="section container">
+      <div class="auth-card">
+        <p class="eyebrow">Members area</p>
+        <h1>Member Login</h1>
+        <p>Use your Nomad Cycling Club Microsoft 365 account to access Club Lounge.</p>
+        <button id="o365LoginBtn" class="button button-primary" type="button">Continue with Microsoft 365</button>
+        <p id="authStatus" class="auth-status" aria-live="polite"></p>
+        <ul class="auth-hints">
+          <li>You must sign in with a nomadcyclingclub.com account.</li>
+          <li>You must belong to the configured Microsoft 365 member group.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© 2026 Nomad Cycling Club. All rights reserved.</p>
+      <p class="footer-mission-note">Mission: Build an inclusive cycling community rooted in Mongolian heritage. Values: Community, Cultural Pride, Inclusivity, Wellness, Adventure, and Respect.</p>
+      <p><a href="contact.html">Contact</a> • <a href="https://www.facebook.com/nomadcyclingclub" target="_blank" rel="noreferrer">Facebook</a></p>
+    </div>
+  </footer>
+
+  <script src="https://alcdn.msauth.net/browser/2.39.0/js/msal-browser.min.js"></script>
+  <script src="script.js"></script>
+  <script src="club-lounge.js"></script>
+</body>
+</html>

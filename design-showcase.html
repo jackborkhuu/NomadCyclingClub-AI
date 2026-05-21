@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nomad Design Visual Picker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;700&family=DM+Serif+Display:ital@0;1&family=Manrope:wght@400;600;700;800&family=Archivo+Black&family=IBM+Plex+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --ink: #0b1220;
+      --muted: #4b5563;
+      --card: #ffffff;
+      --line: #d1d5db;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 22px;
+      background:
+        radial-gradient(circle at 0% 0%, #dbeafe 0, transparent 35%),
+        radial-gradient(circle at 100% 100%, #fee2e2 0, transparent 35%),
+        var(--bg);
+      color: var(--ink);
+      font-family: "Manrope", "Segoe UI", sans-serif;
+    }
+
+    .topbar {
+      max-width: 1250px;
+      margin: 0 auto 14px;
+      background: #ffffffd6;
+      backdrop-filter: blur(6px);
+      border: 1px solid #dbe2ea;
+      border-radius: 14px;
+      padding: 14px 16px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: clamp(1.2rem, 2vw, 1.8rem);
+    }
+
+    .topbar p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .grid {
+      max-width: 1250px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .option {
+      background: var(--card);
+      border: 1px solid #d9e1eb;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+      min-height: 520px;
+      position: relative;
+    }
+
+    .pill {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 2;
+      background: #0f172a;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.75rem;
+      border-radius: 999px;
+      padding: 5px 10px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .mock {
+      padding: 14px;
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto auto auto 1fr auto;
+      gap: 10px;
+    }
+
+    .nav, .hero, .stats, .cards, .foot {
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      color: inherit;
+      opacity: 0.82;
+    }
+
+    .hero h2 { margin: 0; }
+    .hero p { margin: 8px 0 0; font-size: 0.84rem; opacity: 0.82; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .stat {
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1rem;
+      margin-bottom: 3px;
+    }
+
+    .cards {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .card {
+      border-radius: 10px;
+      padding: 9px;
+      min-height: 64px;
+      font-size: 0.78rem;
+    }
+
+    .card strong { display: block; margin-bottom: 4px; }
+
+    .foot {
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-align: center;
+      opacity: 0.85;
+    }
+
+    /* Option 1: Race-Day Editorial */
+    .o1 { background: #0a0a0a; color: #fafafa; }
+    .o1 .nav { background: #141414; border: 1px solid #2a2a2a; }
+    .o1 .hero {
+      background: linear-gradient(135deg, #db1f2f, #7f1d1d);
+      font-family: "Bebas Neue", sans-serif;
+      letter-spacing: 0.03em;
+    }
+    .o1 .hero h2 { font-size: clamp(1.7rem, 3vw, 2.2rem); line-height: 1; }
+    .o1 .stats { background: #141414; border: 1px solid #2a2a2a; }
+    .o1 .stat { background: #1e1e1e; border: 1px solid #343434; }
+    .o1 .cards { background: #141414; border: 1px solid #2a2a2a; }
+    .o1 .card { background: #1e1e1e; border: 1px solid #343434; }
+    .o1 .foot { background: #141414; border: 1px solid #2a2a2a; }
+
+    /* Option 2: Performance Dashboard */
+    .o2 { background: #f7fafc; color: #0b1320; font-family: "Space Grotesk", sans-serif; }
+    .o2 .nav { background: #e8eef8; border: 1px solid #c8d7ef; }
+    .o2 .hero { background: linear-gradient(135deg, #1d4ed8, #0f766e); color: #f8fbff; }
+    .o2 .hero h2 { font-size: clamp(1.35rem, 2.5vw, 1.8rem); }
+    .o2 .stats { background: #e8eef8; border: 1px solid #c8d7ef; }
+    .o2 .stat { background: #ffffff; border: 1px solid #d8e2f2; }
+    .o2 .cards { background: #f0f6ff; border: 1px solid #d5e4f8; }
+    .o2 .card { background: #fff; border: 1px solid #d8e2f2; }
+    .o2 .foot { background: #e8eef8; border: 1px solid #c8d7ef; }
+
+    /* Option 3: Community Storytelling */
+    .o3 { background: #f9f7f2; color: #2e2a24; }
+    .o3 .nav { background: #efe8dc; border: 1px solid #ded2c1; }
+    .o3 .hero { background: #243b2e; color: #f6f2e8; }
+    .o3 .hero h2 {
+      font-family: "DM Serif Display", serif;
+      font-size: clamp(1.5rem, 2.8vw, 2rem);
+      line-height: 1.1;
+      font-weight: 400;
+    }
+    .o3 .stats { background: #efe8dc; border: 1px solid #ded2c1; }
+    .o3 .stat { background: #f9f4ea; border: 1px solid #dfd3c2; }
+    .o3 .cards { background: #f2ebdf; border: 1px solid #dfd3c2; }
+    .o3 .card { background: #fffdf7; border: 1px solid #e4d9cb; }
+    .o3 .foot { background: #efe8dc; border: 1px solid #ded2c1; }
+
+    /* Option 4: Minimal Premium Club */
+    .o4 { background: #ffffff; color: #0f172a; }
+    .o4 .nav { background: #f8fafc; border: 1px solid #e2e8f0; }
+    .o4 .hero {
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+      border: 1px solid #e2e8f0;
+    }
+    .o4 .hero h2 {
+      font-family: "IBM Plex Sans", sans-serif;
+      font-size: clamp(1.2rem, 2.4vw, 1.7rem);
+      letter-spacing: 0.01em;
+    }
+    .o4 .stats { background: #ffffff; border: 1px solid #e2e8f0; }
+    .o4 .stat { background: #f8fafc; border: 1px solid #e2e8f0; }
+    .o4 .cards { background: #ffffff; border: 1px solid #e2e8f0; }
+    .o4 .card { background: #f8fafc; border: 1px solid #e2e8f0; }
+    .o4 .foot { background: #f8fafc; border: 1px solid #e2e8f0; }
+
+    /* Option 5: Event-First Adventure */
+    .o5 { background: #081018; color: #f2f8ff; }
+    .o5 .nav { background: #0f1e2d; border: 1px solid #22415f; }
+    .o5 .hero {
+      background:
+        linear-gradient(140deg, rgba(20, 184, 166, 0.93), rgba(8, 29, 41, 0.95)),
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.06) 0 5px, transparent 5px 10px);
+    }
+    .o5 .hero h2 {
+      font-family: "Archivo Black", sans-serif;
+      font-size: clamp(1.25rem, 2.6vw, 1.75rem);
+      line-height: 1.15;
+      text-transform: uppercase;
+    }
+    .o5 .stats { background: #0f1e2d; border: 1px solid #22415f; }
+    .o5 .stat { background: #13283b; border: 1px solid #274967; }
+    .o5 .cards { background: #0f1e2d; border: 1px solid #22415f; }
+    .o5 .card { background: #13283b; border: 1px solid #274967; }
+    .o5 .foot { background: #0f1e2d; border: 1px solid #22415f; }
+
+    @media (max-width: 700px) {
+      body { padding: 12px; }
+      .mock { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <section class="topbar">
+    <h1>Nomad Cycling Club - Visual Style Picker</h1>
+    <p>Choose one full style, or mix parts like hero from one + cards from another. Reply with option numbers and sections.</p>
+  </section>
+
+  <section class="grid">
+    <article class="option o1">
+      <div class="pill">Option 1</div>
+      <div class="mock">
+        <div class="nav"><span>NOMAD CYCLING CLUB</span><span class="nav-links">HOME ABOUT EVENTS PHOTOS</span></div>
+        <div class="hero"><h2>NOMAD CYCLING CLUB</h2><p>Race-day editorial style with bold contrast and high energy.</p></div>
+        <div class="stats">
+          <div class="stat"><strong>50+</strong>members</div>
+          <div class="stat"><strong>80+</strong>rides/year</div>
+          <div class="stat"><strong>10+</strong>events</div>
+        </div>
+        <div class="cards">
+          <div class="card"><strong>Upcoming Event</strong>Annual challenge countdown with featured image.</div>
+          <div class="card"><strong>Live Feed</strong>Big post titles and bold media cards.</div>
+          <div class="card"><strong>Gallery</strong>Large edge-to-edge thumbnails.</div>
+        </div>
+        <div class="foot">Strong, loud, athletic identity</div>
+      </div>
+    </article>
+
+    <article class="option o2">
+      <div class="pill">Option 2</div>
+      <div class="mock">
+        <div class="nav"><span>Nomad Cycling Club</span><span class="nav-links">Dashboard Events Gallery Join</span></div>
+        <div class="hero"><h2>Nomad Cycling Club</h2><p>Data-driven modern club dashboard with cleaner utilities.</p></div>
+        <div class="stats">
+          <div class="stat"><strong>12</strong>active rides</div>
+          <div class="stat"><strong>6:20</strong>next start</div>
+          <div class="stat"><strong>94%</strong>event fill</div>
+        </div>
+        <div class="cards">
+          <div class="card"><strong>Event Board</strong>Countdown + route info + weather chip.</div>
+          <div class="card"><strong>On This Day</strong>Timeline card stack with quick scroll.</div>
+          <div class="card"><strong>Community</strong>Cards for missions, values, and links.</div>
+        </div>
+        <div class="foot">Clean, modern, practical</div>
+      </div>
+    </article>
+
+    <article class="option o3">
+      <div class="pill">Option 3</div>
+      <div class="mock">
+        <div class="nav"><span>Nomad Cycling Club</span><span class="nav-links">Story Rides Journal Photos</span></div>
+        <div class="hero"><h2>Nomad Cycling Club</h2><p>Storytelling layout focused on culture, people, and memory.</p></div>
+        <div class="stats">
+          <div class="stat"><strong>Seattle</strong>based</div>
+          <div class="stat"><strong>Since</strong>2017</div>
+          <div class="stat"><strong>Weekly</strong>rides</div>
+        </div>
+        <div class="cards">
+          <div class="card"><strong>Ride of the Week</strong>Long-form featured community post.</div>
+          <div class="card"><strong>Member Spotlight</strong>Faces, quotes, and photo snippets.</div>
+          <div class="card"><strong>Archive</strong>Warm editorial gallery style.</div>
+        </div>
+        <div class="foot">Human, warm, community-first</div>
+      </div>
+    </article>
+
+    <article class="option o4">
+      <div class="pill">Option 4</div>
+      <div class="mock">
+        <div class="nav"><span>Nomad Cycling Club</span><span class="nav-links">Home About Events Contact</span></div>
+        <div class="hero"><h2>Nomad Cycling Club</h2><p>Minimal premium design with space, balance, and calm rhythm.</p></div>
+        <div class="stats">
+          <div class="stat"><strong>Members</strong>50+</div>
+          <div class="stat"><strong>Rides</strong>80+</div>
+          <div class="stat"><strong>Events</strong>10+</div>
+        </div>
+        <div class="cards">
+          <div class="card"><strong>Upcoming</strong>Refined event module with clear CTA.</div>
+          <div class="card"><strong>Feed</strong>Simple text-first post treatment.</div>
+          <div class="card"><strong>Gallery</strong>Quiet neutral grid.</div>
+        </div>
+        <div class="foot">Timeless, clean, low-noise</div>
+      </div>
+    </article>
+
+    <article class="option o5">
+      <div class="pill">Option 5</div>
+      <div class="mock">
+        <div class="nav"><span>NOMAD</span><span class="nav-links">EVENTS ROUTES JOIN DONATE</span></div>
+        <div class="hero"><h2>Nomad Cycling Club</h2><p>Event-first landing with adventure energy and urgency.</p></div>
+        <div class="stats">
+          <div class="stat"><strong>39d</strong>to challenge</div>
+          <div class="stat"><strong>128 mi</strong>route</div>
+          <div class="stat"><strong>Open</strong>registration</div>
+        </div>
+        <div class="cards">
+          <div class="card"><strong>Main Event</strong>Countdown hero and route details above fold.</div>
+          <div class="card"><strong>Route Cards</strong>Distance and elevation chips for rides.</div>
+          <div class="card"><strong>Join CTA</strong>Sticky mobile action for conversion.</div>
+        </div>
+        <div class="foot">Aggressive, campaign-style, growth-focused</div>
+      </div>
+    </article>
+  </section>
+</body>
+</html>
