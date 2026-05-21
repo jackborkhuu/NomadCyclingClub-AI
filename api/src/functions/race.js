@@ -99,7 +99,7 @@ async function graphRequest(token, path, options = {}) {
 
 async function getSiteId(token) {
   const hostname = getRequiredEnv('SP_HOSTNAME');
-  const sitePath = getRequiredEnv('SP_SITE_PATH');
+  const sitePath = process.env.SP_SITE_PATH || '/';
   const payload = await graphRequest(token, `/sites/${hostname}:${sitePath}`);
   return payload.id;
 }
