@@ -1,0 +1,37 @@
+declare interface IStyles {
+  documentsExplorer: string;
+  teams: string;
+  header: string;
+  kicker: string;
+  title: string;
+  subtitle: string;
+  rootGrid: string;
+  rootCard: string;
+  itemMain: string;
+  secondaryButton: string;
+  primaryButton: string;
+  breadcrumbButton: string;
+  inlineLink: string;
+  rootCardLabel: string;
+  itemMeta: string;
+  rootCardPath: string;
+  browserShell: string;
+  hiddenInput: string;
+  toolbar: string;
+  breadcrumbs: string;
+  breadcrumbDivider: string;
+  itemList: string;
+  itemRow: string;
+  itemRowSelected: string;
+  selectCell: string;
+  itemBadge: string;
+  folderBadge: string;
+  fileBadge: string;
+  itemText: string;
+  loading: string;
+  emptyState: string;
+  error: string;
+  infoBanner: string;
+}
+declare const styles: IStyles;
+export default styles;
