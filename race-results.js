@@ -40,7 +40,7 @@ function renderTables(payload) {
   const stageRows = [];
   (payload.stageTables || []).forEach((table) => {
     if (!table.entries.length) {
-      stageRows.push(`<tr><td>${escapeHtml(table.stageName)}</td><td colspan="4" class="empty-cell">No published entries for this stage.</td></tr>`);
+      stageRows.push(`<tr><td>${escapeHtml(table.stageName)}</td><td colspan="5" class="empty-cell">No published entries for this stage.</td></tr>`);
       return;
     }
 
@@ -49,6 +49,7 @@ function renderTables(payload) {
         <tr>
           <td>${escapeHtml(table.stageName)}</td>
           <td>${entry.rank}</td>
+          <td>${entry.bib || ''}</td>
           <td>${escapeHtml(entry.riderName)}</td>
           <td>${escapeHtml(entry.team)}</td>
           <td>${formatDuration(entry.elapsedMs)}</td>
@@ -59,13 +60,14 @@ function renderTables(payload) {
 
   stageBody.innerHTML = stageRows.length
     ? stageRows.join('')
-    : '<tr><td colspan="5" class="empty-cell">No published stage data available.</td></tr>';
+    : '<tr><td colspan="6" class="empty-cell">No published stage data available.</td></tr>';
 
   gcBody.innerHTML = (payload.gc || []).length
     ? payload.gc
         .map((entry) => `
           <tr>
             <td>${entry.rank}</td>
+            <td>${entry.bib || ''}</td>
             <td>${escapeHtml(entry.riderName)}</td>
             <td>${escapeHtml(entry.team)}</td>
             <td>${entry.stagesCompleted}</td>
@@ -73,7 +75,7 @@ function renderTables(payload) {
           </tr>
         `)
         .join('')
-    : '<tr><td colspan="5" class="empty-cell">No published GC data available.</td></tr>';
+    : '<tr><td colspan="6" class="empty-cell">No published GC data available.</td></tr>';
 }
 
 function setStatus(message, isError = false) {
@@ -118,7 +120,9 @@ async function loadAndRender(tournamentId = '') {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!window.location.pathname.toLowerCase().endsWith('race-results.html')) {
+  const pagePath = window.location.pathname.toLowerCase();
+  const isRaceResultsPage = pagePath.endsWith('race-results.html') || pagePath === '/raceresults2026' || pagePath === '/raceresults2026/';
+  if (!isRaceResultsPage) {
     return;
   }
 

@@ -70,12 +70,12 @@ function ensureDonateLinks() {
 function ensureRaceResultsLinks() {
   const navGroups = document.querySelectorAll('.tabs, .site-nav');
   navGroups.forEach((group) => {
-    if (group.querySelector('a[href="race-results.html"]')) {
+    if (group.querySelector('a[href="/raceresults2026"]') || group.querySelector('a[href="race-results.html"]')) {
       return;
     }
 
     const resultsLink = document.createElement('a');
-    resultsLink.href = 'race-results.html';
+    resultsLink.href = '/raceresults2026';
     resultsLink.className = group.classList.contains('tabs') ? 'tab member-login-link' : 'member-login-link';
     resultsLink.textContent = 'Race Results';
 

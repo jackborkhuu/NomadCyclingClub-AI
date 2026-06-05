@@ -167,6 +167,31 @@ img {
   font-size: 1rem;
 }
 
+.results-2026-main {
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgba(29, 78, 216, 0.08), transparent 60%),
+    radial-gradient(900px 380px at 100% 0%, rgba(22, 163, 74, 0.08), transparent 58%);
+}
+
+.results-hero {
+  margin-bottom: 1.2rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: var(--shadow);
+}
+
+.results-hero h1 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+
+.results-hero p {
+  margin: 0;
+  color: var(--muted);
+}
+
 .facebook-page {
   max-width: 1200px;
   margin: 0 auto;

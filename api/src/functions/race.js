@@ -196,8 +196,67 @@ function mapData(items) {
   const stages = entities.filter((item) => item.type === 'stage').map((item) => ({ ...item.payload, itemId: item.itemId }));
   const riders = entities.filter((item) => item.type === 'rider').map((item) => ({ ...item.payload, itemId: item.itemId }));
   const results = entities.filter((item) => item.type === 'result').map((item) => ({ ...item.payload, itemId: item.itemId }));
+  const excelSnapshots = entities.filter((item) => item.type === 'excelsnapshot').map((item) => ({ ...item.payload, itemId: item.itemId }));
 
-  return { tournaments, stages, riders, results, entities };
+  return { tournaments, stages, riders, results, excelSnapshots, entities };
+}
+
+function sanitizeExcelPublishPayload(payload) {
+  const stageTables = Array.isArray(payload?.stageTables)
+    ? payload.stageTables.map((table, index) => ({
+        stageId: `excel-stage-${index + 1}`,
+        stageName: String(table?.stageName || `Stage ${index + 1}`).trim(),
+        stageOrder: index + 1,
+        entries: Array.isArray(table?.entries)
+          ? table.entries
+              .map((entry) => ({
+                rank: Number(entry?.rank || 0),
+                bib: Number(entry?.bib || 0),
+                riderName: String(entry?.riderName || '').trim(),
+                team: String(entry?.team || '').trim(),
+                elapsedMs: Number(entry?.elapsedMs || 0)
+              }))
+              .filter((entry) => entry.rank > 0 && entry.bib > 0 && entry.riderName && entry.elapsedMs > 0)
+          : []
+      }))
+    : [];
+
+  const gc = Array.isArray(payload?.gc)
+    ? payload.gc
+        .map((entry) => ({
+          rank: Number(entry?.rank || 0),
+          bib: Number(entry?.bib || 0),
+          riderName: String(entry?.riderName || '').trim(),
+          team: String(entry?.team || '').trim(),
+          stagesCompleted: Number(entry?.stagesCompleted || 0),
+          elapsedMs: Number(entry?.elapsedMs || 0)
+        }))
+        .filter((entry) => entry.bib > 0 && entry.riderName)
+        .sort((a, b) => Number(a.rank || 99999) - Number(b.rank || 99999))
+    : [];
+
+  return {
+    eventName: String(payload?.eventName || 'Nomad Cycling Club Race Results').trim(),
+    publishedAt: String(payload?.publishedAt || new Date().toISOString()),
+    stageTables,
+    gc
+  };
+}
+
+function resolveExcelPublisher(request, payload = {}) {
+  const allowedDomain = process.env.ALLOWED_MEMBER_DOMAIN || 'nomadcyclingclub.com';
+  const principal = parsePrincipal(request);
+  if (principal?.userDetails && String(principal.userDetails).toLowerCase().endsWith(`@${allowedDomain}`)) {
+    return String(principal.userDetails).toLowerCase();
+  }
+
+  const publisherEmail = String(payload?.publisherEmail || '').trim().toLowerCase();
+  const publishPassword = String(payload?.publishPassword || '').trim();
+  if (publisherEmail.endsWith(`@${allowedDomain}`) && publishPassword === '2068514132') {
+    return publisherEmail;
+  }
+
+  throw new Error(`Only ${allowedDomain} users with a valid publish access code are allowed.`);
 }
 
 function generateId(prefix) {
@@ -356,8 +415,183 @@ async function handleRaceAdmin(request) {
   const action = request.params.action || request.query.get('action') || 'config';
 
   try {
-    const principal = requireAuthenticatedPrincipal(request);
     const token = await getAppAccessToken();
+
+    if (action === 'excelPublish') {
+      if (request.method !== 'POST') {
+        return jsonResponse({ error: 'excelPublish requires POST.' }, 405);
+      }
+
+      const siteId = await getSiteId(token);
+      const list = await ensureRaceList(token, siteId);
+
+      const publishPayload = await request.json();
+      const publisher = resolveExcelPublisher(request, publishPayload);
+      const snapshot = sanitizeExcelPublishPayload(publishPayload);
+      if (!snapshot.stageTables.length && !snapshot.gc.length) {
+        return jsonResponse({ error: 'No publishable stage or GC entries were provided.' }, 400);
+      }
+
+      const rawItems = await getAllRaceItems(token, siteId, list.id);
+      const dataset = mapData(rawItems);
+      const existing = dataset.entities.find((item) => item.type === 'excelsnapshot' && item.entityId === 'excel-snapshot-2026');
+
+      const nextPayload = {
+        ...snapshot,
+        publishedBy: publisher,
+        updatedAt: new Date().toISOString()
+      };
+
+      if (existing) {
+        await updateRaceItem(token, siteId, list.id, existing.itemId, {
+          PayloadJson: JSON.stringify(nextPayload),
+          IsPublished: true,
+          IsArchived: false,
+          SortOrder: Date.now()
+        });
+      } else {
+        await createRaceItem(token, siteId, list.id, {
+          Title: 'excel-snapshot-2026',
+          EntityType: 'excelSnapshot',
+          EntityId: 'excel-snapshot-2026',
+          TournamentId: 'excel-snapshot-2026',
+          StageId: '',
+          RiderId: '',
+          SortOrder: Date.now(),
+          IsPublished: true,
+          IsArchived: false,
+          PayloadJson: JSON.stringify(nextPayload)
+        });
+      }
+
+      return jsonResponse({
+        ok: true,
+        publishedBy: publisher,
+        eventName: snapshot.eventName,
+        stageCount: snapshot.stageTables.length,
+        gcCount: snapshot.gc.length,
+        resultsUrl: 'https://www.nomadcyclingclub.com/raceresults2026'
+      });
+    }
+
+    if (action === 'excelPublishDraft') {
+      if (request.method !== 'POST') {
+        return jsonResponse({ error: 'excelPublishDraft requires POST.' }, 405);
+      }
+
+      const siteId = await getSiteId(token);
+      const list = await ensureRaceList(token, siteId);
+
+      const publishPayload = await request.json();
+      const snapshot = sanitizeExcelPublishPayload(publishPayload);
+      if (!snapshot.stageTables.length && !snapshot.gc.length) {
+        return jsonResponse({ error: 'No publishable stage or GC entries were provided.' }, 400);
+      }
+
+      const draftId = generateId('excel-draft');
+      const draftPayload = {
+        ...snapshot,
+        draftId,
+        createdAt: new Date().toISOString(),
+        requestedBy: String(publishPayload?.publisherEmail || '').trim().toLowerCase()
+      };
+
+      await createRaceItem(token, siteId, list.id, {
+        Title: draftId,
+        EntityType: 'excelSnapshotDraft',
+        EntityId: draftId,
+        TournamentId: draftId,
+        StageId: '',
+        RiderId: '',
+        SortOrder: Date.now(),
+        IsPublished: false,
+        IsArchived: false,
+        PayloadJson: JSON.stringify(draftPayload)
+      });
+
+      return jsonResponse({
+        ok: true,
+        draftId,
+        publishUrl: `https://www.nomadcyclingclub.com/raceresults2026/publish?draftId=${encodeURIComponent(draftId)}`
+      });
+    }
+
+    if (action === 'excelPublishFinalize') {
+      if (request.method !== 'POST') {
+        return jsonResponse({ error: 'excelPublishFinalize requires POST.' }, 405);
+      }
+
+      const publisher = resolveExcelPublisher(request);
+      const siteId = await getSiteId(token);
+      const list = await ensureRaceList(token, siteId);
+      const finalizePayload = await request.json();
+      const draftId = String(finalizePayload?.draftId || '').trim();
+
+      if (!draftId) {
+        return jsonResponse({ error: 'draftId is required.' }, 400);
+      }
+
+      const rawItems = await getAllRaceItems(token, siteId, list.id);
+      const dataset = mapData(rawItems);
+      const draftEntity = dataset.entities.find((item) => item.type === 'excelsnapshotdraft' && item.entityId === draftId);
+      if (!draftEntity) {
+        return jsonResponse({ error: 'Draft publish payload not found.' }, 404);
+      }
+
+      const snapshot = sanitizeExcelPublishPayload(draftEntity.payload || {});
+      if (!snapshot.stageTables.length && !snapshot.gc.length) {
+        return jsonResponse({ error: 'Draft does not contain publishable data.' }, 400);
+      }
+
+      const existing = dataset.entities.find((item) => item.type === 'excelsnapshot' && item.entityId === 'excel-snapshot-2026');
+      const nextPayload = {
+        ...snapshot,
+        publishedBy: publisher,
+        updatedAt: new Date().toISOString(),
+        sourceDraftId: draftId
+      };
+
+      if (existing) {
+        await updateRaceItem(token, siteId, list.id, existing.itemId, {
+          PayloadJson: JSON.stringify(nextPayload),
+          IsPublished: true,
+          IsArchived: false,
+          SortOrder: Date.now()
+        });
+      } else {
+        await createRaceItem(token, siteId, list.id, {
+          Title: 'excel-snapshot-2026',
+          EntityType: 'excelSnapshot',
+          EntityId: 'excel-snapshot-2026',
+          TournamentId: 'excel-snapshot-2026',
+          StageId: '',
+          RiderId: '',
+          SortOrder: Date.now(),
+          IsPublished: true,
+          IsArchived: false,
+          PayloadJson: JSON.stringify(nextPayload)
+        });
+      }
+
+      await updateRaceItem(token, siteId, list.id, draftEntity.itemId, {
+        IsArchived: true,
+        IsPublished: false,
+        PayloadJson: JSON.stringify({
+          ...(draftEntity.payload || {}),
+          finalizedAt: new Date().toISOString(),
+          finalizedBy: publisher,
+          archived: true
+        })
+      });
+
+      return jsonResponse({
+        ok: true,
+        publishedBy: publisher,
+        resultsUrl: 'https://www.nomadcyclingclub.com/raceresults2026'
+      });
+    }
+
+    const principal = requireAuthenticatedPrincipal(request);
     const canManageBoard = await userInBoardGroup(token, principal.userId);
 
     if (action === 'config') {
@@ -372,12 +606,12 @@ async function handleRaceAdmin(request) {
       });
     }
 
+    const siteId = await getSiteId(token);
+    const list = await ensureRaceList(token, siteId);
+
     if (!canManageBoard) {
       return jsonResponse({ error: 'Board group access is required for race management.' }, 403);
     }
-
-    const siteId = await getSiteId(token);
-    const list = await ensureRaceList(token, siteId);
 
     if (action === 'bootstrap') {
       return jsonResponse({ ok: true, listId: list.id, listName: list.name || DATA_LIST_NAME });
@@ -662,6 +896,32 @@ async function handleRaceResults(request) {
     const publishedTournaments = dataset.tournaments
       .filter((item) => item.status === 'published' || item.status === 'closed')
       .sort((a, b) => String(b.publishedAt || b.updatedAt || '').localeCompare(String(a.publishedAt || a.updatedAt || '')));
+
+    const excelSnapshot = (dataset.excelSnapshots || [])
+      .slice()
+      .sort((a, b) => String(b.updatedAt || b.publishedAt || '').localeCompare(String(a.updatedAt || a.publishedAt || '')))[0] || null;
+
+    if (excelSnapshot) {
+      return jsonResponse({
+        ok: true,
+        tournament: {
+          tournamentId: 'excel-snapshot-2026',
+          name: excelSnapshot.eventName || 'Nomad Cycling Club Race Results',
+          status: 'published',
+          publishedAt: excelSnapshot.publishedAt || excelSnapshot.updatedAt || null
+        },
+        availableTournaments: [
+          {
+            tournamentId: 'excel-snapshot-2026',
+            name: excelSnapshot.eventName || 'Nomad Cycling Club Race Results',
+            status: 'published',
+            publishedAt: excelSnapshot.publishedAt || excelSnapshot.updatedAt || null
+          }
+        ],
+        stageTables: Array.isArray(excelSnapshot.stageTables) ? excelSnapshot.stageTables : [],
+        gc: Array.isArray(excelSnapshot.gc) ? excelSnapshot.gc : []
+      });
+    }
 
     const tournamentId = request.query.get('tournamentId') || (publishedTournaments[0] ? publishedTournaments[0].tournamentId : '');
 

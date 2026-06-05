@@ -3,42 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Race Results · Nomad Cycling Club</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>Race Results 2026 · Nomad Cycling Club</title>
+  <link rel="stylesheet" href="../styles.css" />
 </head>
 <body>
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="index.html">Nomad Cycling Club</a>
+      <a class="brand" href="../index.html">Nomad Cycling Club</a>
       <button class="nav-toggle" id="navToggle" aria-label="Open navigation">
         <span></span><span></span><span></span>
       </button>
       <nav class="site-nav" id="siteNav">
-        <a href="index.html">Home</a>
-        <a href="about.html">About</a>
-        <a href="events.html">Events</a>
-        <a href="gallery.html">Photos</a>
-        <a href="contact.html">Contact</a>
-        <a href="race-results.html" class="member-login-link">Race Results</a>
-        <a href="#donate" class="donate-trigger" aria-label="Donate to Nomad Cycling Club">Donate</a>
+        <a href="../index.html">Home</a>
+        <a href="../events.html">Events</a>
+        <a href="../gallery.html">Photos</a>
+        <a href="../contact.html">Contact</a>
+        <a href="/raceresults2026" class="member-login-link">Race Results 2026</a>
       </nav>
     </div>
   </header>
 
-  <main>
+  <main class="results-2026-main">
     <section class="section container">
-      <div class="page-intro">
-        <p class="eyebrow">Live standings</p>
-        <h1>Published Race Results</h1>
-        <p>This page only shows officially published race standings from board race management.</p>
+      <div class="results-hero">
+        <p class="eyebrow">Official Publish Feed</p>
+        <h1>Nomad Cycling Club Race Results 2026</h1>
+        <p>Live race standings published from the official Excel scoring workbook.</p>
       </div>
 
       <div class="race-admin-card">
         <div id="publicResultsStatus" class="auth-status">Loading published race results...</div>
-        <form id="publicTournamentSelector" class="race-form race-form-2col" hidden>
-          <select id="publicTournament"></select>
-          <button class="button button-secondary" type="button" id="publicRefreshBtn">Refresh</button>
-        </form>
       </div>
 
       <section class="race-admin-card">
@@ -84,12 +78,11 @@
   <footer class="site-footer">
     <div class="container footer-inner">
       <p>© 2026 Nomad Cycling Club. All rights reserved.</p>
-      <p class="footer-mission-note">Mission: Build an inclusive cycling community rooted in Mongolian heritage. Values: Community, Cultural Pride, Inclusivity, Wellness, Adventure, and Respect.</p>
-      <p><a href="events.html">Events</a> • <a href="contact.html">Contact</a> • <a href="https://www.facebook.com/nomadcyclingclub" target="_blank" rel="noreferrer">Facebook</a></p>
+      <p><a href="../contact.html">Contact</a> • <a href="https://www.facebook.com/nomadcyclingclub" target="_blank" rel="noreferrer">Facebook</a></p>
     </div>
   </footer>
 
-  <script src="script.js"></script>
-  <script src="race-results.js"></script>
+  <script src="../script.js"></script>
+  <script src="../race-results.js"></script>
 </body>
 </html>
