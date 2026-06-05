@@ -886,6 +886,18 @@ async function handleRaceResults(request) {
     };
   }
 
+  const accept = String(request.headers.get('accept') || '').toLowerCase();
+  const wantsHtml = accept.includes('text/html');
+  if (request.method === 'GET' && wantsHtml) {
+    return {
+      status: 302,
+      headers: {
+        Location: 'https://www.nomadcyclingclub.com/raceresults2026',
+        ...corsHeaders()
+      }
+    };
+  }
+
   try {
     const token = await getAppAccessToken();
     const siteId = await getSiteId(token);
