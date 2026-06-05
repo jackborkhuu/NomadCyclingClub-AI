@@ -180,6 +180,125 @@ img {
   color: var(--muted);
 }
 
+.results-layout {
+  margin-top: 1.2rem;
+}
+
+.stage-grid {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.stage-card {
+  border: 1px solid rgba(32, 57, 94, 0.16);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(244, 249, 255, 0.96));
+  box-shadow: 0 14px 28px rgba(18, 40, 72, 0.08);
+  overflow: hidden;
+}
+
+.stage-card-head {
+  padding: 0.95rem 1.1rem;
+  background: linear-gradient(100deg, #123f75, #165ba8);
+  color: #fff;
+}
+
+.stage-card-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+}
+
+.field-grid {
+  display: grid;
+  gap: 0.9rem;
+  padding: 0.95rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.field-card {
+  border: 1px solid rgba(23, 48, 86, 0.14);
+  border-radius: 14px;
+  background: linear-gradient(165deg, #ffffff, #f6f9ff);
+  box-shadow: 0 8px 20px rgba(30, 64, 110, 0.08);
+}
+
+.field-card-head {
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid rgba(20, 51, 94, 0.12);
+  background: linear-gradient(120deg, rgba(14, 95, 115, 0.09), rgba(37, 99, 235, 0.08));
+}
+
+.field-card-head h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #113157;
+}
+
+.field-card-head p {
+  margin: 0.3rem 0 0;
+  font-size: 0.82rem;
+  color: #4b607c;
+}
+
+.field-table-wrap {
+  overflow-x: auto;
+}
+
+.field-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.field-table th,
+.field-table td {
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid rgba(17, 49, 87, 0.08);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.field-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: 0.75rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #214166;
+  background: linear-gradient(180deg, rgba(224, 235, 251, 0.95), rgba(246, 250, 255, 0.95));
+}
+
+.field-table tbody tr:nth-child(odd) {
+  background: rgba(237, 244, 255, 0.45);
+}
+
+.field-table tbody tr:hover {
+  background: rgba(16, 98, 194, 0.1);
+}
+
+.empty-cell {
+  padding: 0.9rem;
+  color: #4c6280;
+}
+
+@media (max-width: 720px) {
+  .field-grid {
+    grid-template-columns: 1fr;
+    padding: 0.7rem;
+  }
+
+  .field-table {
+    font-size: 0.84rem;
+  }
+
+  .field-table th,
+  .field-table td {
+    padding: 0.5rem;
+  }
+}
+
 .facebook-page {
   max-width: 1200px;
   margin: 0 auto;

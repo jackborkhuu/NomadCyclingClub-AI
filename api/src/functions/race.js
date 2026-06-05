@@ -209,14 +209,36 @@ function sanitizeExcelPublishPayload(payload) {
         stageOrder: index + 1,
         entries: Array.isArray(table?.entries)
           ? table.entries
-              .map((entry) => ({
-                rank: Number(entry?.rank || 0),
-                bib: Number(entry?.bib || 0),
-                riderName: String(entry?.riderName || '').trim(),
-                team: String(entry?.team || '').trim(),
-                elapsedMs: Number(entry?.elapsedMs || 0)
-              }))
-              .filter((entry) => entry.rank > 0 && entry.bib > 0 && entry.riderName && entry.elapsedMs > 0)
+              .map((entry) => {
+                const place = Number(entry?.place || entry?.rank || 0);
+                const elapsedMs = Number(entry?.elapsedMs || 0);
+                const gcRank = Number(entry?.gcRank || 0);
+                const gcElapsedMs = Number(entry?.gcElapsedMs || 0);
+                const normalizedStatus = String(entry?.resultStatus || '').trim().toUpperCase();
+                const resultStatus = normalizedStatus || (elapsedMs > 0 ? 'FIN' : 'NO_TIME');
+
+                return {
+                  place: place > 0 ? place : null,
+                  rank: place > 0 ? place : null,
+                  bib: Number(entry?.bib || 0),
+                  fieldName: String(entry?.fieldName || '').trim() || 'Uncategorized',
+                  riderName: String(entry?.riderName || '').trim(),
+                  team: String(entry?.team || '').trim(),
+                  resultStatus,
+                  elapsedMs: elapsedMs > 0 ? elapsedMs : null,
+                  gcRank: gcRank > 0 ? gcRank : null,
+                  gcElapsedMs: gcElapsedMs > 0 ? gcElapsedMs : null
+                };
+              })
+              .filter((entry) => entry.bib > 0 && entry.riderName)
+              .sort((a, b) => {
+                const aPlace = a.place || 99999;
+                const bPlace = b.place || 99999;
+                if (aPlace !== bPlace) {
+                  return aPlace - bPlace;
+                }
+                return a.bib - b.bib;
+              })
           : []
       }))
     : [];

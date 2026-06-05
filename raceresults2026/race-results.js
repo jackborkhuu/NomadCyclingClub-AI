@@ -13,6 +13,9 @@ function escapeHtml(value) {
 
 function formatDuration(ms) {
   const total = Number(ms || 0);
+  if (!Number.isFinite(total) || total <= 0) {
+    return '-';
+  }
   const hours = Math.floor(total / 3600000);
   const minutes = Math.floor((total % 3600000) / 60000);
   const seconds = Math.floor((total % 60000) / 1000);
@@ -30,52 +33,140 @@ async function fetchResults(tournamentId = '') {
   return payload;
 }
 
-function renderTables(payload) {
-  const stageBody = resultsNode('publicStageResultsBody');
-  const gcBody = resultsNode('publicGcBody');
-  if (!stageBody || !gcBody) {
+function getDisplayPlace(entry) {
+  if (Number(entry.place) > 0) {
+    return String(entry.place);
+  }
+  const status = String(entry.resultStatus || '').toUpperCase();
+  if (status === 'DNF' || status === 'DNS') {
+    return status;
+  }
+  return '-';
+}
+
+function getDisplayTime(entry) {
+  if (Number(entry.elapsedMs) > 0) {
+    return formatDuration(entry.elapsedMs);
+  }
+  const status = String(entry.resultStatus || '').toUpperCase();
+  if (status === 'DNF' || status === 'DNS') {
+    return status;
+  }
+  return '-';
+}
+
+function buildGcLookup(payload) {
+  const lookup = new Map();
+  (payload.gc || []).forEach((entry) => {
+    lookup.set(Number(entry.bib), {
+      rank: Number(entry.rank) || null,
+      elapsedMs: Number(entry.elapsedMs) || null
+    });
+  });
+  return lookup;
+}
+
+function groupByField(entries) {
+  const groups = new Map();
+  entries.forEach((entry) => {
+    const fieldName = String(entry.fieldName || 'Uncategorized').trim() || 'Uncategorized';
+    if (!groups.has(fieldName)) {
+      groups.set(fieldName, []);
+    }
+    groups.get(fieldName).push(entry);
+  });
+  return Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+function sortEntries(entries) {
+  return [...entries].sort((a, b) => {
+    const aPlace = Number(a.place) > 0 ? Number(a.place) : 99999;
+    const bPlace = Number(b.place) > 0 ? Number(b.place) : 99999;
+    if (aPlace !== bPlace) {
+      return aPlace - bPlace;
+    }
+    return String(a.riderName || '').localeCompare(String(b.riderName || ''));
+  });
+}
+
+function renderStages(payload) {
+  const stageGrid = resultsNode('publicStagesGrid');
+  if (!stageGrid) {
     return;
   }
 
-  const stageRows = [];
-  (payload.stageTables || []).forEach((table) => {
-    if (!table.entries.length) {
-      stageRows.push(`<tr><td>${escapeHtml(table.stageName)}</td><td colspan="5" class="empty-cell">No published entries for this stage.</td></tr>`);
-      return;
-    }
+  const gcLookup = buildGcLookup(payload);
+  const stageTables = Array.isArray(payload.stageTables) ? payload.stageTables : [];
 
-    table.entries.forEach((entry) => {
-      stageRows.push(`
-        <tr>
-          <td>${escapeHtml(table.stageName)}</td>
-          <td>${entry.rank}</td>
-          <td>${entry.bib || ''}</td>
-          <td>${escapeHtml(entry.riderName)}</td>
-          <td>${escapeHtml(entry.team)}</td>
-          <td>${formatDuration(entry.elapsedMs)}</td>
-        </tr>
-      `);
-    });
-  });
+  if (!stageTables.length) {
+    stageGrid.innerHTML = '<section class="stage-card"><p class="empty-cell">No published stage data available.</p></section>';
+    return;
+  }
 
-  stageBody.innerHTML = stageRows.length
-    ? stageRows.join('')
-    : '<tr><td colspan="6" class="empty-cell">No published stage data available.</td></tr>';
+  stageGrid.innerHTML = stageTables
+    .map((stageTable) => {
+      const fieldGroups = groupByField(sortEntries(stageTable.entries || []));
 
-  gcBody.innerHTML = (payload.gc || []).length
-    ? payload.gc
-        .map((entry) => `
-          <tr>
-            <td>${entry.rank}</td>
-            <td>${entry.bib || ''}</td>
-            <td>${escapeHtml(entry.riderName)}</td>
-            <td>${escapeHtml(entry.team)}</td>
-            <td>${entry.stagesCompleted}</td>
-            <td>${formatDuration(entry.elapsedMs)}</td>
-          </tr>
-        `)
-        .join('')
-    : '<tr><td colspan="6" class="empty-cell">No published GC data available.</td></tr>';
+      const fieldTablesHtml = fieldGroups.length
+        ? fieldGroups
+            .map(([fieldName, entries]) => {
+              const rowsHtml = entries
+                .map((entry) => {
+                  const gc = gcLookup.get(Number(entry.bib)) || {
+                    rank: Number(entry.gcRank) || null,
+                    elapsedMs: Number(entry.gcElapsedMs) || null
+                  };
+
+                  return `
+                    <tr>
+                      <td>${escapeHtml(getDisplayPlace(entry))}</td>
+                      <td>${escapeHtml(entry.riderName || '')}</td>
+                      <td>${escapeHtml(entry.team || '')}</td>
+                      <td>${escapeHtml(getDisplayTime(entry))}</td>
+                      <td>${gc.rank ? `#${gc.rank}` : '-'}</td>
+                      <td>${gc.elapsedMs ? formatDuration(gc.elapsedMs) : '-'}</td>
+                    </tr>
+                  `;
+                })
+                .join('');
+
+              return `
+                <article class="field-card">
+                  <header class="field-card-head">
+                    <h3>${escapeHtml(fieldName)}</h3>
+                    <p>${entries.length} racer${entries.length === 1 ? '' : 's'}</p>
+                  </header>
+                  <div class="field-table-wrap">
+                    <table class="field-table">
+                      <thead>
+                        <tr>
+                          <th>Place</th>
+                          <th>Name</th>
+                          <th>Team</th>
+                          <th>Time</th>
+                          <th>GC</th>
+                          <th>GC Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>${rowsHtml}</tbody>
+                    </table>
+                  </div>
+                </article>
+              `;
+            })
+            .join('')
+        : '<article class="field-card"><p class="empty-cell">No entries for this stage.</p></article>';
+
+      return `
+        <section class="stage-card">
+          <header class="stage-card-head">
+            <h2>${escapeHtml(stageTable.stageName || 'Stage')}</h2>
+          </header>
+          <div class="field-grid">${fieldTablesHtml}</div>
+        </section>
+      `;
+    })
+    .join('');
 }
 
 function setStatus(message, isError = false) {
@@ -87,30 +178,10 @@ function setStatus(message, isError = false) {
   node.classList.toggle('auth-status-error', isError);
 }
 
-function renderTournamentSelector(payload, selectedId) {
-  const wrapper = resultsNode('publicTournamentSelector');
-  const select = resultsNode('publicTournament');
-  if (!wrapper || !select) {
-    return;
-  }
-
-  const tournaments = payload.availableTournaments || [];
-  if (!tournaments.length) {
-    wrapper.hidden = true;
-    return;
-  }
-
-  wrapper.hidden = false;
-  select.innerHTML = tournaments
-    .map((item) => `<option value="${escapeHtml(item.tournamentId)}" ${item.tournamentId === selectedId ? 'selected' : ''}>${escapeHtml(item.name)} (${escapeHtml(item.status || 'published')})</option>`)
-    .join('');
-}
-
 async function loadAndRender(tournamentId = '') {
   const payload = await fetchResults(tournamentId);
-  renderTables(payload);
-  const selectedId = payload.tournament?.tournamentId || tournamentId || '';
-  renderTournamentSelector(payload, selectedId);
+  renderStages(payload);
+
   if (!payload.tournament) {
     setStatus('No published race results available yet.');
     return;
@@ -126,20 +197,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  const selector = resultsNode('publicTournament');
-  const refreshBtn = resultsNode('publicRefreshBtn');
-
   const refresh = async () => {
-    const selected = selector ? selector.value : '';
     try {
-      await loadAndRender(selected);
+      await loadAndRender('');
     } catch (error) {
       setStatus(error.message || 'Unable to load public race results.', true);
     }
   };
-
-  selector?.addEventListener('change', refresh);
-  refreshBtn?.addEventListener('click', refresh);
 
   await refresh();
   window.setInterval(refresh, 15000);
