@@ -1,0 +1,602 @@
+const LOUNGE_CONFIG = {
+  tenantIdOrDomain: 'nomadcyclingclub.com',
+  allowedDomain: 'nomadcyclingclub.com',
+  clientId: '00000000-0000-0000-0000-000000000000',
+  requiredGroupId: '',
+  yammerNetwork: 'nomadcyclingclub.com',
+  yammerGroupId: '131511590912',
+  yammerGroupToken: 'eyJfdHlwZSI6Ikdyb3VwIiwiaWQiOiIxMzE1MTE1OTA5MTIifQ'
+};
+
+const GRAPH_SCOPES = ['User.Read', 'GroupMember.Read.All'];
+const AUTH_STORAGE_KEY = 'nomadClubAuthSession';
+const MSAL_BROWSER_URL = 'https://alcdn.msauth.net/browser/2.39.0/js/msal-browser.min.js';
+
+let msalClient = null;
+
+async function ensureMsalLoaded() {
+  if (window.msal && window.msal.PublicClientApplication) {
+    return;
+  }
+
+  await new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${MSAL_BROWSER_URL}"]`);
+    if (existing) {
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener('error', () => reject(new Error('Microsoft authentication library failed to load.')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = MSAL_BROWSER_URL;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Microsoft authentication library failed to load.'));
+    document.head.appendChild(script);
+  });
+}
+
+function isConfigComplete() {
+  return !LOUNGE_CONFIG.clientId.startsWith('0000');
+}
+
+function hasGroupRequirement() {
+  return Boolean(LOUNGE_CONFIG.requiredGroupId && !LOUNGE_CONFIG.requiredGroupId.startsWith('0000'));
+}
+
+function getAuthStatusNode() {
+  return document.getElementById('authStatus') || document.getElementById('clubAuthMessage');
+}
+
+function setAuthStatus(message, isError = false) {
+  const statusNode = getAuthStatusNode();
+  if (!statusNode) {
+    return;
+  }
+  statusNode.textContent = message;
+  statusNode.classList.toggle('auth-status-error', isError);
+}
+
+function isOrgUser(account) {
+  if (!account || !account.username) {
+    return false;
+  }
+  return account.username.toLowerCase().endsWith(`@${LOUNGE_CONFIG.allowedDomain}`);
+}
+
+function isAllowedDomainIdentity(userDetails) {
+  if (!userDetails) {
+    return false;
+  }
+  return `${userDetails}`.toLowerCase().endsWith(`@${LOUNGE_CONFIG.allowedDomain}`);
+}
+
+async function getMsalClient() {
+  await ensureMsalLoaded();
+  if (!window.msal || !window.msal.PublicClientApplication) {
+    throw new Error('Microsoft authentication library failed to load.');
+  }
+  if (!msalClient) {
+    msalClient = new window.msal.PublicClientApplication({
+      auth: {
+        clientId: LOUNGE_CONFIG.clientId,
+        authority: `https://login.microsoftonline.com/${LOUNGE_CONFIG.tenantIdOrDomain}`,
+        redirectUri: `${window.location.origin}${window.location.pathname}`
+      },
+      cache: {
+        cacheLocation: 'localStorage'
+      }
+    });
+  }
+  await msalClient.initialize();
+  return msalClient;
+}
+
+async function acquireGraphToken(client, account) {
+  const request = {
+    scopes: GRAPH_SCOPES,
+    account
+  };
+  try {
+    const tokenResponse = await client.acquireTokenSilent(request);
+    return tokenResponse.accessToken;
+  } catch (error) {
+    const tokenResponse = await client.acquireTokenPopup({
+      scopes: GRAPH_SCOPES,
+      prompt: 'consent'
+    });
+    return tokenResponse.accessToken;
+  }
+}
+
+async function checkGroupMembership(accessToken) {
+  const response = await fetch('https://graph.microsoft.com/v1.0/me/checkMemberGroups', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      groupIds: [LOUNGE_CONFIG.requiredGroupId]
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('Unable to validate Microsoft 365 group membership. Ensure Graph permissions are granted.');
+  }
+
+  const result = await response.json();
+  return Array.isArray(result.value) && result.value.includes(LOUNGE_CONFIG.requiredGroupId);
+}
+
+function saveSession(account) {
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
+    username: account.username,
+    name: account.name || account.username,
+    authenticatedAt: new Date().toISOString()
+  }));
+}
+
+function clearSession() {
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+}
+
+function getSession() {
+  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+  if (!raw) {
+    return null;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+async function signInMember() {
+  if (!isConfigComplete()) {
+    // SWA Easy Auth path: force Microsoft sign-in without requiring frontend app config.
+    const redirectUri = encodeURIComponent(`${window.location.origin}/club-lounge.html`);
+    window.location.assign(`/.auth/login/aad?post_login_redirect_uri=${redirectUri}`);
+    return;
+  }
+
+  setAuthStatus('Signing you in with Microsoft 365...');
+  const client = await getMsalClient();
+  const loginResponse = await client.loginPopup({
+    scopes: GRAPH_SCOPES,
+    prompt: 'select_account'
+  });
+
+  const account = loginResponse.account;
+  if (!isOrgUser(account)) {
+    throw new Error(`Please use your ${LOUNGE_CONFIG.allowedDomain} Microsoft 365 account.`);
+  }
+
+  if (hasGroupRequirement()) {
+    setAuthStatus('Checking group membership...');
+    const accessToken = await acquireGraphToken(client, account);
+    const isMember = await checkGroupMembership(accessToken);
+    if (!isMember) {
+      throw new Error('Your account is authenticated but not in the required Nomad member group.');
+    }
+  }
+
+  saveSession(account);
+  setAuthStatus('Access approved. Redirecting to Club Lounge...');
+  window.location.href = 'club-lounge.html';
+}
+
+async function setupMemberLoginPage() {
+  const loginButton = document.getElementById('o365LoginBtn');
+  const isMemberLoginPage = window.location.pathname.toLowerCase().endsWith('/member-login.html')
+    || window.location.pathname.toLowerCase().endsWith('member-login.html');
+
+  if (!loginButton && isMemberLoginPage) {
+    try {
+      setAuthStatus('Redirecting to Microsoft sign-in...');
+      await signInMember();
+    } catch (error) {
+      setAuthStatus(error.message || 'Login failed. Try again.', true);
+    }
+    return;
+  }
+
+  if (!loginButton) {
+    return;
+  }
+
+  loginButton.addEventListener('click', async () => {
+    try {
+      await signInMember();
+    } catch (error) {
+      setAuthStatus(error.message || 'Login failed. Try again.', true);
+    }
+  });
+}
+
+async function verifyClubLoungeAccess() {
+  const clubShell = document.getElementById('clubLoungeShell');
+  const clubGate = document.getElementById('clubAuthGate');
+
+  if (!clubShell || !clubGate) {
+    return;
+  }
+
+  // If no frontend app config, validate with SWA Easy Auth principal.
+  if (!isConfigComplete()) {
+    await verifyClubLoungeAccessWithEasyAuth(clubGate, clubShell);
+    return;
+  }
+
+  const session = getSession();
+  if (!session) {
+    setAuthStatus('Please sign in first to access Club Lounge.', true);
+    return;
+  }
+
+  try {
+    const client = await getMsalClient();
+    const orgAccounts = client.getAllAccounts().filter(isOrgUser);
+    if (!orgAccounts.length) {
+      throw new Error('Your login session expired. Please sign in again.');
+    }
+
+    const account = orgAccounts[0];
+    if (hasGroupRequirement()) {
+      const token = await acquireGraphToken(client, account);
+      const isMember = await checkGroupMembership(token);
+      if (!isMember) {
+        throw new Error('This account is not in the required Nomad Cycling Club Microsoft 365 group.');
+      }
+    }
+
+    saveSession(account);
+    clubGate.hidden = true;
+    clubShell.hidden = false;
+
+    const memberIdentity = document.getElementById('memberIdentity');
+    if (memberIdentity) {
+      memberIdentity.textContent = `Signed in as ${account.name || account.username}`;
+    }
+
+    setupLogoutButton(client, account);
+    setupRaceManagement();
+    await setupCalendar();
+    setupYammerFeed();
+  } catch (error) {
+    clearSession();
+    setAuthStatus(error.message || 'Unable to verify access.', true);
+  }
+}
+
+async function verifyClubLoungeAccessWithEasyAuth(clubGate, clubShell) {
+  try {
+    const response = await fetch('/.auth/me', {
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      throw new Error('Unable to verify Microsoft sign-in session.');
+    }
+
+    const identities = await response.json();
+    const principal = Array.isArray(identities)
+      ? (identities[0] ? identities[0].clientPrincipal : null)
+      : (identities && identities.clientPrincipal ? identities.clientPrincipal : null);
+    if (!principal) {
+      setAuthStatus('Please sign in with Microsoft 365 to access Club Lounge.', true);
+      return;
+    }
+
+    if (!Array.isArray(principal.userRoles) || !principal.userRoles.includes('authenticated')) {
+      setAuthStatus('Please sign in with Microsoft 365 to access Club Lounge.', true);
+      return;
+    }
+
+    if (!isAllowedDomainIdentity(principal.userDetails)) {
+      throw new Error(`Only ${LOUNGE_CONFIG.allowedDomain} Microsoft accounts can access Club Lounge.`);
+    }
+
+    clubGate.hidden = true;
+    clubShell.hidden = false;
+
+    const memberIdentity = document.getElementById('memberIdentity');
+    if (memberIdentity) {
+      memberIdentity.textContent = `Signed in as ${principal.userDetails}`;
+    }
+
+    setupLogoutButton();
+    setupRaceManagement();
+    await setupCalendar();
+    setupYammerFeed();
+  } catch (error) {
+    setAuthStatus(error.message || 'Unable to verify access.', true);
+  }
+}
+
+function setupLogoutButton(client, account) {
+  const logoutButton = document.getElementById('logoutBtn');
+  if (!logoutButton) {
+    return;
+  }
+  logoutButton.addEventListener('click', async () => {
+    clearSession();
+    if (client && account) {
+      await client.logoutPopup({
+        account
+      });
+      window.location.href = 'member-login.html';
+      return;
+    }
+
+    const postLogoutUri = encodeURIComponent(`${window.location.origin}/member-login.html`);
+    window.location.assign(`/.auth/logout?post_logout_redirect_uri=${postLogoutUri}`);
+  });
+}
+
+function setupRaceManagement() {
+  const raceSection = document.getElementById('raceSection');
+  if (!raceSection) {
+    return;
+  }
+
+  if (window.NomadRaceAdmin && typeof window.NomadRaceAdmin.init === 'function') {
+    window.NomadRaceAdmin.init();
+    return;
+  }
+
+  const statusNode = document.getElementById('raceAdminStatus');
+  if (statusNode) {
+    statusNode.textContent = 'Race management module did not load. Refresh and try again.';
+    statusNode.classList.add('auth-status-error');
+  }
+}
+
+function formatDayKey(date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function parseDayKeyLocal(dayKey) {
+  const [year, month, day] = dayKey.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function parseEventDate(value) {
+  const normalized = `${value || ''}`.replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function buildEventLookup(events) {
+  return events.reduce((lookup, eventItem) => {
+    const date = parseEventDate(eventItem.startTime || eventItem.start_time || eventItem.date);
+    if (!date) {
+      return lookup;
+    }
+
+    const key = formatDayKey(date);
+    if (!lookup[key]) {
+      lookup[key] = [];
+    }
+
+    lookup[key].push({
+      name: eventItem.name || 'Club ride',
+      place: eventItem.place && eventItem.place.name ? eventItem.place.name : 'Location TBA',
+      eventUrl: eventItem.eventUrl || eventItem.event_url || ''
+    });
+
+    return lookup;
+  }, {});
+}
+
+async function loadClubEvents() {
+  const response = await fetch('data/facebook-events.json');
+  if (!response.ok) {
+    throw new Error('Unable to load ride events for the calendar.');
+  }
+  const payload = await response.json();
+  const upcoming = Array.isArray(payload.upcoming) ? payload.upcoming : [];
+  const past = Array.isArray(payload.past) ? payload.past : [];
+  return [...upcoming, ...past];
+}
+
+function renderSelectedDateEvents(dayKey, lookup) {
+  const selectedDateLabel = document.getElementById('calendarSelectedDateLabel');
+  const selectedEvents = document.getElementById('calendarSelectedEvents');
+  if (!selectedDateLabel || !selectedEvents) {
+    return;
+  }
+
+  const selectedDate = parseDayKeyLocal(dayKey);
+  selectedDateLabel.textContent = selectedDate.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  });
+
+  const events = lookup[dayKey] || [];
+  if (!events.length) {
+    selectedEvents.innerHTML = '<li>No group rides or events on this day.</li>';
+    return;
+  }
+
+  selectedEvents.innerHTML = events
+    .map((entry) => {
+      const title = escapeHtml(entry.name);
+      const place = escapeHtml(entry.place);
+      if (entry.eventUrl) {
+        return `<li><a href="${escapeHtml(entry.eventUrl)}" target="_blank" rel="noopener">${title}</a> · ${place}</li>`;
+      }
+      return `<li>${title} · ${place}</li>`;
+    })
+    .join('');
+}
+
+function renderCalendar(monthDate, lookup, selectedDay) {
+  const monthLabel = document.getElementById('calendarMonthLabel');
+  const grid = document.getElementById('calendarGrid');
+  if (!monthLabel || !grid) {
+    return;
+  }
+
+  monthLabel.textContent = monthDate.toLocaleDateString(undefined, {
+    month: 'long',
+    year: 'numeric'
+  });
+
+  const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+  const startOffset = firstDay.getDay();
+  const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
+
+  const headers = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    .map((dayName) => `<div class="calendar-header">${dayName}</div>`)
+    .join('');
+
+  const cells = [];
+  for (let i = 0; i < startOffset; i += 1) {
+    cells.push('<div class="calendar-day empty" aria-hidden="true"></div>');
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const cellDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
+    const dayKey = formatDayKey(cellDate);
+    const hasEvents = Boolean((lookup[dayKey] || []).length);
+    const isSelected = selectedDay === dayKey;
+    cells.push(`
+      <button class="calendar-day ${hasEvents ? 'has-event' : ''} ${isSelected ? 'selected' : ''}" type="button" data-day="${dayKey}">
+        <span>${day}</span>
+        ${hasEvents ? '<span class="calendar-dot" aria-hidden="true"></span>' : ''}
+      </button>
+    `);
+  }
+
+  grid.innerHTML = `${headers}${cells.join('')}`;
+  grid.querySelectorAll('.calendar-day[data-day]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const dayKey = button.getAttribute('data-day');
+      renderSelectedDateEvents(dayKey, lookup);
+      const currentMonth = parseDayKeyLocal(dayKey);
+      renderCalendar(currentMonth, lookup, dayKey);
+      setupCalendarNavigation(currentMonth, lookup, dayKey);
+    });
+  });
+}
+
+function setupCalendarNavigation(currentMonth, lookup, selectedDay) {
+  const prevButton = document.getElementById('calendarPrev');
+  const nextButton = document.getElementById('calendarNext');
+
+  if (!prevButton || !nextButton) {
+    return;
+  }
+
+  prevButton.onclick = () => {
+    const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+    const nextSelected = formatDayKey(nextMonth);
+    renderCalendar(nextMonth, lookup, nextSelected);
+    renderSelectedDateEvents(nextSelected, lookup);
+    setupCalendarNavigation(nextMonth, lookup, nextSelected);
+  };
+
+  nextButton.onclick = () => {
+    const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+    const nextSelected = formatDayKey(nextMonth);
+    renderCalendar(nextMonth, lookup, nextSelected);
+    renderSelectedDateEvents(nextSelected, lookup);
+    setupCalendarNavigation(nextMonth, lookup, nextSelected);
+  };
+}
+
+async function setupCalendar() {
+  const grid = document.getElementById('calendarGrid');
+  if (!grid) {
+    return;
+  }
+
+  try {
+    const events = await loadClubEvents();
+    const lookup = buildEventLookup(events);
+    const now = new Date();
+    const selectedDay = formatDayKey(now);
+    const monthView = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    renderCalendar(monthView, lookup, selectedDay);
+    renderSelectedDateEvents(selectedDay, lookup);
+    setupCalendarNavigation(monthView, lookup, selectedDay);
+  } catch (error) {
+    const selectedEvents = document.getElementById('calendarSelectedEvents');
+    if (selectedEvents) {
+      selectedEvents.innerHTML = `<li>${escapeHtml(error.message || 'Unable to load calendar')}</li>`;
+    }
+  }
+}
+
+function setupYammerFeed() {
+  const statusNode = document.getElementById('yammerStatus');
+  const yammerTarget = document.getElementById('yammerFeed');
+  if (!statusNode || !yammerTarget) {
+    return;
+  }
+
+  if (!LOUNGE_CONFIG.yammerGroupId || !LOUNGE_CONFIG.yammerGroupToken) {
+    statusNode.textContent = 'Set yammerGroupId and yammerGroupToken in club-lounge.js to enable the Discussions feed.';
+    return;
+  }
+
+  statusNode.textContent = 'Loading Viva Engage discussion feed...';
+  const feedUrl = `https://engage.cloud.microsoft/main/org/${encodeURIComponent(LOUNGE_CONFIG.yammerNetwork)}/groups/${LOUNGE_CONFIG.yammerGroupToken}/all`;
+  yammerTarget.innerHTML = `
+    <iframe
+      title="Viva Engage Discussions"
+      src="${feedUrl}"
+      class="yammer-feed-frame"
+      loading="lazy"
+      referrerpolicy="strict-origin-when-cross-origin"
+      allow="clipboard-read; clipboard-write"
+    ></iframe>
+    <p class="yammer-fallback-link">
+      If the embedded feed does not appear, <a href="${feedUrl}" target="_blank" rel="noopener">open the Nomads Yammer community in a new tab</a>.
+    </p>
+  `;
+
+  const frame = yammerTarget.querySelector('iframe');
+  if (!frame) {
+    statusNode.textContent = 'Unable to initialize the Viva Engage embed. Use the fallback link below.';
+    return;
+  }
+
+  let loaded = false;
+  frame.addEventListener('load', () => {
+    loaded = true;
+    statusNode.textContent = 'Viva Engage feed loaded. If prompted, sign in with your Microsoft organization account.';
+  });
+
+  frame.addEventListener('error', () => {
+    statusNode.textContent = 'Embedded Viva Engage failed to load. Use the fallback link below.';
+  });
+
+  window.setTimeout(() => {
+    if (!loaded) {
+      statusNode.textContent = 'Still loading Viva Engage. If it stays blank, use the fallback link below.';
+    }
+  }, 8000);
+}
+
+function escapeHtml(value) {
+  return `${value || ''}`
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await setupMemberLoginPage();
+  await verifyClubLoungeAccess();
+});

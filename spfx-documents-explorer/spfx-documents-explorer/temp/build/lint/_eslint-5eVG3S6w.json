@@ -1,0 +1,18 @@
+{
+  "cacheVersion": "9.37.0_v24.15.0",
+  "fileVersions": [
+    [
+      "webparts/documentsExplorer/components/IDocumentsExplorerProps.ts",
+      "eB1h+v6Z1+0par7ghJgB/Z994AI=_WOCXAybMhcKTDAt3I3G/2fP4uZw="
+    ],
+    [
+      "webparts/documentsExplorer/components/DocumentsExplorer.tsx",
+      "BJg27e9WKFRayUBBQZe6vJrJxdY=_cBNElyqkJlivdcOC27DhgUm4QDY="
+    ],
+    [
+      "webparts/documentsExplorer/DocumentsExplorerWebPart.ts",
+      "Kw61mcjniqqPeN8VmdkmqPnuICA=_WOCXAybMhcKTDAt3I3G/2fP4uZw="
+    ]
+  ],
+  "filesHash": "G4P6OPrvCMwkTtJfFcu5TA"
+}
