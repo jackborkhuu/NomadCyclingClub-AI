@@ -213,7 +213,7 @@ img {
   display: grid;
   gap: 0.9rem;
   padding: 0.95rem;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .field-card {
@@ -285,7 +285,6 @@ img {
 
 @media (max-width: 720px) {
   .field-grid {
-    grid-template-columns: 1fr;
     padding: 0.7rem;
   }
 
