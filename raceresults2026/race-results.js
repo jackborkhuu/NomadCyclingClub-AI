@@ -210,6 +210,31 @@ function formatRefreshedAt(date) {
   return date.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
+function resolvePublishedMeta(payload) {
+  const candidates = [
+    { source: 'payload.publishedAt', value: payload?.publishedAt },
+    { source: 'payload.updatedAt', value: payload?.updatedAt },
+    { source: 'payload.tournament.publishedAt', value: payload?.tournament?.publishedAt },
+    { source: 'payload.tournament.updatedAt', value: payload?.tournament?.updatedAt }
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate.value) {
+      continue;
+    }
+    const parsed = new Date(candidate.value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return {
+        source: candidate.source,
+        raw: String(candidate.value),
+        date: parsed
+      };
+    }
+  }
+
+  return null;
+}
+
 function renderStages(payload, refreshedAt) {
   const stageGrid = resultsNode('publicStagesGrid');
   if (!stageGrid) {
@@ -355,14 +380,19 @@ function setStatus(message, isError = false) {
 
 async function loadAndRender(tournamentId = '') {
   const payload = await fetchResults(tournamentId);
-  renderStages(payload, new Date());
+  const publishedMeta = resolvePublishedMeta(payload);
+  renderStages(payload, publishedMeta?.date || null);
 
   if (!payload.tournament) {
     setStatus('No published race results available yet.');
     return;
   }
 
-  setStatus(`Showing published results for ${payload.tournament.name}.`);
+  const publishedLabel = publishedMeta
+    ? `${formatRefreshedAt(publishedMeta.date)} (API: ${publishedMeta.raw})`
+    : 'not provided by API';
+
+  setStatus(`Showing published results for ${payload.tournament.name}. Data refresh time: ${publishedLabel}`);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
