@@ -80,16 +80,26 @@ function groupByField(entries) {
 
 function sortEntries(entries) {
   return [...entries].sort((a, b) => {
-    const aPlace = Number(a.place) > 0 ? Number(a.place) : 99999;
-    const bPlace = Number(b.place) > 0 ? Number(b.place) : 99999;
-    if (aPlace !== bPlace) {
-      return aPlace - bPlace;
+    const aFin = Number(a.place) > 0;
+    const bFin = Number(b.place) > 0;
+    if (aFin && bFin) {
+      return Number(a.place) - Number(b.place);
     }
+    if (aFin) return -1;
+    if (bFin) return 1;
+    // Both non-finishers: DNS before DNF, then alphabetical
+    const aS = String(a.resultStatus || '').toUpperCase();
+    const bS = String(b.resultStatus || '').toUpperCase();
+    if (aS !== bS) return aS.localeCompare(bS);
     return String(a.riderName || '').localeCompare(String(b.riderName || ''));
   });
 }
 
-function renderStages(payload) {
+function formatRefreshedAt(date) {
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function renderStages(payload, refreshedAt) {
   const stageGrid = resultsNode('publicStagesGrid');
   if (!stageGrid) {
     return;
@@ -97,6 +107,7 @@ function renderStages(payload) {
 
   const gcLookup = buildGcLookup(payload);
   const stageTables = Array.isArray(payload.stageTables) ? payload.stageTables : [];
+  const refreshedStr = refreshedAt ? formatRefreshedAt(refreshedAt) : '';
 
   if (!stageTables.length) {
     stageGrid.innerHTML = '<section class="stage-card"><p class="empty-cell">No published stage data available.</p></section>';
@@ -133,7 +144,7 @@ function renderStages(payload) {
               return `
                 <article class="field-card">
                   <header class="field-card-head">
-                    <h3>${escapeHtml(fieldName)}</h3>
+                    <h3>${escapeHtml(fieldName)}${refreshedStr ? `<span class="field-refreshed">Updated ${escapeHtml(refreshedStr)}</span>` : ''}</h3>
                     <p>${entries.length} racer${entries.length === 1 ? '' : 's'}</p>
                   </header>
                   <div class="field-table-wrap">
@@ -180,7 +191,7 @@ function setStatus(message, isError = false) {
 
 async function loadAndRender(tournamentId = '') {
   const payload = await fetchResults(tournamentId);
-  renderStages(payload);
+  renderStages(payload, new Date());
 
   if (!payload.tournament) {
     setStatus('No published race results available yet.');

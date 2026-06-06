@@ -233,6 +233,17 @@ img {
   margin: 0;
   font-size: 1rem;
   color: #113157;
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.field-refreshed {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: #5a7499;
+  letter-spacing: 0.01em;
 }
 
 .field-card-head p {
