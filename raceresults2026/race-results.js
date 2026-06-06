@@ -144,7 +144,7 @@ function renderStages(payload, refreshedAt) {
               return `
                 <article class="field-card">
                   <header class="field-card-head">
-                    <h3>${escapeHtml(fieldName)}${refreshedStr ? `<span class="field-refreshed">Updated ${escapeHtml(refreshedStr)}</span>` : ''}</h3>
+                    <h3>${escapeHtml(stageTable.stageName)} · ${escapeHtml(fieldName)}${refreshedStr ? `<span class="field-refreshed">Updated ${escapeHtml(refreshedStr)}</span>` : ''}</h3>
                     <p>${entries.length} racer${entries.length === 1 ? '' : 's'}</p>
                   </header>
                   <div class="field-table-wrap">
