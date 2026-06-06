@@ -63,18 +63,106 @@ function getDisplayBonus(entry) {
   return '-';
 }
 
-function buildGcLookup(payload) {
-  const lookup = new Map();
-  (payload.gc || []).forEach((entry) => {
-    const gcStatus = String(entry.gcStatus || 'ACTIVE').toUpperCase();
-    const isNonFinisher = gcStatus === 'DNF' || gcStatus === 'DNS';
-    lookup.set(Number(entry.bib), {
-      rank: isNonFinisher ? null : (Number(entry.rank) || null),
-      elapsedMs: isNonFinisher ? null : (Number(entry.elapsedMs) || null),
-      gcStatus
+function normalizeResultStatus(entry) {
+  const status = String(entry?.resultStatus || '').toUpperCase();
+  if (status === 'DNF' || status === 'DNS') {
+    return status;
+  }
+  if (Number(entry?.elapsedMs) > 0) {
+    return 'FIN';
+  }
+  return status || 'NO_TIME';
+}
+
+function buildGeneralClassificationByField(stageTables) {
+  const stagesWithData = stageTables.filter((stageTable) => Array.isArray(stageTable?.entries) && stageTable.entries.length > 0);
+  const requiredStages = stagesWithData.length;
+  const ridersByBib = new Map();
+
+  stagesWithData.forEach((stageTable) => {
+    stageTable.entries.forEach((entry) => {
+      const bib = Number(entry?.bib || 0);
+      if (bib <= 0) {
+        return;
+      }
+
+      const rider = ridersByBib.get(bib) || {
+        bib,
+        riderName: String(entry?.riderName || '').trim(),
+        team: String(entry?.team || '').trim(),
+        fieldName: String(entry?.fieldName || '').trim() || 'Uncategorized',
+        elapsedMs: 0,
+        stagesCompleted: 0,
+        gcStatus: 'ACTIVE'
+      };
+
+      if (!rider.riderName) {
+        rider.riderName = String(entry?.riderName || '').trim();
+      }
+      if (!rider.team) {
+        rider.team = String(entry?.team || '').trim();
+      }
+      if (!rider.fieldName) {
+        rider.fieldName = String(entry?.fieldName || '').trim() || 'Uncategorized';
+      }
+
+      const status = normalizeResultStatus(entry);
+      if (status === 'DNS') {
+        rider.gcStatus = 'DNS';
+      } else if (status === 'DNF') {
+        if (rider.gcStatus !== 'DNS') {
+          rider.gcStatus = 'DNF';
+        }
+      } else if (rider.gcStatus === 'ACTIVE' && Number(entry?.elapsedMs) > 0) {
+        rider.elapsedMs += Number(entry.elapsedMs);
+        rider.stagesCompleted += 1;
+      }
+
+      ridersByBib.set(bib, rider);
     });
   });
-  return lookup;
+
+  const groups = new Map();
+  ridersByBib.forEach((rider) => {
+    const field = rider.fieldName || 'Uncategorized';
+    if (!groups.has(field)) {
+      groups.set(field, []);
+    }
+    groups.get(field).push(rider);
+  });
+
+  return Array.from(groups.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([fieldName, riders]) => {
+      const ranked = riders
+        .filter((rider) => rider.gcStatus === 'ACTIVE' && rider.stagesCompleted === requiredStages)
+        .sort((a, b) => {
+          if (a.elapsedMs !== b.elapsedMs) {
+            return a.elapsedMs - b.elapsedMs;
+          }
+          return a.bib - b.bib;
+        })
+        .map((rider, index) => ({ ...rider, rank: index + 1 }));
+
+      const unranked = riders
+        .filter((rider) => !(rider.gcStatus === 'ACTIVE' && rider.stagesCompleted === requiredStages))
+        .map((rider) => ({
+          ...rider,
+          rank: null,
+          gcStatus: rider.gcStatus === 'ACTIVE' ? 'PENDING' : rider.gcStatus
+        }))
+        .sort((a, b) => {
+          const statusOrder = { DNF: 1, DNS: 2, PENDING: 3 };
+          const aOrder = statusOrder[a.gcStatus] || 9;
+          const bOrder = statusOrder[b.gcStatus] || 9;
+          if (aOrder !== bOrder) {
+            return aOrder - bOrder;
+          }
+          return String(a.riderName || '').localeCompare(String(b.riderName || ''));
+        });
+
+      return { fieldName, rows: [...ranked, ...unranked] };
+    });
 }
 
 function groupByField(entries) {
@@ -128,8 +216,8 @@ function renderStages(payload, refreshedAt) {
     return;
   }
 
-  const gcLookup = buildGcLookup(payload);
   const stageTables = Array.isArray(payload.stageTables) ? payload.stageTables : [];
+  const gcTables = buildGeneralClassificationByField(stageTables);
   const refreshedStr = refreshedAt ? formatRefreshedAt(refreshedAt) : '';
 
   if (!stageTables.length) {
@@ -144,16 +232,9 @@ function renderStages(payload, refreshedAt) {
       const fieldTablesHtml = fieldGroups.length
         ? fieldGroups
             .map(([fieldName, entries]) => {
-              let placeCounter = 0;
               const rowsHtml = entries
                 .map((entry) => {
-                  const status = String(entry.resultStatus || '').toUpperCase();
-                  const isFinisher = status !== 'DNF' && status !== 'DNS' && (Number(entry.place) > 0 || Number(entry.elapsedMs) > 0);
-                  const displayPlace = isFinisher ? String(++placeCounter) : getDisplayPlace(entry);
-                  const gc = gcLookup.get(Number(entry.bib)) || {
-                    rank: Number(entry.gcRank) || null,
-                    elapsedMs: Number(entry.gcElapsedMs) || null
-                  };
+                  const displayPlace = getDisplayPlace(entry);
 
                   return `
                     <tr>
@@ -163,8 +244,6 @@ function renderStages(payload, refreshedAt) {
                       <td>${escapeHtml(entry.team || '')}</td>
                       <td>${escapeHtml(getDisplayTime(entry))}</td>
                       <td>${escapeHtml(getDisplayBonus(entry))}</td>
-                      <td>${gc.rank ? `#${gc.rank}` : (gc.gcStatus && gc.gcStatus !== 'ACTIVE' ? gc.gcStatus : '-')}</td>
-                      <td>${gc.elapsedMs ? formatDuration(gc.elapsedMs) : (gc.gcStatus && gc.gcStatus !== 'ACTIVE' ? gc.gcStatus : '-')}</td>
                     </tr>
                   `;
                 })
@@ -186,8 +265,6 @@ function renderStages(payload, refreshedAt) {
                           <th>Team</th>
                           <th>Time</th>
                           <th>Bonus</th>
-                          <th>GC</th>
-                          <th>GC Total</th>
                         </tr>
                       </thead>
                       <tbody>${rowsHtml}</tbody>
@@ -209,6 +286,62 @@ function renderStages(payload, refreshedAt) {
       `;
     })
     .join('');
+
+  const gcTablesHtml = gcTables.length
+    ? gcTables
+        .map((table) => {
+          const rowsHtml = table.rows
+            .map((row) => {
+              const statusText = row.rank ? 'ACTIVE' : row.gcStatus;
+              const gcTotal = row.rank ? formatDuration(row.elapsedMs) : '-';
+              return `
+                <tr>
+                  <td>${row.rank ? `#${row.rank}` : '-'}</td>
+                  <td>${row.bib || '-'}</td>
+                  <td>${escapeHtml(row.riderName || '')}</td>
+                  <td>${escapeHtml(row.team || '')}</td>
+                  <td>${escapeHtml(statusText)}</td>
+                  <td>${escapeHtml(gcTotal)}</td>
+                </tr>
+              `;
+            })
+            .join('');
+
+          return `
+            <article class="field-card">
+              <header class="field-card-head">
+                <h3>GC - General Classification · ${escapeHtml(table.fieldName)}${refreshedStr ? `<span class="field-refreshed">Updated ${escapeHtml(refreshedStr)}</span>` : ''}</h3>
+                <p>${table.rows.length} racer${table.rows.length === 1 ? '' : 's'}</p>
+              </header>
+              <div class="field-table-wrap">
+                <table class="field-table">
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Bib#</th>
+                      <th>Name</th>
+                      <th>Team</th>
+                      <th>Status</th>
+                      <th>GC Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>${rowsHtml}</tbody>
+                </table>
+              </div>
+            </article>
+          `;
+        })
+        .join('')
+    : '<article class="field-card"><p class="empty-cell">No GC data available.</p></article>';
+
+  stageGrid.innerHTML += `
+    <section class="stage-card">
+      <header class="stage-card-head">
+        <h2>GC - General Classification</h2>
+      </header>
+      <div class="field-grid">${gcTablesHtml}</div>
+    </section>
+  `;
 }
 
 function setStatus(message, isError = false) {
