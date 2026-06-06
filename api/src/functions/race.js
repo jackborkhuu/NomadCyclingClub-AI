@@ -201,6 +201,19 @@ function mapData(items) {
   return { tournaments, stages, riders, results, excelSnapshots, entities };
 }
 
+const BIB_FIELD_RANGES = [
+  { fieldName: 'Men Under 40', bibStart: 1, bibEnd: 50 },
+  { fieldName: 'Men 40+', bibStart: 51, bibEnd: 100 },
+  { fieldName: 'Men 50+', bibStart: 101, bibEnd: 150 },
+  { fieldName: 'Women', bibStart: 151, bibEnd: 200 }
+];
+
+function fieldNameFromBib(bib) {
+  const n = Number(bib);
+  const match = BIB_FIELD_RANGES.find((r) => n >= r.bibStart && n <= r.bibEnd);
+  return match ? match.fieldName : null;
+}
+
 function sanitizeExcelPublishPayload(payload) {
   const stageTables = Array.isArray(payload?.stageTables)
     ? payload.stageTables.map((table, index) => ({
@@ -221,7 +234,7 @@ function sanitizeExcelPublishPayload(payload) {
                   place: place > 0 ? place : null,
                   rank: place > 0 ? place : null,
                   bib: Number(entry?.bib || 0),
-                  fieldName: String(entry?.fieldName || '').trim() || 'Uncategorized',
+                  fieldName: String(entry?.fieldName || '').trim() || fieldNameFromBib(entry?.bib) || 'Uncategorized',
                   riderName: String(entry?.riderName || '').trim(),
                   team: String(entry?.team || '').trim(),
                   resultStatus,
