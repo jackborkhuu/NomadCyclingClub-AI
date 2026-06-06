@@ -965,7 +965,19 @@ async function handleRaceResults(request) {
             publishedAt: excelSnapshot.publishedAt || excelSnapshot.updatedAt || null
           }
         ],
-        stageTables: Array.isArray(excelSnapshot.stageTables) ? excelSnapshot.stageTables : [],
+        stageTables: Array.isArray(excelSnapshot.stageTables)
+          ? excelSnapshot.stageTables.map((stage) => ({
+              ...stage,
+              entries: Array.isArray(stage.entries)
+                ? stage.entries.map((entry) => ({
+                    ...entry,
+                    fieldName: (String(entry.fieldName || '').trim() && entry.fieldName !== 'Uncategorized')
+                      ? entry.fieldName
+                      : (fieldNameFromBib(entry.bib) || entry.fieldName || 'Uncategorized')
+                  }))
+                : []
+            }))
+          : [],
         gc: Array.isArray(excelSnapshot.gc) ? excelSnapshot.gc : []
       });
     }
