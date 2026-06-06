@@ -55,6 +55,14 @@ function getDisplayTime(entry) {
   return '-';
 }
 
+function getDisplayBonus(entry) {
+  const bonusSeconds = Number(entry.bonusSec || 0);
+  if (Number.isFinite(bonusSeconds) && bonusSeconds > 0) {
+    return `-${bonusSeconds}s`;
+  }
+  return '-';
+}
+
 function buildGcLookup(payload) {
   const lookup = new Map();
   (payload.gc || []).forEach((entry) => {
@@ -80,10 +88,20 @@ function groupByField(entries) {
 
 function sortEntries(entries) {
   return [...entries].sort((a, b) => {
-    const aFin = Number(a.place) > 0;
-    const bFin = Number(b.place) > 0;
+    const aFin = Number(a.place) > 0 || Number(a.elapsedMs) > 0;
+    const bFin = Number(b.place) > 0 || Number(b.elapsedMs) > 0;
     if (aFin && bFin) {
-      return Number(a.place) - Number(b.place);
+      const aPlace = Number(a.place) > 0 ? Number(a.place) : 99999;
+      const bPlace = Number(b.place) > 0 ? Number(b.place) : 99999;
+      if (aPlace !== bPlace) {
+        return aPlace - bPlace;
+      }
+      const aElapsed = Number(a.elapsedMs) > 0 ? Number(a.elapsedMs) : Number.MAX_SAFE_INTEGER;
+      const bElapsed = Number(b.elapsedMs) > 0 ? Number(b.elapsedMs) : Number.MAX_SAFE_INTEGER;
+      if (aElapsed !== bElapsed) {
+        return aElapsed - bElapsed;
+      }
+      return String(a.riderName || '').localeCompare(String(b.riderName || ''));
     }
     if (aFin) return -1;
     if (bFin) return 1;
@@ -121,8 +139,11 @@ function renderStages(payload, refreshedAt) {
       const fieldTablesHtml = fieldGroups.length
         ? fieldGroups
             .map(([fieldName, entries]) => {
+              let placeCounter = 0;
               const rowsHtml = entries
                 .map((entry) => {
+                  const isFinisher = Number(entry.place) > 0 || Number(entry.elapsedMs) > 0;
+                  const displayPlace = isFinisher ? String(++placeCounter) : getDisplayPlace(entry);
                   const gc = gcLookup.get(Number(entry.bib)) || {
                     rank: Number(entry.gcRank) || null,
                     elapsedMs: Number(entry.gcElapsedMs) || null
@@ -130,10 +151,12 @@ function renderStages(payload, refreshedAt) {
 
                   return `
                     <tr>
-                      <td>${escapeHtml(getDisplayPlace(entry))}</td>
+                      <td>${escapeHtml(displayPlace)}</td>
+                      <td>${entry.bib || '-'}</td>
                       <td>${escapeHtml(entry.riderName || '')}</td>
                       <td>${escapeHtml(entry.team || '')}</td>
                       <td>${escapeHtml(getDisplayTime(entry))}</td>
+                      <td>${escapeHtml(getDisplayBonus(entry))}</td>
                       <td>${gc.rank ? `#${gc.rank}` : '-'}</td>
                       <td>${gc.elapsedMs ? formatDuration(gc.elapsedMs) : '-'}</td>
                     </tr>
@@ -152,9 +175,11 @@ function renderStages(payload, refreshedAt) {
                       <thead>
                         <tr>
                           <th>Place</th>
+                          <th>Bib#</th>
                           <th>Name</th>
                           <th>Team</th>
                           <th>Time</th>
+                          <th>Bonus</th>
                           <th>GC</th>
                           <th>GC Total</th>
                         </tr>
