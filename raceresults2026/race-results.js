@@ -23,6 +23,18 @@ function formatDuration(ms) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(millis).padStart(3, '0')}`;
 }
 
+function formatDurationHms(ms) {
+  const total = Number(ms || 0);
+  if (!Number.isFinite(total) || total <= 0) {
+    return '-';
+  }
+  const totalSeconds = Math.floor(total / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
 async function fetchResults(tournamentId = '') {
   const suffix = tournamentId ? `?tournamentId=${encodeURIComponent(tournamentId)}` : '';
   const response = await fetch(`/api/race-results${suffix}`);
@@ -76,10 +88,19 @@ function normalizeResultStatus(entry) {
 
 function buildGeneralClassificationByField(stageTables) {
   const stagesWithData = stageTables.filter((stageTable) => Array.isArray(stageTable?.entries) && stageTable.entries.length > 0);
+  const orderedStages = [...stagesWithData]
+    .sort((a, b) => Number(a?.stageOrder || 0) - Number(b?.stageOrder || 0))
+    .slice(0, 3)
+    .map((stageTable, idx) => ({
+      id: String(stageTable?.stageId || `stage-${idx + 1}`),
+      label: `S${idx + 1}`
+    }));
+  const allowedStageIds = new Set(orderedStages.map((stage) => stage.id));
   const requiredStages = stagesWithData.length;
   const ridersByBib = new Map();
 
   stagesWithData.forEach((stageTable) => {
+    const currentStageId = String(stageTable?.stageId || '');
     stageTable.entries.forEach((entry) => {
       const bib = Number(entry?.bib || 0);
       if (bib <= 0) {
@@ -93,7 +114,8 @@ function buildGeneralClassificationByField(stageTables) {
         fieldName: String(entry?.fieldName || '').trim() || 'Uncategorized',
         elapsedMs: 0,
         stagesCompleted: 0,
-        gcStatus: 'ACTIVE'
+        gcStatus: 'ACTIVE',
+        stageElapsedMs: {}
       };
 
       if (!rider.riderName) {
@@ -116,6 +138,9 @@ function buildGeneralClassificationByField(stageTables) {
       } else if (rider.gcStatus === 'ACTIVE' && Number(entry?.elapsedMs) > 0) {
         rider.elapsedMs += Number(entry.elapsedMs);
         rider.stagesCompleted += 1;
+        if (allowedStageIds.has(currentStageId)) {
+          rider.stageElapsedMs[currentStageId] = Number(entry.elapsedMs);
+        }
       }
 
       ridersByBib.set(bib, rider);
@@ -162,7 +187,8 @@ function buildGeneralClassificationByField(stageTables) {
         });
 
       return { fieldName, rows: [...ranked, ...unranked] };
-    });
+    })
+    .map((table) => ({ ...table, stageColumns: orderedStages }));
 }
 
 function groupByField(entries) {
@@ -318,7 +344,10 @@ function renderStages(payload, refreshedAt) {
           const rowsHtml = table.rows
             .map((row) => {
               const statusText = row.rank ? 'ACTIVE' : row.gcStatus;
-              const gcTotal = row.rank ? formatDuration(row.elapsedMs) : '-';
+              const gcTotal = row.rank ? formatDurationHms(row.elapsedMs) : '-';
+              const stageCells = (table.stageColumns || [])
+                .map((stage) => `<td>${escapeHtml(formatDurationHms(row.stageElapsedMs?.[stage.id]))}</td>`)
+                .join('');
               return `
                 <tr>
                   <td>${row.rank ? `#${row.rank}` : '-'}</td>
@@ -326,10 +355,15 @@ function renderStages(payload, refreshedAt) {
                   <td>${escapeHtml(row.riderName || '')}</td>
                   <td>${escapeHtml(row.team || '')}</td>
                   <td>${escapeHtml(statusText)}</td>
+                  ${stageCells}
                   <td>${escapeHtml(gcTotal)}</td>
                 </tr>
               `;
             })
+            .join('');
+
+          const stageHeaders = (table.stageColumns || [])
+            .map((stage) => `<th>${escapeHtml(stage.label)} Time</th>`)
             .join('');
 
           return `
@@ -347,6 +381,7 @@ function renderStages(payload, refreshedAt) {
                       <th>Name</th>
                       <th>Team</th>
                       <th>Status</th>
+                      ${stageHeaders}
                       <th>GC Total</th>
                     </tr>
                   </thead>
