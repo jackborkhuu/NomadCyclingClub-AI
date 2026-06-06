@@ -262,12 +262,13 @@ function sanitizeExcelPublishPayload(payload) {
   const gc = Array.isArray(payload?.gc)
     ? payload.gc
         .map((entry) => ({
-          rank: Number(entry?.rank || 0),
+          rank: Number(entry?.rank || 0) || null,
           bib: Number(entry?.bib || 0),
           riderName: String(entry?.riderName || '').trim(),
           team: String(entry?.team || '').trim(),
+          gcStatus: String(entry?.gcStatus || 'ACTIVE').trim().toUpperCase(),
           stagesCompleted: Number(entry?.stagesCompleted || 0),
-          elapsedMs: Number(entry?.elapsedMs || 0)
+          elapsedMs: Number(entry?.elapsedMs || 0) || null
         }))
         .filter((entry) => entry.bib > 0 && entry.riderName)
         .sort((a, b) => Number(a.rank || 99999) - Number(b.rank || 99999))

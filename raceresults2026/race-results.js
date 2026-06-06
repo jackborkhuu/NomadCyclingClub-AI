@@ -66,9 +66,12 @@ function getDisplayBonus(entry) {
 function buildGcLookup(payload) {
   const lookup = new Map();
   (payload.gc || []).forEach((entry) => {
+    const gcStatus = String(entry.gcStatus || 'ACTIVE').toUpperCase();
+    const isNonFinisher = gcStatus === 'DNF' || gcStatus === 'DNS';
     lookup.set(Number(entry.bib), {
-      rank: Number(entry.rank) || null,
-      elapsedMs: Number(entry.elapsedMs) || null
+      rank: isNonFinisher ? null : (Number(entry.rank) || null),
+      elapsedMs: isNonFinisher ? null : (Number(entry.elapsedMs) || null),
+      gcStatus
     });
   });
   return lookup;
@@ -160,8 +163,8 @@ function renderStages(payload, refreshedAt) {
                       <td>${escapeHtml(entry.team || '')}</td>
                       <td>${escapeHtml(getDisplayTime(entry))}</td>
                       <td>${escapeHtml(getDisplayBonus(entry))}</td>
-                      <td>${gc.rank ? `#${gc.rank}` : '-'}</td>
-                      <td>${gc.elapsedMs ? formatDuration(gc.elapsedMs) : '-'}</td>
+                      <td>${gc.rank ? `#${gc.rank}` : (gc.gcStatus && gc.gcStatus !== 'ACTIVE' ? gc.gcStatus : '-')}</td>
+                      <td>${gc.elapsedMs ? formatDuration(gc.elapsedMs) : (gc.gcStatus && gc.gcStatus !== 'ACTIVE' ? gc.gcStatus : '-')}</td>
                     </tr>
                   `;
                 })
