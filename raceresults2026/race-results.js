@@ -34,23 +34,23 @@ async function fetchResults(tournamentId = '') {
 }
 
 function getDisplayPlace(entry) {
-  if (Number(entry.place) > 0) {
-    return String(entry.place);
-  }
   const status = String(entry.resultStatus || '').toUpperCase();
   if (status === 'DNF' || status === 'DNS') {
     return status;
+  }
+  if (Number(entry.place) > 0) {
+    return String(entry.place);
   }
   return '-';
 }
 
 function getDisplayTime(entry) {
-  if (Number(entry.elapsedMs) > 0) {
-    return formatDuration(entry.elapsedMs);
-  }
   const status = String(entry.resultStatus || '').toUpperCase();
   if (status === 'DNF' || status === 'DNS') {
     return status;
+  }
+  if (Number(entry.elapsedMs) > 0) {
+    return formatDuration(entry.elapsedMs);
   }
   return '-';
 }
@@ -88,8 +88,10 @@ function groupByField(entries) {
 
 function sortEntries(entries) {
   return [...entries].sort((a, b) => {
-    const aFin = Number(a.place) > 0 || Number(a.elapsedMs) > 0;
-    const bFin = Number(b.place) > 0 || Number(b.elapsedMs) > 0;
+    const aStatus = String(a.resultStatus || '').toUpperCase();
+    const bStatus = String(b.resultStatus || '').toUpperCase();
+    const aFin = aStatus !== 'DNF' && aStatus !== 'DNS' && (Number(a.place) > 0 || Number(a.elapsedMs) > 0);
+    const bFin = bStatus !== 'DNF' && bStatus !== 'DNS' && (Number(b.place) > 0 || Number(b.elapsedMs) > 0);
     if (aFin && bFin) {
       const aPlace = Number(a.place) > 0 ? Number(a.place) : 99999;
       const bPlace = Number(b.place) > 0 ? Number(b.place) : 99999;
@@ -106,8 +108,8 @@ function sortEntries(entries) {
     if (aFin) return -1;
     if (bFin) return 1;
     // Both non-finishers: DNS before DNF, then alphabetical
-    const aS = String(a.resultStatus || '').toUpperCase();
-    const bS = String(b.resultStatus || '').toUpperCase();
+    const aS = aStatus;
+    const bS = bStatus;
     if (aS !== bS) return aS.localeCompare(bS);
     return String(a.riderName || '').localeCompare(String(b.riderName || ''));
   });
@@ -142,7 +144,8 @@ function renderStages(payload, refreshedAt) {
               let placeCounter = 0;
               const rowsHtml = entries
                 .map((entry) => {
-                  const isFinisher = Number(entry.place) > 0 || Number(entry.elapsedMs) > 0;
+                  const status = String(entry.resultStatus || '').toUpperCase();
+                  const isFinisher = status !== 'DNF' && status !== 'DNS' && (Number(entry.place) > 0 || Number(entry.elapsedMs) > 0);
                   const displayPlace = isFinisher ? String(++placeCounter) : getDisplayPlace(entry);
                   const gc = gcLookup.get(Number(entry.bib)) || {
                     rank: Number(entry.gcRank) || null,

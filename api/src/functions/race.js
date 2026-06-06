@@ -227,18 +227,21 @@ function sanitizeExcelPublishPayload(payload) {
                 const elapsedMs = Number(entry?.elapsedMs || 0);
                 const gcRank = Number(entry?.gcRank || 0);
                 const gcElapsedMs = Number(entry?.gcElapsedMs || 0);
+                const bonusSec = Number(entry?.bonusSec || 0);
                 const normalizedStatus = String(entry?.resultStatus || '').trim().toUpperCase();
                 const resultStatus = normalizedStatus || (elapsedMs > 0 ? 'FIN' : 'NO_TIME');
+                const isNonFinisher = resultStatus === 'DNF' || resultStatus === 'DNS';
 
                 return {
-                  place: place > 0 ? place : null,
-                  rank: place > 0 ? place : null,
+                  place: !isNonFinisher && place > 0 ? place : null,
+                  rank: !isNonFinisher && place > 0 ? place : null,
                   bib: Number(entry?.bib || 0),
                   fieldName: String(entry?.fieldName || '').trim() || fieldNameFromBib(entry?.bib) || 'Uncategorized',
                   riderName: String(entry?.riderName || '').trim(),
                   team: String(entry?.team || '').trim(),
                   resultStatus,
-                  elapsedMs: elapsedMs > 0 ? elapsedMs : null,
+                  elapsedMs: !isNonFinisher && elapsedMs > 0 ? elapsedMs : null,
+                  bonusSec: bonusSec > 0 ? bonusSec : 0,
                   gcRank: gcRank > 0 ? gcRank : null,
                   gcElapsedMs: gcElapsedMs > 0 ? gcElapsedMs : null
                 };
