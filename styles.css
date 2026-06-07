@@ -253,12 +253,13 @@ img {
 }
 
 .field-table-wrap {
-  overflow-x: auto;
+  overflow-x: hidden;
 }
 
 .field-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   font-size: 0.9rem;
 }
 
@@ -267,7 +268,10 @@ img {
   padding: 0.55rem 0.6rem;
   border-bottom: 1px solid rgba(17, 49, 87, 0.08);
   text-align: left;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.3;
 }
 
 .field-table thead th {
@@ -300,12 +304,12 @@ img {
   }
 
   .field-table {
-    font-size: 0.84rem;
+    font-size: 0.78rem;
   }
 
   .field-table th,
   .field-table td {
-    padding: 0.5rem;
+    padding: 0.42rem;
   }
 }
 
