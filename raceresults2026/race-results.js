@@ -356,7 +356,7 @@ function renderStages(payload, refreshedAt) {
               const gcTotal = row.gcStatus === 'ACTIVE' ? formatDurationHms(row.elapsedMs) : '-';
               const bonusTotal = row.gcStatus === 'ACTIVE' ? formatBonusSeconds(row.bonusSecTotal) : '-';
               const stageCells = (table.stageColumns || [])
-                .map((stage) => `<td>${escapeHtml(formatDurationHms(row.stageElapsedMs?.[stage.id]))}</td>`)
+                .map((stage) => `<td>${escapeHtml(formatDuration(row.stageElapsedMs?.[stage.id]))}</td>`)
                 .join('');
               return `
                 <tr>
