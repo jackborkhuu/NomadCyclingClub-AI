@@ -75,6 +75,19 @@ function getDisplayTime(entry) {
   return '-';
 }
 
+function getDisplayRawTime(entry) {
+  const status = String(entry.resultStatus || '').toUpperCase();
+  if (status === 'DNF' || status === 'DNS') {
+    return status;
+  }
+  const elapsedMs = Number(entry.elapsedMs || 0);
+  if (elapsedMs > 0) {
+    const bonusMs = Math.max(0, Number(entry.bonusSec || 0)) * 1000;
+    return formatDuration(elapsedMs + bonusMs);
+  }
+  return '-';
+}
+
 function getDisplayBonus(entry) {
   const bonusSeconds = Number(entry.bonusSec || 0);
   if (Number.isFinite(bonusSeconds) && bonusSeconds > 0) {
@@ -294,12 +307,13 @@ function renderStages(payload, refreshedAt) {
             .map(([fieldName, entries]) => {
               const stageColGroup = `
                 <colgroup>
+                  <col style="width:7%" />
+                  <col style="width:7%" />
+                  <col style="width:27%" />
+                  <col style="width:18%" />
+                  <col style="width:16%" />
                   <col style="width:8%" />
-                  <col style="width:8%" />
-                  <col style="width:29%" />
-                  <col style="width:23%" />
-                  <col style="width:20%" />
-                  <col style="width:12%" />
+                  <col style="width:17%" />
                 </colgroup>
               `;
 
@@ -313,8 +327,9 @@ function renderStages(payload, refreshedAt) {
                       <td>${entry.bib || '-'}</td>
                       <td>${escapeHtml(entry.riderName || '')}</td>
                       <td>${escapeHtml(entry.team || '')}</td>
-                      <td>${escapeHtml(getDisplayTime(entry))}</td>
+                      <td>${escapeHtml(getDisplayRawTime(entry))}</td>
                       <td>${escapeHtml(getDisplayBonus(entry))}</td>
+                      <td>${escapeHtml(getDisplayTime(entry))}</td>
                     </tr>
                   `;
                 })
@@ -335,8 +350,9 @@ function renderStages(payload, refreshedAt) {
                           <th>Bib#</th>
                           <th>Name</th>
                           <th>Team</th>
-                          <th>Time</th>
+                          <th>Raw</th>
                           <th>Bonus</th>
+                          <th>Net</th>
                         </tr>
                       </thead>
                       <tbody>${rowsHtml}</tbody>
