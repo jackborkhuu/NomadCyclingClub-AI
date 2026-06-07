@@ -88,12 +88,13 @@ function normalizeResultStatus(entry) {
 
 function buildGeneralClassificationByField(stageTables) {
   const stagesWithData = stageTables.filter((stageTable) => Array.isArray(stageTable?.entries) && stageTable.entries.length > 0);
+  const gcStageLabels = ['Road', 'TT', 'Mountain'];
   const orderedStages = [...stagesWithData]
     .sort((a, b) => Number(a?.stageOrder || 0) - Number(b?.stageOrder || 0))
     .slice(0, 3)
     .map((stageTable, idx) => ({
       id: String(stageTable?.stageId || `stage-${idx + 1}`),
-      label: `S${idx + 1}`
+      label: gcStageLabels[idx] || `Stage ${idx + 1}`
     }));
   const allowedStageIds = new Set(orderedStages.map((stage) => stage.id));
   const ridersByBib = new Map();
@@ -361,7 +362,7 @@ function renderStages(payload, refreshedAt) {
             .join('');
 
           const stageHeaders = (table.stageColumns || [])
-            .map((stage) => `<th>${escapeHtml(stage.label)} Time</th>`)
+            .map((stage) => `<th>${escapeHtml(stage.label)}</th>`)
             .join('');
 
           return `
