@@ -317,9 +317,18 @@ function renderStages(payload, refreshedAt) {
                 </colgroup>
               `;
 
+              let finishPlace = 0;
               const rowsHtml = entries
                 .map((entry) => {
-                  const displayPlace = getDisplayPlace(entry);
+                  const status = String(entry.resultStatus || '').toUpperCase();
+                  let displayPlace = '-';
+
+                  if (status === 'DNF' || status === 'DNS') {
+                    displayPlace = status;
+                  } else if (Number(entry.elapsedMs) > 0 || Number(entry.place) > 0) {
+                    finishPlace += 1;
+                    displayPlace = String(finishPlace);
+                  }
 
                   return `
                     <tr>
