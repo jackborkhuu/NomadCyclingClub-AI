@@ -292,6 +292,17 @@ function renderStages(payload, refreshedAt) {
       const fieldTablesHtml = fieldGroups.length
         ? fieldGroups
             .map(([fieldName, entries]) => {
+              const stageColGroup = `
+                <colgroup>
+                  <col style="width:8%" />
+                  <col style="width:8%" />
+                  <col style="width:29%" />
+                  <col style="width:23%" />
+                  <col style="width:20%" />
+                  <col style="width:12%" />
+                </colgroup>
+              `;
+
               const rowsHtml = entries
                 .map((entry) => {
                   const displayPlace = getDisplayPlace(entry);
@@ -316,7 +327,8 @@ function renderStages(payload, refreshedAt) {
                     <p>${entries.length} racer${entries.length === 1 ? '' : 's'}</p>
                   </header>
                   <div class="field-table-wrap">
-                    <table class="field-table">
+                    <table class="field-table table-stage">
+                      ${stageColGroup}
                       <thead>
                         <tr>
                           <th>Place</th>
@@ -350,6 +362,21 @@ function renderStages(payload, refreshedAt) {
   const gcTablesHtml = gcTables.length
     ? gcTables
         .map((table) => {
+          const gcColGroup = `
+            <colgroup>
+              <col style="width:6%" />
+              <col style="width:6%" />
+              <col style="width:19%" />
+              <col style="width:15%" />
+              <col style="width:9%" />
+              <col style="width:10%" />
+              <col style="width:8%" />
+              <col style="width:11%" />
+              <col style="width:6%" />
+              <col style="width:10%" />
+            </colgroup>
+          `;
+
           const rowsHtml = table.rows
             .map((row) => {
               const statusText = row.gcStatus;
@@ -384,7 +411,8 @@ function renderStages(payload, refreshedAt) {
                 <p>${table.rows.length} racer${table.rows.length === 1 ? '' : 's'}</p>
               </header>
               <div class="field-table-wrap">
-                <table class="field-table">
+                <table class="field-table table-gc">
+                  ${gcColGroup}
                   <thead>
                     <tr>
                       <th>Rank</th>
