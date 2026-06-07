@@ -96,7 +96,6 @@ function buildGeneralClassificationByField(stageTables) {
       label: `S${idx + 1}`
     }));
   const allowedStageIds = new Set(orderedStages.map((stage) => stage.id));
-  const requiredStages = stagesWithData.length;
   const ridersByBib = new Map();
 
   stagesWithData.forEach((stageTable) => {
@@ -114,7 +113,7 @@ function buildGeneralClassificationByField(stageTables) {
         fieldName: String(entry?.fieldName || '').trim() || 'Uncategorized',
         elapsedMs: 0,
         stagesCompleted: 0,
-        gcStatus: 'ACTIVE',
+        gcStatus: 'NO_DATA',
         stageElapsedMs: {}
       };
 
@@ -129,13 +128,10 @@ function buildGeneralClassificationByField(stageTables) {
       }
 
       const status = normalizeResultStatus(entry);
-      if (status === 'DNS') {
-        rider.gcStatus = 'DNS';
-      } else if (status === 'DNF') {
-        if (rider.gcStatus !== 'DNS') {
-          rider.gcStatus = 'DNF';
-        }
-      } else if (rider.gcStatus === 'ACTIVE' && Number(entry?.elapsedMs) > 0) {
+      if (status === 'DNS' || status === 'DNF') {
+        rider.gcStatus = 'OUT';
+      } else if (Number(entry?.elapsedMs) > 0 && rider.gcStatus !== 'OUT') {
+        rider.gcStatus = 'ACTIVE';
         rider.elapsedMs += Number(entry.elapsedMs);
         rider.stagesCompleted += 1;
         if (allowedStageIds.has(currentStageId)) {
@@ -159,34 +155,36 @@ function buildGeneralClassificationByField(stageTables) {
   return Array.from(groups.entries())
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([fieldName, riders]) => {
-      const ranked = riders
-        .filter((rider) => rider.gcStatus === 'ACTIVE' && rider.stagesCompleted === requiredStages)
+      const active = riders
+        .filter((rider) => rider.gcStatus === 'ACTIVE')
         .sort((a, b) => {
+          if (a.stagesCompleted !== b.stagesCompleted) {
+            return b.stagesCompleted - a.stagesCompleted;
+          }
           if (a.elapsedMs !== b.elapsedMs) {
             return a.elapsedMs - b.elapsedMs;
           }
           return a.bib - b.bib;
-        })
-        .map((rider, index) => ({ ...rider, rank: index + 1 }));
-
-      const unranked = riders
-        .filter((rider) => !(rider.gcStatus === 'ACTIVE' && rider.stagesCompleted === requiredStages))
-        .map((rider) => ({
-          ...rider,
-          rank: null,
-          gcStatus: rider.gcStatus === 'ACTIVE' ? 'PENDING' : rider.gcStatus
-        }))
-        .sort((a, b) => {
-          const statusOrder = { DNF: 1, DNS: 2, PENDING: 3 };
-          const aOrder = statusOrder[a.gcStatus] || 9;
-          const bOrder = statusOrder[b.gcStatus] || 9;
-          if (aOrder !== bOrder) {
-            return aOrder - bOrder;
-          }
-          return String(a.riderName || '').localeCompare(String(b.riderName || ''));
         });
 
-      return { fieldName, rows: [...ranked, ...unranked] };
+      const noData = riders
+        .filter((rider) => rider.gcStatus === 'NO_DATA')
+        .sort((a, b) => {
+          return a.bib - b.bib;
+        });
+
+      const out = riders
+        .filter((rider) => rider.gcStatus === 'OUT')
+        .sort((a, b) => {
+          return a.bib - b.bib;
+        });
+
+      const rankedRows = [...active, ...noData, ...out].map((rider, index) => ({
+        ...rider,
+        rank: index + 1
+      }));
+
+      return { fieldName, rows: rankedRows };
     })
     .map((table) => ({ ...table, stageColumns: orderedStages }));
 }
@@ -343,8 +341,8 @@ function renderStages(payload, refreshedAt) {
         .map((table) => {
           const rowsHtml = table.rows
             .map((row) => {
-              const statusText = row.rank ? 'ACTIVE' : row.gcStatus;
-              const gcTotal = row.rank ? formatDurationHms(row.elapsedMs) : '-';
+              const statusText = row.gcStatus;
+              const gcTotal = row.gcStatus === 'ACTIVE' ? formatDurationHms(row.elapsedMs) : '-';
               const stageCells = (table.stageColumns || [])
                 .map((stage) => `<td>${escapeHtml(formatDurationHms(row.stageElapsedMs?.[stage.id]))}</td>`)
                 .join('');
