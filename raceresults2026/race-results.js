@@ -35,6 +35,14 @@ function formatDurationHms(ms) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+function formatBonusSeconds(seconds) {
+  const total = Number(seconds || 0);
+  if (!Number.isFinite(total) || total <= 0) {
+    return '-';
+  }
+  return `-${total}s`;
+}
+
 async function fetchResults(tournamentId = '') {
   const suffix = tournamentId ? `?tournamentId=${encodeURIComponent(tournamentId)}` : '';
   const response = await fetch(`/api/race-results${suffix}`);
@@ -113,6 +121,7 @@ function buildGeneralClassificationByField(stageTables) {
         team: String(entry?.team || '').trim(),
         fieldName: String(entry?.fieldName || '').trim() || 'Uncategorized',
         elapsedMs: 0,
+        bonusSecTotal: 0,
         stagesCompleted: 0,
         gcStatus: 'NO_DATA',
         stageElapsedMs: {}
@@ -134,6 +143,7 @@ function buildGeneralClassificationByField(stageTables) {
       } else if (Number(entry?.elapsedMs) > 0 && rider.gcStatus !== 'OUT') {
         rider.gcStatus = 'ACTIVE';
         rider.elapsedMs += Number(entry.elapsedMs);
+        rider.bonusSecTotal += Math.max(0, Number(entry?.bonusSec || 0));
         rider.stagesCompleted += 1;
         if (allowedStageIds.has(currentStageId)) {
           rider.stageElapsedMs[currentStageId] = Number(entry.elapsedMs);
@@ -344,6 +354,7 @@ function renderStages(payload, refreshedAt) {
             .map((row) => {
               const statusText = row.gcStatus;
               const gcTotal = row.gcStatus === 'ACTIVE' ? formatDurationHms(row.elapsedMs) : '-';
+              const bonusTotal = row.gcStatus === 'ACTIVE' ? formatBonusSeconds(row.bonusSecTotal) : '-';
               const stageCells = (table.stageColumns || [])
                 .map((stage) => `<td>${escapeHtml(formatDurationHms(row.stageElapsedMs?.[stage.id]))}</td>`)
                 .join('');
@@ -355,6 +366,7 @@ function renderStages(payload, refreshedAt) {
                   <td>${escapeHtml(row.team || '')}</td>
                   <td>${escapeHtml(statusText)}</td>
                   ${stageCells}
+                  <td>${escapeHtml(bonusTotal)}</td>
                   <td>${escapeHtml(gcTotal)}</td>
                 </tr>
               `;
@@ -381,6 +393,7 @@ function renderStages(payload, refreshedAt) {
                       <th>Team</th>
                       <th>Status</th>
                       ${stageHeaders}
+                      <th>Bonus</th>
                       <th>GC Total</th>
                     </tr>
                   </thead>
