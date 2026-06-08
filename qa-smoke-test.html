@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QA Smoke Test · Nomad Cycling Club</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .qa-grid { display: grid; gap: 1rem; }
+    .qa-card { border: 1px solid #d9dde3; border-radius: 12px; padding: 1rem; background: #fff; }
+    .qa-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+    .qa-pass { color: #0a7f2e; font-weight: 600; }
+    .qa-fail { color: #b42318; font-weight: 600; }
+    .qa-json { margin-top: 0.75rem; padding: 0.75rem; border-radius: 8px; background: #f6f8fa; overflow: auto; max-height: 220px; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html">Nomad Cycling Club</a>
+      <nav class="site-nav" id="siteNav">
+        <a href="index.html">Home</a>
+        <a href="club-lounge.html">Club Lounge</a>
+        <a href="race-management.html">Race Management</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="section container">
+      <div class="auth-card">
+        <p class="eyebrow">QA</p>
+        <h1>Azure Smoke Test Page</h1>
+        <p>Use this page to quickly validate auth and backend endpoints before full UI testing.</p>
+        <div class="qa-row">
+          <a class="button button-primary" href="/.auth/login/aad?post_login_redirect_uri=/qa-smoke-test.html">Sign in with Microsoft 365</a>
+          <a class="button button-secondary" href="/.auth/logout?post_logout_redirect_uri=/qa-smoke-test.html">Sign out</a>
+        </div>
+      </div>
+
+      <div class="qa-grid" style="margin-top:1rem;">
+        <section class="qa-card">
+          <h2>Principal Session</h2>
+          <div class="qa-row">
+            <button class="button button-secondary" id="checkAuthBtn" type="button">Check /.auth/me</button>
+            <span id="authStatus">Not checked</span>
+          </div>
+          <pre id="authPayload" class="qa-json"></pre>
+        </section>
+
+        <section class="qa-card">
+          <h2>API Health</h2>
+          <div class="qa-row">
+            <button class="button button-secondary" id="checkHealthBtn" type="button">Check /api/health</button>
+            <span id="healthStatus">Not checked</span>
+          </div>
+          <pre id="healthPayload" class="qa-json"></pre>
+        </section>
+
+        <section class="qa-card">
+          <h2>Race Admin Access</h2>
+          <div class="qa-row">
+            <button class="button button-secondary" id="checkRaceConfigBtn" type="button">Check /api/race-admin/config</button>
+            <span id="raceConfigStatus">Not checked</span>
+          </div>
+          <pre id="raceConfigPayload" class="qa-json"></pre>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    async function checkJson(url, statusId, payloadId) {
+      const statusNode = document.getElementById(statusId);
+      const payloadNode = document.getElementById(payloadId);
+      statusNode.textContent = 'Checking...';
+      statusNode.className = '';
+      payloadNode.textContent = '';
+
+      try {
+        const response = await fetch(url, { credentials: 'include' });
+        const text = await response.text();
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          parsed = text;
+        }
+
+        if (response.ok) {
+          statusNode.textContent = 'PASS';
+          statusNode.className = 'qa-pass';
+        } else {
+          statusNode.textContent = 'FAIL (' + response.status + ')';
+          statusNode.className = 'qa-fail';
+        }
+
+        payloadNode.textContent = typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2);
+      } catch (error) {
+        statusNode.textContent = 'FAIL';
+        statusNode.className = 'qa-fail';
+        payloadNode.textContent = String(error && error.message ? error.message : error);
+      }
+    }
+
+    document.getElementById('checkAuthBtn').addEventListener('click', () => checkJson('/.auth/me', 'authStatus', 'authPayload'));
+    document.getElementById('checkHealthBtn').addEventListener('click', () => checkJson('/api/health', 'healthStatus', 'healthPayload'));
+    document.getElementById('checkRaceConfigBtn').addEventListener('click', () => checkJson('/api/race-admin/config', 'raceConfigStatus', 'raceConfigPayload'));
+  </script>
+</body>
+</html>

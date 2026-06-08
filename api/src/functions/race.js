@@ -2,6 +2,7 @@ import { app } from '@azure/functions';
 
 const GRAPH_ROOT = 'https://graph.microsoft.com/v1.0';
 const DATA_LIST_NAME = process.env.SP_RACE_LIST_NAME || 'NomadRaceData';
+const DEFAULT_GOOGLE_REGISTRATION_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1TAKqNwmCDRKPEAKHFv0PrmCPiGly7bPacp7HqTw2id4/export?format=csv&gid=276157338';
 
 function corsHeaders() {
   return {
@@ -196,106 +197,8 @@ function mapData(items) {
   const stages = entities.filter((item) => item.type === 'stage').map((item) => ({ ...item.payload, itemId: item.itemId }));
   const riders = entities.filter((item) => item.type === 'rider').map((item) => ({ ...item.payload, itemId: item.itemId }));
   const results = entities.filter((item) => item.type === 'result').map((item) => ({ ...item.payload, itemId: item.itemId }));
-  const excelSnapshots = entities.filter((item) => item.type === 'excelsnapshot').map((item) => ({ ...item.payload, itemId: item.itemId }));
 
-  return { tournaments, stages, riders, results, excelSnapshots, entities };
-}
-
-const BIB_FIELD_RANGES = [
-  { fieldName: 'Men Under 40', bibStart: 1, bibEnd: 50 },
-  { fieldName: 'Men 40+', bibStart: 51, bibEnd: 100 },
-  { fieldName: 'Men 50+', bibStart: 101, bibEnd: 150 },
-  { fieldName: 'Women', bibStart: 151, bibEnd: 200 }
-];
-
-function fieldNameFromBib(bib) {
-  const n = Number(bib);
-  const match = BIB_FIELD_RANGES.find((r) => n >= r.bibStart && n <= r.bibEnd);
-  return match ? match.fieldName : null;
-}
-
-function sanitizeExcelPublishPayload(payload) {
-  const stageTables = Array.isArray(payload?.stageTables)
-    ? payload.stageTables.map((table, index) => ({
-        stageId: `excel-stage-${index + 1}`,
-        stageName: String(table?.stageName || `Stage ${index + 1}`).trim(),
-        stageOrder: index + 1,
-        entries: Array.isArray(table?.entries)
-          ? table.entries
-              .map((entry) => {
-                const place = Number(entry?.place || entry?.rank || 0);
-                const elapsedMs = Number(entry?.elapsedMs || 0);
-                const gcRank = Number(entry?.gcRank || 0);
-                const gcElapsedMs = Number(entry?.gcElapsedMs || 0);
-                const bonusSec = Number(entry?.bonusSec || 0);
-                const normalizedStatus = String(entry?.resultStatus || '').trim().toUpperCase();
-                const resultStatus = normalizedStatus || (elapsedMs > 0 ? 'FIN' : 'NO_TIME');
-                const isNonFinisher = resultStatus === 'DNF' || resultStatus === 'DNS';
-
-                return {
-                  place: !isNonFinisher && place > 0 ? place : null,
-                  rank: !isNonFinisher && place > 0 ? place : null,
-                  bib: Number(entry?.bib || 0),
-                  fieldName: String(entry?.fieldName || '').trim() || fieldNameFromBib(entry?.bib) || 'Uncategorized',
-                  riderName: String(entry?.riderName || '').trim(),
-                  team: String(entry?.team || '').trim(),
-                  resultStatus,
-                  elapsedMs: !isNonFinisher && elapsedMs > 0 ? elapsedMs : null,
-                  bonusSec: bonusSec > 0 ? bonusSec : 0,
-                  gcRank: gcRank > 0 ? gcRank : null,
-                  gcElapsedMs: gcElapsedMs > 0 ? gcElapsedMs : null
-                };
-              })
-              .filter((entry) => entry.bib > 0 && entry.riderName)
-              .sort((a, b) => {
-                const aPlace = a.place || 99999;
-                const bPlace = b.place || 99999;
-                if (aPlace !== bPlace) {
-                  return aPlace - bPlace;
-                }
-                return a.bib - b.bib;
-              })
-          : []
-      }))
-    : [];
-
-  const gc = Array.isArray(payload?.gc)
-    ? payload.gc
-        .map((entry) => ({
-          rank: Number(entry?.rank || 0) || null,
-          bib: Number(entry?.bib || 0),
-          riderName: String(entry?.riderName || '').trim(),
-          team: String(entry?.team || '').trim(),
-          gcStatus: String(entry?.gcStatus || 'ACTIVE').trim().toUpperCase(),
-          stagesCompleted: Number(entry?.stagesCompleted || 0),
-          elapsedMs: Number(entry?.elapsedMs || 0) || null
-        }))
-        .filter((entry) => entry.bib > 0 && entry.riderName)
-        .sort((a, b) => Number(a.rank || 99999) - Number(b.rank || 99999))
-    : [];
-
-  return {
-    eventName: String(payload?.eventName || 'Nomad Cycling Club Race Results').trim(),
-    publishedAt: String(payload?.publishedAt || new Date().toISOString()),
-    stageTables,
-    gc
-  };
-}
-
-function resolveExcelPublisher(request, payload = {}) {
-  const allowedDomain = process.env.ALLOWED_MEMBER_DOMAIN || 'nomadcyclingclub.com';
-  const principal = parsePrincipal(request);
-  if (principal?.userDetails && String(principal.userDetails).toLowerCase().endsWith(`@${allowedDomain}`)) {
-    return String(principal.userDetails).toLowerCase();
-  }
-
-  const publisherEmail = String(payload?.publisherEmail || '').trim().toLowerCase();
-  const publishPassword = String(payload?.publishPassword || '').trim();
-  if (publisherEmail.endsWith(`@${allowedDomain}`) && publishPassword === '2068514132') {
-    return publisherEmail;
-  }
-
-  throw new Error(`Only ${allowedDomain} users with a valid publish access code are allowed.`);
+  return { tournaments, stages, riders, results, entities };
 }
 
 function generateId(prefix) {
@@ -305,20 +208,30 @@ function generateId(prefix) {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
 }
 
-async function userInBoardGroup(token, userId) {
-  const boardGroupId = process.env.BOARD_GROUP_OBJECT_ID || '';
-  if (!boardGroupId) {
+function getRaceDirectorsGroupId() {
+  const configured = String(process.env.RACE_DIRECTORS_GROUP_OBJECT_ID || '').trim();
+  if (configured) {
+    return configured;
+  }
+
+  // Backward compatibility for existing deployments.
+  return String(process.env.BOARD_GROUP_OBJECT_ID || '').trim();
+}
+
+async function userInRaceDirectorsGroup(token, userId) {
+  const raceDirectorsGroupId = getRaceDirectorsGroupId();
+  if (!raceDirectorsGroupId) {
     return true;
   }
 
   const payload = await graphRequest(token, `/users/${userId}/checkMemberGroups`, {
     method: 'POST',
     body: JSON.stringify({
-      groupIds: [boardGroupId]
+      groupIds: [raceDirectorsGroupId]
     })
   });
 
-  return Array.isArray(payload?.value) && payload.value.includes(boardGroupId);
+  return Array.isArray(payload?.value) && payload.value.includes(raceDirectorsGroupId);
 }
 
 function requireAuthenticatedPrincipal(request) {
@@ -443,6 +356,188 @@ function normalizeCategories(rawCategories) {
   return ['Under 40 Men', '40+ Men', 'Women', '50+ Men'];
 }
 
+function normalizeNameToken(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function splitNameParts(fullName) {
+  const cleaned = String(fullName || '').trim().replace(/\s+/g, ' ');
+  if (!cleaned) {
+    return { firstName: '', lastName: '' };
+  }
+
+  const parts = cleaned.split(' ');
+  if (parts.length < 2) {
+    return { firstName: cleaned, lastName: '' };
+  }
+
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(' ')
+  };
+}
+
+function riderNameKey(firstName, lastName) {
+  const first = normalizeNameToken(firstName);
+  const last = normalizeNameToken(lastName);
+  if (!first || !last) {
+    return '';
+  }
+  return `${first}::${last}`;
+}
+
+function buildTournamentRiderNameKeys(riders, tournamentId) {
+  const keys = new Set();
+  for (const rider of riders) {
+    if (rider.tournamentId !== tournamentId) {
+      continue;
+    }
+
+    const firstName = rider.firstName || splitNameParts(rider.name || '').firstName;
+    const lastName = rider.lastName || splitNameParts(rider.name || '').lastName;
+    const key = riderNameKey(firstName, lastName);
+    if (key) {
+      keys.add(key);
+    }
+  }
+  return keys;
+}
+
+function normalizeHeaderKey(value) {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let value = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i];
+
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') {
+          value += '"';
+          i += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        value += c;
+      }
+      continue;
+    }
+
+    if (c === '"') {
+      inQuotes = true;
+      continue;
+    }
+
+    if (c === ',') {
+      row.push(value);
+      value = '';
+      continue;
+    }
+
+    if (c === '\n') {
+      row.push(value);
+      rows.push(row);
+      row = [];
+      value = '';
+      continue;
+    }
+
+    if (c === '\r') {
+      continue;
+    }
+
+    value += c;
+  }
+
+  row.push(value);
+  if (row.some((cell) => String(cell || '').trim() !== '') || rows.length === 0) {
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+function csvRowsToObjects(csvText) {
+  const rows = parseCsv(csvText).filter((r) => r.some((cell) => String(cell || '').trim() !== ''));
+  if (!rows.length) {
+    return [];
+  }
+
+  const headers = rows[0].map((header) => String(header || '').trim());
+  return rows.slice(1).map((cells) => {
+    const item = {};
+    headers.forEach((header, idx) => {
+      if (!header) {
+        return;
+      }
+      item[header] = String(cells[idx] || '').trim();
+    });
+    return item;
+  });
+}
+
+function getRowFieldValue(row, aliases) {
+  const normalizedAliases = aliases.map(normalizeHeaderKey);
+  for (const [key, rawValue] of Object.entries(row)) {
+    if (normalizedAliases.includes(normalizeHeaderKey(key))) {
+      return String(rawValue || '').trim();
+    }
+  }
+  return '';
+}
+
+function mapGoogleRegistrationRow(row) {
+  const firstNameRaw = getRowFieldValue(row, ['first name', 'firstname', 'rider first name']);
+  const lastNameRaw = getRowFieldValue(row, ['last name', 'lastname', 'rider last name']);
+  const fullNameRaw = getRowFieldValue(row, ['name', 'full name', 'rider name']);
+
+  const fallbackName = splitNameParts(fullNameRaw);
+  const firstName = firstNameRaw || fallbackName.firstName;
+  const lastName = lastNameRaw || fallbackName.lastName;
+
+  return {
+    timestamp: getRowFieldValue(row, ['timestamp', 'time stamp', 'date']),
+    firstName,
+    lastName,
+    team: getRowFieldValue(row, ['team name', 'team']),
+    age: Number(getRowFieldValue(row, ['age']) || 0),
+    category: getRowFieldValue(row, ['category']),
+    fieldName: getRowFieldValue(row, ['fields', 'field'])
+  };
+}
+
+function getGoogleRegistrationCsvUrl() {
+  const configured = String(process.env.GOOGLE_REGISTRATION_SHEET_CSV_URL || '').trim();
+  if (!configured) {
+    return DEFAULT_GOOGLE_REGISTRATION_SHEET_URL;
+  }
+
+  if (configured.includes('/export?')) {
+    return configured;
+  }
+
+  const match = configured.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if (!match) {
+    return configured;
+  }
+
+  const sheetId = match[1];
+  let gid = '0';
+  const gidMatch = configured.match(/[?#&]gid=(\d+)/);
+  if (gidMatch) {
+    gid = gidMatch[1];
+  }
+
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+}
+
 async function handleRaceAdmin(request) {
   if (request.method === 'OPTIONS') {
     return {
@@ -454,184 +549,9 @@ async function handleRaceAdmin(request) {
   const action = request.params.action || request.query.get('action') || 'config';
 
   try {
-    const token = await getAppAccessToken();
-
-    if (action === 'excelPublish') {
-      if (request.method !== 'POST') {
-        return jsonResponse({ error: 'excelPublish requires POST.' }, 405);
-      }
-
-      const siteId = await getSiteId(token);
-      const list = await ensureRaceList(token, siteId);
-
-      const publishPayload = await request.json();
-      const publisher = resolveExcelPublisher(request, publishPayload);
-      const snapshot = sanitizeExcelPublishPayload(publishPayload);
-      if (!snapshot.stageTables.length && !snapshot.gc.length) {
-        return jsonResponse({ error: 'No publishable stage or GC entries were provided.' }, 400);
-      }
-
-      const rawItems = await getAllRaceItems(token, siteId, list.id);
-      const dataset = mapData(rawItems);
-      const existing = dataset.entities.find((item) => item.type === 'excelsnapshot' && item.entityId === 'excel-snapshot-2026');
-
-      const nextPayload = {
-        ...snapshot,
-        publishedBy: publisher,
-        updatedAt: new Date().toISOString()
-      };
-
-      if (existing) {
-        await updateRaceItem(token, siteId, list.id, existing.itemId, {
-          PayloadJson: JSON.stringify(nextPayload),
-          IsPublished: true,
-          IsArchived: false,
-          SortOrder: Date.now()
-        });
-      } else {
-        await createRaceItem(token, siteId, list.id, {
-          Title: 'excel-snapshot-2026',
-          EntityType: 'excelSnapshot',
-          EntityId: 'excel-snapshot-2026',
-          TournamentId: 'excel-snapshot-2026',
-          StageId: '',
-          RiderId: '',
-          SortOrder: Date.now(),
-          IsPublished: true,
-          IsArchived: false,
-          PayloadJson: JSON.stringify(nextPayload)
-        });
-      }
-
-      return jsonResponse({
-        ok: true,
-        publishedBy: publisher,
-        eventName: snapshot.eventName,
-        stageCount: snapshot.stageTables.length,
-        gcCount: snapshot.gc.length,
-        resultsUrl: 'https://www.nomadcyclingclub.com/raceresults2026'
-      });
-    }
-
-    if (action === 'excelPublishDraft') {
-      if (request.method !== 'POST') {
-        return jsonResponse({ error: 'excelPublishDraft requires POST.' }, 405);
-      }
-
-      const siteId = await getSiteId(token);
-      const list = await ensureRaceList(token, siteId);
-
-      const publishPayload = await request.json();
-      const snapshot = sanitizeExcelPublishPayload(publishPayload);
-      if (!snapshot.stageTables.length && !snapshot.gc.length) {
-        return jsonResponse({ error: 'No publishable stage or GC entries were provided.' }, 400);
-      }
-
-      const draftId = generateId('excel-draft');
-      const draftPayload = {
-        ...snapshot,
-        draftId,
-        createdAt: new Date().toISOString(),
-        requestedBy: String(publishPayload?.publisherEmail || '').trim().toLowerCase()
-      };
-
-      await createRaceItem(token, siteId, list.id, {
-        Title: draftId,
-        EntityType: 'excelSnapshotDraft',
-        EntityId: draftId,
-        TournamentId: draftId,
-        StageId: '',
-        RiderId: '',
-        SortOrder: Date.now(),
-        IsPublished: false,
-        IsArchived: false,
-        PayloadJson: JSON.stringify(draftPayload)
-      });
-
-      return jsonResponse({
-        ok: true,
-        draftId,
-        publishUrl: `https://www.nomadcyclingclub.com/raceresults2026/publish?draftId=${encodeURIComponent(draftId)}`
-      });
-    }
-
-    if (action === 'excelPublishFinalize') {
-      if (request.method !== 'POST') {
-        return jsonResponse({ error: 'excelPublishFinalize requires POST.' }, 405);
-      }
-
-      const publisher = resolveExcelPublisher(request);
-      const siteId = await getSiteId(token);
-      const list = await ensureRaceList(token, siteId);
-      const finalizePayload = await request.json();
-      const draftId = String(finalizePayload?.draftId || '').trim();
-
-      if (!draftId) {
-        return jsonResponse({ error: 'draftId is required.' }, 400);
-      }
-
-      const rawItems = await getAllRaceItems(token, siteId, list.id);
-      const dataset = mapData(rawItems);
-      const draftEntity = dataset.entities.find((item) => item.type === 'excelsnapshotdraft' && item.entityId === draftId);
-      if (!draftEntity) {
-        return jsonResponse({ error: 'Draft publish payload not found.' }, 404);
-      }
-
-      const snapshot = sanitizeExcelPublishPayload(draftEntity.payload || {});
-      if (!snapshot.stageTables.length && !snapshot.gc.length) {
-        return jsonResponse({ error: 'Draft does not contain publishable data.' }, 400);
-      }
-
-      const existing = dataset.entities.find((item) => item.type === 'excelsnapshot' && item.entityId === 'excel-snapshot-2026');
-      const nextPayload = {
-        ...snapshot,
-        publishedBy: publisher,
-        updatedAt: new Date().toISOString(),
-        sourceDraftId: draftId
-      };
-
-      if (existing) {
-        await updateRaceItem(token, siteId, list.id, existing.itemId, {
-          PayloadJson: JSON.stringify(nextPayload),
-          IsPublished: true,
-          IsArchived: false,
-          SortOrder: Date.now()
-        });
-      } else {
-        await createRaceItem(token, siteId, list.id, {
-          Title: 'excel-snapshot-2026',
-          EntityType: 'excelSnapshot',
-          EntityId: 'excel-snapshot-2026',
-          TournamentId: 'excel-snapshot-2026',
-          StageId: '',
-          RiderId: '',
-          SortOrder: Date.now(),
-          IsPublished: true,
-          IsArchived: false,
-          PayloadJson: JSON.stringify(nextPayload)
-        });
-      }
-
-      await updateRaceItem(token, siteId, list.id, draftEntity.itemId, {
-        IsArchived: true,
-        IsPublished: false,
-        PayloadJson: JSON.stringify({
-          ...(draftEntity.payload || {}),
-          finalizedAt: new Date().toISOString(),
-          finalizedBy: publisher,
-          archived: true
-        })
-      });
-
-      return jsonResponse({
-        ok: true,
-        publishedBy: publisher,
-        resultsUrl: 'https://www.nomadcyclingclub.com/raceresults2026'
-      });
-    }
-
     const principal = requireAuthenticatedPrincipal(request);
-    const canManageBoard = await userInBoardGroup(token, principal.userId);
+    const token = await getAppAccessToken();
+    const canManageRace = await userInRaceDirectorsGroup(token, principal.userId);
 
     if (action === 'config') {
       return jsonResponse({
@@ -640,17 +560,17 @@ async function handleRaceAdmin(request) {
           userId: principal.userId,
           userDetails: principal.userDetails
         },
-        canManageBoard,
-        boardGroupConfigured: Boolean(process.env.BOARD_GROUP_OBJECT_ID)
+        canManageRace,
+        raceDirectorsGroupConfigured: Boolean(getRaceDirectorsGroupId())
       });
+    }
+
+    if (!canManageRace) {
+      return jsonResponse({ error: 'RaceDirectors group access is required for race management.' }, 403);
     }
 
     const siteId = await getSiteId(token);
     const list = await ensureRaceList(token, siteId);
-
-    if (!canManageBoard) {
-      return jsonResponse({ error: 'Board group access is required for race management.' }, 403);
-    }
 
     if (action === 'bootstrap') {
       return jsonResponse({ ok: true, listId: list.id, listName: list.name || DATA_LIST_NAME });
@@ -764,6 +684,19 @@ async function handleRaceAdmin(request) {
 
       const tournament = getTournamentById(dataset, tournamentId);
       ensureTournamentEditable(tournament);
+
+      const nameParts = splitNameParts(name);
+      const firstName = String(payload.firstName || nameParts.firstName || '').trim();
+      const lastName = String(payload.lastName || nameParts.lastName || '').trim();
+      if (!firstName || !lastName) {
+        return jsonResponse({ error: 'Rider must include both first and last name.' }, 400);
+      }
+
+      const existingNameKeys = buildTournamentRiderNameKeys(dataset.riders, tournamentId);
+      if (existingNameKeys.has(riderNameKey(firstName, lastName))) {
+        return jsonResponse({ error: 'Duplicate rider: first and last name already exists in this tournament.' }, 409);
+      }
+
       const category = String(payload.category || '').trim();
       const allowedCategories = normalizeCategories(tournament.categories);
       if (category && !allowedCategories.includes(category)) {
@@ -778,12 +711,15 @@ async function handleRaceAdmin(request) {
         riderId,
         tournamentId,
         riderNumber,
-        name,
+        name: `${firstName} ${lastName}`.trim(),
+        firstName,
+        lastName,
         state: String(payload.state || '').trim(),
         team: String(payload.team || '').trim(),
         gender: String(payload.gender || '').trim(),
         age: Number(payload.age || 0),
         category,
+        fieldName: String(payload.fieldName || '').trim(),
         createdAt: new Date().toISOString()
       };
 
@@ -801,6 +737,112 @@ async function handleRaceAdmin(request) {
       });
 
       return jsonResponse({ ok: true, rider });
+    }
+
+    if (action === 'syncGoogleRegistrations') {
+      const tournamentId = String(payload.tournamentId || '');
+      if (!tournamentId) {
+        return jsonResponse({ error: 'tournamentId is required.' }, 400);
+      }
+
+      const tournament = getTournamentById(dataset, tournamentId);
+      ensureTournamentEditable(tournament);
+
+      const csvUrl = getGoogleRegistrationCsvUrl();
+      const response = await fetch(csvUrl);
+      if (!response.ok) {
+        return jsonResponse({ error: `Unable to fetch Google registration sheet (${response.status}).` }, 502);
+      }
+
+      const csvText = await response.text();
+      const rows = csvRowsToObjects(csvText);
+      const allowedCategories = normalizeCategories(tournament.categories);
+      const existingNameKeys = buildTournamentRiderNameKeys(dataset.riders, tournamentId);
+      const newlySeenKeys = new Set();
+
+      let riderNumber = dataset.riders
+        .filter((rider) => rider.tournamentId === tournamentId)
+        .reduce((max, rider) => Math.max(max, Number(rider.riderNumber || 0)), 0);
+
+      let added = 0;
+      let duplicates = 0;
+      let invalid = 0;
+
+      for (const row of rows) {
+        const mapped = mapGoogleRegistrationRow(row);
+        const firstName = String(mapped.firstName || '').trim();
+        const lastName = String(mapped.lastName || '').trim();
+
+        if (!firstName || !lastName) {
+          invalid += 1;
+          continue;
+        }
+
+        const nameKey = riderNameKey(firstName, lastName);
+        if (!nameKey) {
+          invalid += 1;
+          continue;
+        }
+
+        if (existingNameKeys.has(nameKey) || newlySeenKeys.has(nameKey)) {
+          duplicates += 1;
+          continue;
+        }
+
+        const categoryCandidate = String(mapped.category || mapped.fieldName || '').trim();
+        if (categoryCandidate && !allowedCategories.includes(categoryCandidate)) {
+          invalid += 1;
+          continue;
+        }
+
+        riderNumber += 1;
+        const riderId = generateId('rider');
+        const rider = {
+          riderId,
+          tournamentId,
+          riderNumber,
+          name: `${firstName} ${lastName}`.trim(),
+          firstName,
+          lastName,
+          state: '',
+          team: String(mapped.team || '').trim(),
+          gender: '',
+          age: Number(mapped.age || 0),
+          category: categoryCandidate,
+          fieldName: String(mapped.fieldName || '').trim(),
+          source: 'google-sheet-sync',
+          sourceTimestamp: String(mapped.timestamp || '').trim(),
+          createdAt: new Date().toISOString(),
+          createdBy: principal.userDetails
+        };
+
+        await createRaceItem(token, siteId, list.id, {
+          Title: riderId,
+          EntityType: 'rider',
+          EntityId: riderId,
+          TournamentId: tournamentId,
+          StageId: '',
+          RiderId: riderId,
+          SortOrder: riderNumber,
+          IsPublished: false,
+          IsArchived: false,
+          PayloadJson: JSON.stringify(rider)
+        });
+
+        newlySeenKeys.add(nameKey);
+        added += 1;
+      }
+
+      return jsonResponse({
+        ok: true,
+        summary: {
+          totalRows: rows.length,
+          added,
+          duplicates,
+          invalid
+        },
+        source: csvUrl
+      });
     }
 
     if (action === 'addResult') {
@@ -925,18 +967,6 @@ async function handleRaceResults(request) {
     };
   }
 
-  const accept = String(request.headers.get('accept') || '').toLowerCase();
-  const wantsHtml = accept.includes('text/html');
-  if (request.method === 'GET' && wantsHtml) {
-    return {
-      status: 302,
-      headers: {
-        Location: 'https://www.nomadcyclingclub.com/raceresults2026',
-        ...corsHeaders()
-      }
-    };
-  }
-
   try {
     const token = await getAppAccessToken();
     const siteId = await getSiteId(token);
@@ -947,44 +977,6 @@ async function handleRaceResults(request) {
     const publishedTournaments = dataset.tournaments
       .filter((item) => item.status === 'published' || item.status === 'closed')
       .sort((a, b) => String(b.publishedAt || b.updatedAt || '').localeCompare(String(a.publishedAt || a.updatedAt || '')));
-
-    const excelSnapshot = (dataset.excelSnapshots || [])
-      .slice()
-      .sort((a, b) => String(b.updatedAt || b.publishedAt || '').localeCompare(String(a.updatedAt || a.publishedAt || '')))[0] || null;
-
-    if (excelSnapshot) {
-      return jsonResponse({
-        ok: true,
-        tournament: {
-          tournamentId: 'excel-snapshot-2026',
-          name: excelSnapshot.eventName || 'Nomad Cycling Club Race Results',
-          status: 'published',
-          publishedAt: excelSnapshot.publishedAt || excelSnapshot.updatedAt || null
-        },
-        availableTournaments: [
-          {
-            tournamentId: 'excel-snapshot-2026',
-            name: excelSnapshot.eventName || 'Nomad Cycling Club Race Results',
-            status: 'published',
-            publishedAt: excelSnapshot.publishedAt || excelSnapshot.updatedAt || null
-          }
-        ],
-        stageTables: Array.isArray(excelSnapshot.stageTables)
-          ? excelSnapshot.stageTables.map((stage) => ({
-              ...stage,
-              entries: Array.isArray(stage.entries)
-                ? stage.entries.map((entry) => ({
-                    ...entry,
-                    fieldName: (String(entry.fieldName || '').trim() && entry.fieldName !== 'Uncategorized')
-                      ? entry.fieldName
-                      : (fieldNameFromBib(entry.bib) || entry.fieldName || 'Uncategorized')
-                  }))
-                : []
-            }))
-          : [],
-        gc: Array.isArray(excelSnapshot.gc) ? excelSnapshot.gc : []
-      });
-    }
 
     const tournamentId = request.query.get('tournamentId') || (publishedTournaments[0] ? publishedTournaments[0].tournamentId : '');
 

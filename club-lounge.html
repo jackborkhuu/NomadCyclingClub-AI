@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Club Lounge · Nomad Cycling Club</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html">Nomad Cycling Club</a>
+      <button class="nav-toggle" id="navToggle" aria-label="Open navigation">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="site-nav" id="siteNav">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="events.html">Events</a>
+        <a href="gallery.html">Photos</a>
+        <a href="contact.html">Contact</a>
+        <a href="club-lounge.html" class="member-login-link">Club Lounge</a>
+        <a href="#donate" class="donate-trigger" aria-label="Donate to Nomad Cycling Club">Donate</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="section container">
+      <div id="clubAuthGate" class="auth-card">
+        <p class="eyebrow">Members only</p>
+        <h1>Club Lounge Access</h1>
+        <p id="clubAuthMessage">Verifying your Microsoft 365 member access...</p>
+        <a href="member-login.html" class="button button-primary">Sign in with Microsoft 365</a>
+      </div>
+
+      <div id="clubLoungeShell" class="club-lounge-shell" hidden>
+        <div class="lounge-heading">
+          <div>
+            <p class="eyebrow">Member portal</p>
+            <h1>Club Lounge</h1>
+            <p id="memberIdentity" class="lounge-subtitle"></p>
+          </div>
+          <button id="logoutBtn" class="button button-secondary" type="button">Sign out</button>
+        </div>
+
+        <section class="lounge-section" id="discussionSection">
+          <div class="lounge-section-head">
+            <h2>1. Discussions</h2>
+            <p>Microsoft Viva Engage (Yammer) group feed for member conversations.</p>
+          </div>
+          <div id="yammerStatus" class="auth-status"></div>
+          <div id="yammerFeed" class="yammer-feed"></div>
+        </section>
+
+        <section class="lounge-section" id="calendarSection">
+          <div class="lounge-section-head">
+            <h2>2. Calendar</h2>
+            <p>Group rides and events from the club event feed.</p>
+          </div>
+          <div class="calendar-controls">
+            <button id="calendarPrev" class="button button-secondary" type="button">Previous</button>
+            <h3 id="calendarMonthLabel"></h3>
+            <button id="calendarNext" class="button button-secondary" type="button">Next</button>
+          </div>
+          <div id="calendarGrid" class="calendar-grid" role="grid" aria-label="Club rides calendar"></div>
+          <div class="calendar-events-panel">
+            <h4 id="calendarSelectedDateLabel">Events</h4>
+            <ul id="calendarSelectedEvents" class="calendar-event-list"></ul>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© 2026 Nomad Cycling Club. All rights reserved.</p>
+      <p class="footer-mission-note">Mission: Build an inclusive cycling community rooted in Mongolian heritage. Values: Community, Cultural Pride, Inclusivity, Wellness, Adventure, and Respect.</p>
+      <p><a href="events.html">Events</a> • <a href="contact.html">Contact</a> • <a href="https://www.facebook.com/nomadcyclingclub" target="_blank" rel="noreferrer">Facebook</a></p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script src="club-lounge.js"></script>
+</body>
+</html>
