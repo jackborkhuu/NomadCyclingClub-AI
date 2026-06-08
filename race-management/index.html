@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Race Management · Nomad Cycling Club</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html">Nomad Cycling Club</a>
+      <button class="nav-toggle" id="navToggle" aria-label="Open navigation">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="site-nav" id="siteNav">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="events.html">Events</a>
+        <a href="gallery.html">Photos</a>
+        <a href="contact.html">Contact</a>
+        <a href="club-lounge" class="member-login-link">Club Lounge</a>
+        <a href="race-management" class="member-login-link">Race Management</a>
+        <a href="#donate" class="donate-trigger" aria-label="Donate to Nomad Cycling Club">Donate</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="section container">
+      <div id="raceAuthGate" class="auth-card">
+        <p class="eyebrow">Race directors</p>
+        <h1>Race Management Portal</h1>
+        <p id="raceAuthMessage">Sign in with your Microsoft 365 account to continue.</p>
+        <p><a href="/.auth/login/aad?post_login_redirect_uri=/race-management" class="button button-primary">Sign in with Microsoft 365</a></p>
+        <p><a href="/club-lounge" class="button button-secondary">Back to Club Lounge</a></p>
+      </div>
+
+      <div class="lounge-heading" hidden>
+        <div>
+          <p class="eyebrow">Race operations</p>
+          <h1>Race Management</h1>
+          <p id="raceManagerIdentity" class="lounge-subtitle"></p>
+        </div>
+        <button id="raceLogoutBtn" class="button button-secondary" type="button">Sign out</button>
+      </div>
+
+      <section class="lounge-section" id="raceSection" hidden>
+        <div class="lounge-section-head">
+          <h2>Race Management</h2>
+          <p>Race director tools for tournament setup, rider registration, stage timing, GC scoring, publishing, and archiving. Google import is optional and only adds newly found riders.</p>
+        </div>
+        <div id="raceAdminStatus" class="auth-status">Checking RaceDirectors access...</div>
+
+        <div id="raceAdminApp" class="race-admin-app" hidden>
+          <div class="race-admin-grid">
+            <section class="race-admin-card">
+              <h3>Tournament Setup</h3>
+              <form id="tournamentForm" class="race-form race-form-2col">
+                <input type="text" id="tournamentName" placeholder="Tournament name" required />
+                <input type="text" id="tournamentCategories" placeholder="Categories (comma-separated, e.g. Under 40 Men, 40+ Men, Women, 50+ Men)" required />
+                <button class="button button-primary" type="submit">Create Tournament</button>
+              </form>
+            </section>
+
+            <section class="race-admin-card">
+              <h3>Tournament Config</h3>
+              <form id="activeTournamentForm" class="race-form race-form-2col">
+                <select id="activeTournament" required></select>
+                <button class="button button-secondary" id="refreshTournamentData" type="button">Refresh Data</button>
+              </form>
+              <div class="race-admin-actions">
+                <button class="button button-primary" id="publishTournamentBtn" type="button">Publish Results</button>
+                <button class="button button-secondary" id="closeTournamentBtn" type="button">Close Race (Read Only)</button>
+              </div>
+            </section>
+          </div>
+
+          <div class="race-admin-grid">
+            <section class="race-admin-card">
+              <h3>Configure Stage (PST)</h3>
+              <form id="stageForm" class="race-form race-form-3col">
+                <input type="text" id="stageName" placeholder="Stage name" required />
+                <input type="number" id="stageOrder" min="1" placeholder="Stage order" required />
+                <input type="datetime-local" id="stageStartPst" step="1" required />
+                <input type="text" id="stageNotes" placeholder="Stage notes (optional)" />
+                <button class="button button-primary" type="submit">Add Stage</button>
+              </form>
+            </section>
+
+            <section class="race-admin-card">
+              <h3>Register Rider</h3>
+              <div class="race-admin-actions">
+                <button class="button button-secondary" id="syncGoogleRegistrationsBtn" type="button">Sync Google Registrations</button>
+              </div>
+              <form id="riderForm" class="race-form race-form-3col">
+                <input type="text" id="riderName" placeholder="Rider name" required />
+                <input type="text" id="riderState" placeholder="State" required />
+                <input type="text" id="riderTeam" placeholder="Team" required />
+                <input type="text" id="riderFieldName" placeholder="Field (optional)" />
+                <select id="riderGender" required>
+                  <option value="">Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Non-binary">Non-binary</option>
+                </select>
+                <input type="number" id="riderAge" min="10" max="100" placeholder="Age" required />
+                <select id="riderCategory" required>
+                  <option value="">Category</option>
+                  <option value="Under 40 Men">Under 40 Men</option>
+                  <option value="40+ Men">40+ Men</option>
+                  <option value="Women">Women</option>
+                  <option value="50+ Men">50+ Men</option>
+                </select>
+                <button class="button button-primary" type="submit">Register Rider</button>
+              </form>
+            </section>
+          </div>
+
+          <section class="race-admin-card">
+            <h3>Enter Stage Result</h3>
+            <form id="resultForm" class="race-form race-form-4col">
+              <select id="resultStage" required></select>
+              <select id="resultRider" required></select>
+              <input type="datetime-local" id="resultFinishStamp" step="0.001" required />
+              <input type="text" id="resultStopwatch" placeholder="Stopwatch (e.g. 01:12:45.389)" required />
+              <input type="number" id="resultElapsedMs" min="1" step="1" placeholder="Elapsed ms" required />
+              <button class="button button-primary" type="submit">Save Result</button>
+            </form>
+          </section>
+
+          <section class="race-admin-card">
+            <h3>Stages</h3>
+            <div class="race-table-wrap">
+              <table class="race-table">
+                <thead>
+                  <tr>
+                    <th>Order</th>
+                    <th>Stage</th>
+                    <th>Start (PST)</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="stageTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="race-admin-card">
+            <h3>Registered Riders</h3>
+            <div class="race-table-wrap">
+              <table class="race-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Field</th>
+                    <th>State</th>
+                    <th>Team</th>
+                    <th>Gender</th>
+                    <th>Age</th>
+                    <th>Category</th>
+                  </tr>
+                </thead>
+                <tbody id="riderTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="race-admin-card">
+            <h3>Stage Results (Live)</h3>
+            <div class="race-table-wrap">
+              <table class="race-table">
+                <thead>
+                  <tr>
+                    <th>Stage</th>
+                    <th>Rank</th>
+                    <th>Rider</th>
+                    <th>Team</th>
+                    <th>Finish Timestamp</th>
+                    <th>Stopwatch</th>
+                    <th>Elapsed</th>
+                  </tr>
+                </thead>
+                <tbody id="stageResultsTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="race-admin-card">
+            <h3>General Classification (GC)</h3>
+            <div class="race-table-wrap">
+              <table class="race-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Rider</th>
+                    <th>Team</th>
+                    <th>Completed Stages</th>
+                    <th>Total Time</th>
+                  </tr>
+                </thead>
+                <tbody id="gcTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© 2026 Nomad Cycling Club. All rights reserved.</p>
+      <p class="footer-mission-note">Mission: Build an inclusive cycling community rooted in Mongolian heritage. Values: Community, Cultural Pride, Inclusivity, Wellness, Adventure, and Respect.</p>
+      <p><a href="events.html">Events</a> • <a href="contact.html">Contact</a> • <a href="https://www.facebook.com/nomadcyclingclub" target="_blank" rel="noreferrer">Facebook</a></p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script src="race-management.js"></script>
+</body>
+</html>
