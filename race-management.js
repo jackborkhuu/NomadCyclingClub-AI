@@ -16,7 +16,10 @@ function raceNode(id) {
 
 function isRaceManagementPage() {
   const path = window.location.pathname.toLowerCase();
-  return path.endsWith('/race-management.html') || path.endsWith('race-management.html');
+  return path.endsWith('/race-management.html')
+    || path.endsWith('race-management.html')
+    || path.endsWith('/race-management')
+    || path.endsWith('race-management');
 }
 
 function setRaceAuthMessage(message, isError = false) {
@@ -68,7 +71,7 @@ function setupRaceLogoutButton() {
   }
 
   logoutButton.addEventListener('click', () => {
-    const postLogoutUri = encodeURIComponent(`${window.location.origin}/member-login.html`);
+    const postLogoutUri = encodeURIComponent(`${window.location.origin}/`);
     window.location.assign(`/.auth/logout?post_logout_redirect_uri=${postLogoutUri}`);
   });
 }
@@ -620,7 +623,10 @@ window.NomadRaceAdmin = {
 
 document.addEventListener('DOMContentLoaded', () => {
   const path = window.location.pathname.toLowerCase();
-  const onClubLounge = path.endsWith('/club-lounge.html') || path.endsWith('club-lounge.html');
+  const onClubLounge = path.endsWith('/club-lounge.html')
+    || path.endsWith('club-lounge.html')
+    || path.endsWith('/club-lounge')
+    || path.endsWith('club-lounge');
   const onRaceManagement = isRaceManagementPage();
   if (!onClubLounge && !onRaceManagement) {
     return;

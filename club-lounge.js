@@ -156,7 +156,7 @@ function getSession() {
 async function signInMember() {
   if (!isConfigComplete()) {
     // SWA Easy Auth path: force Microsoft sign-in without requiring frontend app config.
-    const redirectUri = encodeURIComponent(`${window.location.origin}/club-lounge.html`);
+    const redirectUri = encodeURIComponent(`${window.location.origin}/club-lounge`);
     window.location.assign(`/.auth/login/aad?post_login_redirect_uri=${redirectUri}`);
     return;
   }
@@ -184,13 +184,16 @@ async function signInMember() {
 
   saveSession(account);
   setAuthStatus('Access approved. Redirecting to Club Lounge...');
-  window.location.href = 'club-lounge.html';
+  window.location.href = '/club-lounge';
 }
 
 async function setupMemberLoginPage() {
   const loginButton = document.getElementById('o365LoginBtn');
-  const isMemberLoginPage = window.location.pathname.toLowerCase().endsWith('/member-login.html')
-    || window.location.pathname.toLowerCase().endsWith('member-login.html');
+  const path = window.location.pathname.toLowerCase();
+  const isMemberLoginPage = path.endsWith('/member-login.html')
+    || path.endsWith('member-login.html')
+    || path.endsWith('/member-login')
+    || path.endsWith('member-login');
 
   if (!loginButton && isMemberLoginPage) {
     try {
@@ -324,11 +327,11 @@ function setupLogoutButton(client, account) {
       await client.logoutPopup({
         account
       });
-      window.location.href = 'member-login.html';
+      window.location.href = '/';
       return;
     }
 
-    const postLogoutUri = encodeURIComponent(`${window.location.origin}/member-login.html`);
+    const postLogoutUri = encodeURIComponent(`${window.location.origin}/`);
     window.location.assign(`/.auth/logout?post_logout_redirect_uri=${postLogoutUri}`);
   });
 }
