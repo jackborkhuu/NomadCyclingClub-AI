@@ -218,10 +218,33 @@ function getRaceDirectorsGroupId() {
   return String(process.env.BOARD_GROUP_OBJECT_ID || '').trim();
 }
 
+function normalizeObjectId(value) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return '';
+  }
+
+  // Accept raw 32-char object IDs and normalize them to canonical GUID format.
+  const compact = raw.replace(/-/g, '');
+  if (/^[0-9a-fA-F]{32}$/.test(compact)) {
+    return `${compact.slice(0, 8)}-${compact.slice(8, 12)}-${compact.slice(12, 16)}-${compact.slice(16, 20)}-${compact.slice(20)}`.toLowerCase();
+  }
+
+  return raw;
+}
+
+function isGuid(value) {
+  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(String(value || ''));
+}
+
 async function userInRaceDirectorsGroup(token, userId) {
-  const raceDirectorsGroupId = getRaceDirectorsGroupId();
+  const raceDirectorsGroupId = normalizeObjectId(getRaceDirectorsGroupId());
   if (!raceDirectorsGroupId) {
     return true;
+  }
+
+  if (!isGuid(raceDirectorsGroupId)) {
+    throw new Error('Invalid RaceDirectors group object ID configuration. Use a valid Entra object GUID.');
   }
 
   const payload = await graphRequest(token, `/users/${userId}/checkMemberGroups`, {
