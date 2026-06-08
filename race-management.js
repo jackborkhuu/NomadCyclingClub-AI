@@ -181,7 +181,7 @@ function renderRiders() {
     .sort((a, b) => Number(a.riderNumber || 0) - Number(b.riderNumber || 0));
 
   if (riders.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-cell">No riders registered.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-cell">No riders registered.</td></tr>';
     riderSelect.innerHTML = '<option value="">No riders</option>';
     return;
   }
@@ -191,6 +191,7 @@ function renderRiders() {
       <tr>
         <td>${Number(rider.riderNumber || 0)}</td>
         <td>${escapeHtml(rider.name)}</td>
+        <td>${escapeHtml(rider.fieldName || '')}</td>
         <td>${escapeHtml(rider.state || '')}</td>
         <td>${escapeHtml(rider.team || '')}</td>
         <td>${escapeHtml(rider.gender || '')}</td>
@@ -374,6 +375,7 @@ function setupRaceForms() {
         name: getFormValue('riderName').trim(),
         state: getFormValue('riderState').trim(),
         team: getFormValue('riderTeam').trim(),
+        fieldName: getFormValue('riderFieldName').trim(),
         gender: getFormValue('riderGender'),
         age: Number(getFormValue('riderAge')),
         category: getFormValue('riderCategory')
@@ -383,6 +385,29 @@ function setupRaceForms() {
     clearForm('riderForm');
     await loadDataset();
     setRaceStatus('Rider registered. Rider ID auto-assigned.');
+  });
+
+  raceNode('syncGoogleRegistrationsBtn')?.addEventListener('click', async () => {
+    if (!RaceAdminState.activeTournamentId) {
+      setRaceStatus('Create and select a tournament first.', true);
+      return;
+    }
+    if (getActiveTournament()?.status === 'closed') {
+      setRaceStatus('This tournament is closed. Registration sync is disabled.', true);
+      return;
+    }
+
+    setRaceStatus('Syncing Google registrations...');
+    const result = await raceApi('/api/race-admin/syncGoogleRegistrations', {
+      method: 'POST',
+      body: JSON.stringify({
+        tournamentId: RaceAdminState.activeTournamentId
+      })
+    });
+
+    await loadDataset();
+    const summary = result.summary || {};
+    setRaceStatus(`Google sync complete. Added ${Number(summary.added || 0)}, skipped duplicates ${Number(summary.duplicates || 0)}, invalid rows ${Number(summary.invalid || 0)}.`);
   });
 
   raceNode('resultForm')?.addEventListener('submit', async (event) => {

@@ -2,6 +2,7 @@ import { app } from '@azure/functions';
 
 const GRAPH_ROOT = 'https://graph.microsoft.com/v1.0';
 const DATA_LIST_NAME = process.env.SP_RACE_LIST_NAME || 'NomadRaceData';
+const DEFAULT_GOOGLE_REGISTRATION_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1TAKqNwmCDRKPEAKHFv0PrmCPiGly7bPacp7HqTw2id4/export?format=csv&gid=276157338';
 
 function corsHeaders() {
   return {
@@ -345,6 +346,188 @@ function normalizeCategories(rawCategories) {
   return ['Under 40 Men', '40+ Men', 'Women', '50+ Men'];
 }
 
+function normalizeNameToken(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function splitNameParts(fullName) {
+  const cleaned = String(fullName || '').trim().replace(/\s+/g, ' ');
+  if (!cleaned) {
+    return { firstName: '', lastName: '' };
+  }
+
+  const parts = cleaned.split(' ');
+  if (parts.length < 2) {
+    return { firstName: cleaned, lastName: '' };
+  }
+
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(' ')
+  };
+}
+
+function riderNameKey(firstName, lastName) {
+  const first = normalizeNameToken(firstName);
+  const last = normalizeNameToken(lastName);
+  if (!first || !last) {
+    return '';
+  }
+  return `${first}::${last}`;
+}
+
+function buildTournamentRiderNameKeys(riders, tournamentId) {
+  const keys = new Set();
+  for (const rider of riders) {
+    if (rider.tournamentId !== tournamentId) {
+      continue;
+    }
+
+    const firstName = rider.firstName || splitNameParts(rider.name || '').firstName;
+    const lastName = rider.lastName || splitNameParts(rider.name || '').lastName;
+    const key = riderNameKey(firstName, lastName);
+    if (key) {
+      keys.add(key);
+    }
+  }
+  return keys;
+}
+
+function normalizeHeaderKey(value) {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let value = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i];
+
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') {
+          value += '"';
+          i += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        value += c;
+      }
+      continue;
+    }
+
+    if (c === '"') {
+      inQuotes = true;
+      continue;
+    }
+
+    if (c === ',') {
+      row.push(value);
+      value = '';
+      continue;
+    }
+
+    if (c === '\n') {
+      row.push(value);
+      rows.push(row);
+      row = [];
+      value = '';
+      continue;
+    }
+
+    if (c === '\r') {
+      continue;
+    }
+
+    value += c;
+  }
+
+  row.push(value);
+  if (row.some((cell) => String(cell || '').trim() !== '') || rows.length === 0) {
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+function csvRowsToObjects(csvText) {
+  const rows = parseCsv(csvText).filter((r) => r.some((cell) => String(cell || '').trim() !== ''));
+  if (!rows.length) {
+    return [];
+  }
+
+  const headers = rows[0].map((header) => String(header || '').trim());
+  return rows.slice(1).map((cells) => {
+    const item = {};
+    headers.forEach((header, idx) => {
+      if (!header) {
+        return;
+      }
+      item[header] = String(cells[idx] || '').trim();
+    });
+    return item;
+  });
+}
+
+function getRowFieldValue(row, aliases) {
+  const normalizedAliases = aliases.map(normalizeHeaderKey);
+  for (const [key, rawValue] of Object.entries(row)) {
+    if (normalizedAliases.includes(normalizeHeaderKey(key))) {
+      return String(rawValue || '').trim();
+    }
+  }
+  return '';
+}
+
+function mapGoogleRegistrationRow(row) {
+  const firstNameRaw = getRowFieldValue(row, ['first name', 'firstname', 'rider first name']);
+  const lastNameRaw = getRowFieldValue(row, ['last name', 'lastname', 'rider last name']);
+  const fullNameRaw = getRowFieldValue(row, ['name', 'full name', 'rider name']);
+
+  const fallbackName = splitNameParts(fullNameRaw);
+  const firstName = firstNameRaw || fallbackName.firstName;
+  const lastName = lastNameRaw || fallbackName.lastName;
+
+  return {
+    timestamp: getRowFieldValue(row, ['timestamp', 'time stamp', 'date']),
+    firstName,
+    lastName,
+    team: getRowFieldValue(row, ['team name', 'team']),
+    age: Number(getRowFieldValue(row, ['age']) || 0),
+    category: getRowFieldValue(row, ['category']),
+    fieldName: getRowFieldValue(row, ['fields', 'field'])
+  };
+}
+
+function getGoogleRegistrationCsvUrl() {
+  const configured = String(process.env.GOOGLE_REGISTRATION_SHEET_CSV_URL || '').trim();
+  if (!configured) {
+    return DEFAULT_GOOGLE_REGISTRATION_SHEET_URL;
+  }
+
+  if (configured.includes('/export?')) {
+    return configured;
+  }
+
+  const match = configured.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if (!match) {
+    return configured;
+  }
+
+  const sheetId = match[1];
+  let gid = '0';
+  const gidMatch = configured.match(/[?#&]gid=(\d+)/);
+  if (gidMatch) {
+    gid = gidMatch[1];
+  }
+
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+}
+
 async function handleRaceAdmin(request) {
   if (request.method === 'OPTIONS') {
     return {
@@ -491,6 +674,19 @@ async function handleRaceAdmin(request) {
 
       const tournament = getTournamentById(dataset, tournamentId);
       ensureTournamentEditable(tournament);
+
+      const nameParts = splitNameParts(name);
+      const firstName = String(payload.firstName || nameParts.firstName || '').trim();
+      const lastName = String(payload.lastName || nameParts.lastName || '').trim();
+      if (!firstName || !lastName) {
+        return jsonResponse({ error: 'Rider must include both first and last name.' }, 400);
+      }
+
+      const existingNameKeys = buildTournamentRiderNameKeys(dataset.riders, tournamentId);
+      if (existingNameKeys.has(riderNameKey(firstName, lastName))) {
+        return jsonResponse({ error: 'Duplicate rider: first and last name already exists in this tournament.' }, 409);
+      }
+
       const category = String(payload.category || '').trim();
       const allowedCategories = normalizeCategories(tournament.categories);
       if (category && !allowedCategories.includes(category)) {
@@ -505,12 +701,15 @@ async function handleRaceAdmin(request) {
         riderId,
         tournamentId,
         riderNumber,
-        name,
+        name: `${firstName} ${lastName}`.trim(),
+        firstName,
+        lastName,
         state: String(payload.state || '').trim(),
         team: String(payload.team || '').trim(),
         gender: String(payload.gender || '').trim(),
         age: Number(payload.age || 0),
         category,
+        fieldName: String(payload.fieldName || '').trim(),
         createdAt: new Date().toISOString()
       };
 
@@ -528,6 +727,112 @@ async function handleRaceAdmin(request) {
       });
 
       return jsonResponse({ ok: true, rider });
+    }
+
+    if (action === 'syncGoogleRegistrations') {
+      const tournamentId = String(payload.tournamentId || '');
+      if (!tournamentId) {
+        return jsonResponse({ error: 'tournamentId is required.' }, 400);
+      }
+
+      const tournament = getTournamentById(dataset, tournamentId);
+      ensureTournamentEditable(tournament);
+
+      const csvUrl = getGoogleRegistrationCsvUrl();
+      const response = await fetch(csvUrl);
+      if (!response.ok) {
+        return jsonResponse({ error: `Unable to fetch Google registration sheet (${response.status}).` }, 502);
+      }
+
+      const csvText = await response.text();
+      const rows = csvRowsToObjects(csvText);
+      const allowedCategories = normalizeCategories(tournament.categories);
+      const existingNameKeys = buildTournamentRiderNameKeys(dataset.riders, tournamentId);
+      const newlySeenKeys = new Set();
+
+      let riderNumber = dataset.riders
+        .filter((rider) => rider.tournamentId === tournamentId)
+        .reduce((max, rider) => Math.max(max, Number(rider.riderNumber || 0)), 0);
+
+      let added = 0;
+      let duplicates = 0;
+      let invalid = 0;
+
+      for (const row of rows) {
+        const mapped = mapGoogleRegistrationRow(row);
+        const firstName = String(mapped.firstName || '').trim();
+        const lastName = String(mapped.lastName || '').trim();
+
+        if (!firstName || !lastName) {
+          invalid += 1;
+          continue;
+        }
+
+        const nameKey = riderNameKey(firstName, lastName);
+        if (!nameKey) {
+          invalid += 1;
+          continue;
+        }
+
+        if (existingNameKeys.has(nameKey) || newlySeenKeys.has(nameKey)) {
+          duplicates += 1;
+          continue;
+        }
+
+        const categoryCandidate = String(mapped.category || mapped.fieldName || '').trim();
+        if (categoryCandidate && !allowedCategories.includes(categoryCandidate)) {
+          invalid += 1;
+          continue;
+        }
+
+        riderNumber += 1;
+        const riderId = generateId('rider');
+        const rider = {
+          riderId,
+          tournamentId,
+          riderNumber,
+          name: `${firstName} ${lastName}`.trim(),
+          firstName,
+          lastName,
+          state: '',
+          team: String(mapped.team || '').trim(),
+          gender: '',
+          age: Number(mapped.age || 0),
+          category: categoryCandidate,
+          fieldName: String(mapped.fieldName || '').trim(),
+          source: 'google-sheet-sync',
+          sourceTimestamp: String(mapped.timestamp || '').trim(),
+          createdAt: new Date().toISOString(),
+          createdBy: principal.userDetails
+        };
+
+        await createRaceItem(token, siteId, list.id, {
+          Title: riderId,
+          EntityType: 'rider',
+          EntityId: riderId,
+          TournamentId: tournamentId,
+          StageId: '',
+          RiderId: riderId,
+          SortOrder: riderNumber,
+          IsPublished: false,
+          IsArchived: false,
+          PayloadJson: JSON.stringify(rider)
+        });
+
+        newlySeenKeys.add(nameKey);
+        added += 1;
+      }
+
+      return jsonResponse({
+        ok: true,
+        summary: {
+          totalRows: rows.length,
+          added,
+          duplicates,
+          invalid
+        },
+        source: csvUrl
+      });
     }
 
     if (action === 'addResult') {

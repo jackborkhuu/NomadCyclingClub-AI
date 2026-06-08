@@ -98,10 +98,14 @@
 
               <section class="race-admin-card">
                 <h3>Register Rider</h3>
+                <div class="race-admin-actions">
+                  <button class="button button-secondary" id="syncGoogleRegistrationsBtn" type="button">Sync Google Registrations</button>
+                </div>
                 <form id="riderForm" class="race-form race-form-3col">
                   <input type="text" id="riderName" placeholder="Rider name" required />
                   <input type="text" id="riderState" placeholder="State" required />
                   <input type="text" id="riderTeam" placeholder="Team" required />
+                  <input type="text" id="riderFieldName" placeholder="Field (optional)" />
                   <select id="riderGender" required>
                     <option value="">Gender</option>
                     <option value="Male">Male</option>
@@ -158,6 +162,7 @@
                     <tr>
                       <th>ID</th>
                       <th>Name</th>
+                      <th>Field</th>
                       <th>State</th>
                       <th>Team</th>
                       <th>Gender</th>

@@ -100,6 +100,7 @@ This project now includes a board-managed race system with:
 - `SP_RACE_LIST_NAME` - optional, defaults to `NomadRaceData`
 - `ALLOWED_MEMBER_DOMAIN` - optional, defaults to `nomadcyclingclub.com`
 - `BOARD_GROUP_OBJECT_ID` - board Microsoft 365 group object ID (required for board-only race admin)
+- `GOOGLE_REGISTRATION_SHEET_CSV_URL` - optional Google Sheet CSV export URL used by `syncGoogleRegistrations` (defaults to the configured 2026 registration sheet)
 
 ### Graph permissions required for API app registration
 
