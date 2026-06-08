@@ -247,12 +247,23 @@ async function userInRaceDirectorsGroup(token, userId) {
     throw new Error('Invalid RaceDirectors group object ID configuration. Use a valid Entra object GUID.');
   }
 
-  const payload = await graphRequest(token, `/users/${userId}/checkMemberGroups`, {
-    method: 'POST',
-    body: JSON.stringify({
-      groupIds: [raceDirectorsGroupId]
-    })
-  });
+  let payload;
+  try {
+    payload = await graphRequest(token, `/users/${userId}/checkMemberGroups`, {
+      method: 'POST',
+      body: JSON.stringify({
+        groupIds: [raceDirectorsGroupId]
+      })
+    });
+  } catch (error) {
+    const message = String(error?.message || error || '');
+    if (/Request_ResourceNotFound/i.test(message)) {
+      throw new Error(
+        `Configured RaceDirectors group object ID '${raceDirectorsGroupId}' was not found in this tenant. Update RACE_DIRECTORS_GROUP_OBJECT_ID.`
+      );
+    }
+    throw error;
+  }
 
   return Array.isArray(payload?.value) && payload.value.includes(raceDirectorsGroupId);
 }
