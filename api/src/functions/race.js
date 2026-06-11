@@ -201,19 +201,6 @@ function mapData(items) {
   return { tournaments, stages, riders, results, excelSnapshots, entities };
 }
 
-const BIB_FIELD_RANGES = [
-  { fieldName: 'Men Under 40', bibStart: 1, bibEnd: 50 },
-  { fieldName: 'Men 40+', bibStart: 51, bibEnd: 100 },
-  { fieldName: 'Men 50+', bibStart: 101, bibEnd: 150 },
-  { fieldName: 'Women', bibStart: 151, bibEnd: 200 }
-];
-
-function fieldNameFromBib(bib) {
-  const n = Number(bib);
-  const match = BIB_FIELD_RANGES.find((r) => n >= r.bibStart && n <= r.bibEnd);
-  return match ? match.fieldName : null;
-}
-
 function sanitizeExcelPublishPayload(payload) {
   const stageTables = Array.isArray(payload?.stageTables)
     ? payload.stageTables.map((table, index) => ({
@@ -222,39 +209,14 @@ function sanitizeExcelPublishPayload(payload) {
         stageOrder: index + 1,
         entries: Array.isArray(table?.entries)
           ? table.entries
-              .map((entry) => {
-                const place = Number(entry?.place || entry?.rank || 0);
-                const elapsedMs = Number(entry?.elapsedMs || 0);
-                const gcRank = Number(entry?.gcRank || 0);
-                const gcElapsedMs = Number(entry?.gcElapsedMs || 0);
-                const bonusSec = Number(entry?.bonusSec || 0);
-                const normalizedStatus = String(entry?.resultStatus || '').trim().toUpperCase();
-                const resultStatus = normalizedStatus || (elapsedMs > 0 ? 'FIN' : 'NO_TIME');
-                const isNonFinisher = resultStatus === 'DNF' || resultStatus === 'DNS';
-
-                return {
-                  place: !isNonFinisher && place > 0 ? place : null,
-                  rank: !isNonFinisher && place > 0 ? place : null,
-                  bib: Number(entry?.bib || 0),
-                  fieldName: String(entry?.fieldName || '').trim() || fieldNameFromBib(entry?.bib) || 'Uncategorized',
-                  riderName: String(entry?.riderName || '').trim(),
-                  team: String(entry?.team || '').trim(),
-                  resultStatus,
-                  elapsedMs: !isNonFinisher && elapsedMs > 0 ? elapsedMs : null,
-                  bonusSec: bonusSec > 0 ? bonusSec : 0,
-                  gcRank: gcRank > 0 ? gcRank : null,
-                  gcElapsedMs: gcElapsedMs > 0 ? gcElapsedMs : null
-                };
-              })
-              .filter((entry) => entry.bib > 0 && entry.riderName)
-              .sort((a, b) => {
-                const aPlace = a.place || 99999;
-                const bPlace = b.place || 99999;
-                if (aPlace !== bPlace) {
-                  return aPlace - bPlace;
-                }
-                return a.bib - b.bib;
-              })
+              .map((entry) => ({
+                rank: Number(entry?.rank || 0),
+                bib: Number(entry?.bib || 0),
+                riderName: String(entry?.riderName || '').trim(),
+                team: String(entry?.team || '').trim(),
+                elapsedMs: Number(entry?.elapsedMs || 0)
+              }))
+              .filter((entry) => entry.rank > 0 && entry.bib > 0 && entry.riderName && entry.elapsedMs > 0)
           : []
       }))
     : [];
@@ -262,13 +224,12 @@ function sanitizeExcelPublishPayload(payload) {
   const gc = Array.isArray(payload?.gc)
     ? payload.gc
         .map((entry) => ({
-          rank: Number(entry?.rank || 0) || null,
+          rank: Number(entry?.rank || 0),
           bib: Number(entry?.bib || 0),
           riderName: String(entry?.riderName || '').trim(),
           team: String(entry?.team || '').trim(),
-          gcStatus: String(entry?.gcStatus || 'ACTIVE').trim().toUpperCase(),
           stagesCompleted: Number(entry?.stagesCompleted || 0),
-          elapsedMs: Number(entry?.elapsedMs || 0) || null
+          elapsedMs: Number(entry?.elapsedMs || 0)
         }))
         .filter((entry) => entry.bib > 0 && entry.riderName)
         .sort((a, b) => Number(a.rank || 99999) - Number(b.rank || 99999))
@@ -291,7 +252,7 @@ function resolveExcelPublisher(request, payload = {}) {
 
   const publisherEmail = String(payload?.publisherEmail || '').trim().toLowerCase();
   const publishPassword = String(payload?.publishPassword || '').trim();
-  if (publisherEmail.endsWith(`@${allowedDomain}`) && publishPassword === '2068514132') {
+  if (publisherEmail.endsWith(`@${allowedDomain}`) && publishPassword === '35789') {
     return publisherEmail;
   }
 
@@ -925,18 +886,6 @@ async function handleRaceResults(request) {
     };
   }
 
-  const accept = String(request.headers.get('accept') || '').toLowerCase();
-  const wantsHtml = accept.includes('text/html');
-  if (request.method === 'GET' && wantsHtml) {
-    return {
-      status: 302,
-      headers: {
-        Location: 'https://www.nomadcyclingclub.com/raceresults2026',
-        ...corsHeaders()
-      }
-    };
-  }
-
   try {
     const token = await getAppAccessToken();
     const siteId = await getSiteId(token);
@@ -969,19 +918,7 @@ async function handleRaceResults(request) {
             publishedAt: excelSnapshot.publishedAt || excelSnapshot.updatedAt || null
           }
         ],
-        stageTables: Array.isArray(excelSnapshot.stageTables)
-          ? excelSnapshot.stageTables.map((stage) => ({
-              ...stage,
-              entries: Array.isArray(stage.entries)
-                ? stage.entries.map((entry) => ({
-                    ...entry,
-                    fieldName: (String(entry.fieldName || '').trim() && entry.fieldName !== 'Uncategorized')
-                      ? entry.fieldName
-                      : (fieldNameFromBib(entry.bib) || entry.fieldName || 'Uncategorized')
-                  }))
-                : []
-            }))
-          : [],
+        stageTables: Array.isArray(excelSnapshot.stageTables) ? excelSnapshot.stageTables : [],
         gc: Array.isArray(excelSnapshot.gc) ? excelSnapshot.gc : []
       });
     }

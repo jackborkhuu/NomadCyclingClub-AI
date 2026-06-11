@@ -1814,7 +1814,7 @@ Public Sub PublishRaceResultsCore()
 
   publishStep = "resolve_local_access_code"
   Dim accessCode As String
-  accessCode = "2068514132"
+  accessCode = "35789"
 
   ' Ensure dependent formulas (net time/place/gc) are current before exporting.
   publishStep = "calculate_full"
