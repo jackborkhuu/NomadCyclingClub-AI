@@ -46,12 +46,53 @@ function formatBonusSeconds(seconds) {
 
 async function fetchResults(tournamentId = '') {
   const suffix = tournamentId ? `?tournamentId=${encodeURIComponent(tournamentId)}` : '';
-  const response = await fetch(`/api/race-results${suffix}`);
+  const isLocalFilePreview = window.location.protocol === 'file:';
+  const endpoint = isLocalFilePreview
+    ? `https://www.nomadcyclingclub.com/api/race-results${suffix}`
+    : `/api/race-results${suffix}`;
+  const response = await fetch(endpoint);
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(payload.error || `Failed to load results (${response.status})`);
   }
   return payload;
+}
+
+let tableFitFrame = 0;
+
+function fitFieldTablesToViewport() {
+  const wraps = document.querySelectorAll('.field-table-wrap');
+  wraps.forEach((wrap) => {
+    const table = wrap.querySelector('.field-table');
+    if (!table) {
+      return;
+    }
+
+    table.style.transform = 'none';
+    table.style.transformOrigin = 'top left';
+    wrap.style.height = '';
+
+    const availableWidth = wrap.clientWidth;
+    const naturalWidth = table.getBoundingClientRect().width;
+    if (!availableWidth || !naturalWidth || naturalWidth <= availableWidth) {
+      return;
+    }
+
+    const scale = availableWidth / naturalWidth;
+    table.style.transform = `scale(${scale})`;
+    wrap.style.height = `${Math.ceil(table.offsetHeight * scale)}px`;
+  });
+}
+
+function scheduleFieldTableFit() {
+  if (tableFitFrame) {
+    window.cancelAnimationFrame(tableFitFrame);
+  }
+
+  tableFitFrame = window.requestAnimationFrame(() => {
+    fitFieldTablesToViewport();
+    tableFitFrame = 0;
+  });
 }
 
 function getDisplayPlace(entry) {
@@ -375,9 +416,12 @@ function renderStages(payload, refreshedAt) {
         : '<article class="field-card"><p class="empty-cell">No entries for this stage.</p></article>';
 
       return `
-        <section class="stage-card">
+        <section class="stage-card" data-stage-id="${escapeHtml(stageTable.stageId || '')}">
           <header class="stage-card-head">
-            <h2>${escapeHtml(stageTable.stageName || 'Stage')}</h2>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+              <h2>${escapeHtml(stageTable.stageName || 'Stage')}</h2>
+              <button class="stage-print-btn" type="button" data-stage-id="${escapeHtml(stageTable.stageId || '')}">Print This Stage</button>
+            </div>
           </header>
           <div class="field-grid">${fieldTablesHtml}</div>
         </section>
@@ -461,13 +505,18 @@ function renderStages(payload, refreshedAt) {
     : '<article class="field-card"><p class="empty-cell">No GC data available.</p></article>';
 
   stageGrid.innerHTML += `
-    <section class="stage-card">
+    <section class="stage-card" id="gc-section">
       <header class="stage-card-head">
-        <h2>GC - General Classification</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <h2>GC - General Classification</h2>
+          <button class="stage-print-btn" type="button" id="gc-print-btn">Print This Section</button>
+        </div>
       </header>
       <div class="field-grid">${gcTablesHtml}</div>
     </section>
   `;
+
+  scheduleFieldTableFit();
 }
 
 function setStatus(message, isError = false) {
@@ -496,9 +545,235 @@ async function loadAndRender(tournamentId = '') {
   setStatus(`Showing published results for ${payload.tournament.name}. Data refresh time: ${publishedLabel}`);
 }
 
+function generateStagePDF(stageCard, triggerBtn) {
+  if (!stageCard) {
+    alert('No stage data available for PDF export.');
+    return;
+  }
+
+  const fieldCards = stageCard.querySelectorAll('.field-card');
+  if (fieldCards.length === 0) {
+    alert('No sub-tables available for this stage.');
+    return;
+  }
+
+  const printBtn = triggerBtn || null;
+  const printBtnDefaultLabel = printBtn ? printBtn.textContent : 'Print This Stage';
+  if (printBtn) {
+    printBtn.disabled = true;
+    printBtn.textContent = 'Generating...';
+  }
+
+  const stageTitle = stageCard.querySelector('.stage-card-head h2')?.textContent || 'Stage Results';
+
+  const fieldTablesHtml = Array.from(fieldCards)
+    .map((fieldCard) => {
+      const fieldHead = fieldCard.querySelector('.field-card-head');
+      const fieldHeadHtml = fieldHead ? fieldHead.outerHTML : '';
+      const table = fieldCard.querySelector('.field-table');
+      const tableHtml = table ? table.outerHTML : '';
+      return `
+        <div class="pdf-field-source">
+          ${fieldHeadHtml}
+          ${tableHtml}
+        </div>
+      `;
+    })
+    .join('');
+
+  const finishPrinting = () => {
+    if (printBtn) {
+      printBtn.disabled = false;
+      printBtn.textContent = printBtnDefaultLabel;
+    }
+  };
+
+  try {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      throw new Error('Unable to open print window. Please allow pop-ups and try again.');
+    }
+
+    printWindow.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>${escapeHtml(stageTitle)}</title>
+          <style>
+            @page { size: A4 portrait; margin: 8mm; }
+            * { box-sizing: border-box; }
+            body { margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: 11px; color: #1b1b1b; }
+            .print-page { height: 281mm; page-break-after: always; break-after: page; overflow: hidden; }
+            .print-page:last-child { page-break-after: auto; break-after: auto; }
+            .page-inner { height: 281mm; overflow: hidden; }
+            .pdf-field { margin: 0 0 8px 0; }
+            .pdf-field.scaled { margin-bottom: 0; }
+            .field-card-head { background: #f0f4f8; padding: 8px; margin: 0 0 8px 0; font-size: 12px; }
+            .field-card-head h3 { margin: 0; font-size: 12px; }
+            .field-card-head .field-refreshed { font-size: 10px; color: #666; }
+            .field-card-head p { margin: 4px 0 0; }
+            .field-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+            .field-table th, .field-table td { border: 1px solid #ddd; padding: 5px; text-align: left; }
+            .field-table th { background: #e0ebfb; font-weight: 700; white-space: nowrap; }
+            #sourceFields, #measureRoot { display: none; }
+            #measureRoot {
+              position: fixed;
+              left: -99999px;
+              top: 0;
+              width: calc(100vw - 16mm);
+              display: block;
+              visibility: hidden;
+              pointer-events: none;
+            }
+          </style>
+        </head>
+        <body>
+          <div id="sourceFields">${fieldTablesHtml}</div>
+          <div id="measureRoot"></div>
+          <div id="pagesRoot"></div>
+          <script>
+            (function () {
+              var sourceFields = Array.prototype.slice.call(document.querySelectorAll('.pdf-field-source'));
+              var pagesRoot = document.getElementById('pagesRoot');
+              var measureRoot = document.getElementById('measureRoot');
+
+              function createPage() {
+                var page = document.createElement('section');
+                page.className = 'print-page';
+                var inner = document.createElement('div');
+                inner.className = 'page-inner';
+                page.appendChild(inner);
+                pagesRoot.appendChild(page);
+                return page;
+              }
+
+              function pageInner(page) {
+                return page.querySelector('.page-inner');
+              }
+
+              function getPageCapacity(page) {
+                var inner = pageInner(page);
+                return inner ? inner.clientHeight : 0;
+              }
+
+              function getPageUsed(page) {
+                var inner = pageInner(page);
+                return inner ? inner.scrollHeight : 0;
+              }
+
+              function getPageRemaining(page) {
+                return Math.max(0, getPageCapacity(page) - getPageUsed(page));
+              }
+
+              function measureBlock(block) {
+                measureRoot.appendChild(block);
+                var h = block.getBoundingClientRect().height;
+                measureRoot.removeChild(block);
+                return h;
+              }
+
+              function setScale(block, scaleValue) {
+                var scale = Math.max(0.4, Math.min(1, scaleValue));
+                block.classList.add('scaled');
+                block.style.transformOrigin = 'top left';
+                block.style.transform = 'scale(' + scale + ')';
+                block.style.width = (100 / scale).toFixed(4) + '%';
+              }
+
+              var page = null;
+
+              sourceFields.forEach(function (sourceField, index) {
+                var block = sourceField.cloneNode(true);
+                block.className = 'pdf-field';
+
+                var naturalHeight = measureBlock(block.cloneNode(true));
+                
+                // Create first page on-demand when placing first table
+                if (!page) {
+                  page = createPage();
+                }
+                
+                var remaining = getPageRemaining(page);
+
+                if (naturalHeight <= remaining) {
+                  pageInner(page).appendChild(block);
+                  return;
+                }
+
+                var freshPage = createPage();
+                var freshCapacity = getPageCapacity(freshPage);
+
+                if (naturalHeight <= freshCapacity) {
+                  page = freshPage;
+                  pageInner(page).appendChild(block);
+                  return;
+                }
+
+                // Oversized table: scale to fit a single page.
+                var targetCapacity = freshCapacity;
+                var scale = targetCapacity / Math.max(1, naturalHeight);
+                setScale(block, scale);
+
+                page = freshPage;
+                pageInner(page).appendChild(block);
+              });
+
+              // Remove any completely empty pages (e.g., blank first page)
+              var allPages = pagesRoot.querySelectorAll('.print-page');
+              allPages.forEach(function (pageEl) {
+                var inner = pageEl.querySelector('.page-inner');
+                // Check if page has no children or only empty text nodes
+                if (inner && (inner.children.length === 0 || inner.scrollHeight < 2)) {
+                  pagesRoot.removeChild(pageEl);
+                }
+              });
+
+              window.__layoutReady = true;
+            })();
+          <\/script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+
+    const launchPrint = () => {
+      if (printWindow.closed) {
+        finishPrinting();
+        return;
+      }
+
+      if (!printWindow.__layoutReady) {
+        setTimeout(launchPrint, 120);
+        return;
+      }
+
+      try {
+        printWindow.focus();
+        printWindow.print();
+      } catch (err) {
+        console.warn('Print invocation failed.', err);
+      } finally {
+        finishPrinting();
+      }
+    };
+
+    printWindow.addEventListener('load', launchPrint, { once: true });
+    setTimeout(launchPrint, 700);
+  } catch (err) {
+    console.error('Print window error:', err);
+    alert('Error preparing print preview. Please try again.');
+    finishPrinting();
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const pagePath = window.location.pathname.toLowerCase();
-  const isRaceResultsPage = pagePath.endsWith('race-results.html') || pagePath === '/raceresults2026' || pagePath === '/raceresults2026/';
+  const isRaceResultsPage =
+    pagePath.endsWith('race-results.html') ||
+    pagePath.endsWith('/raceresults2026/index.html') ||
+    pagePath === '/raceresults2026' ||
+    pagePath === '/raceresults2026/';
   if (!isRaceResultsPage) {
     return;
   }
@@ -511,6 +786,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  window.addEventListener('resize', scheduleFieldTableFit);
+
+  const stageGrid = resultsNode('publicStagesGrid');
+  if (stageGrid) {
+    stageGrid.addEventListener('click', (event) => {
+      const btn = event.target?.closest('.stage-print-btn');
+      if (!btn) {
+        return;
+      }
+
+      const card = btn.closest('.stage-card');
+      generateStagePDF(card, btn);
+    });
+  }
+
+  const gcPrintBtn = document.getElementById('gc-print-btn');
+  if (gcPrintBtn) {
+    gcPrintBtn.addEventListener('click', (event) => {
+      const gcSection = document.getElementById('gc-section');
+      if (gcSection) {
+        generateStagePDF(gcSection, gcPrintBtn);
+      }
+    });
+  }
+  
   await refresh();
+  
   window.setInterval(refresh, 15000);
 });
