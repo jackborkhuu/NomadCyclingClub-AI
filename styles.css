@@ -95,28 +95,11 @@ img {
 }
 
 .site-nav .donate-trigger {
-  background: #16a34a;
-  color: #ffffff;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
+  color: var(--muted);
 }
 
 .site-nav .member-login-link {
-  border: 1px solid #2563eb;
-  color: #1d4ed8;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-}
-
-.site-nav .member-login-link:hover {
-  background: #eff6ff;
-  text-decoration: none;
-}
-
-.site-nav .donate-trigger:hover {
-  background: #15803d;
-  color: #ffffff;
-  text-decoration: none;
+  color: var(--muted);
 }
 
 .nav-toggle {
@@ -516,33 +499,7 @@ img {
   border-bottom-color: var(--facebook-blue);
 }
 
-.tab.donate-trigger {
-  background: #16a34a;
-  color: #ffffff;
-  border-bottom-color: #15803d;
-  border-radius: 999px;
-  padding: 8px 14px;
-  margin: 8px 0;
-}
 
-.tab.member-login-link {
-  border: 1px solid #2563eb;
-  color: #1d4ed8;
-  border-radius: 999px;
-  padding: 8px 14px;
-  margin: 8px 0;
-}
-
-.tab.member-login-link:hover {
-  background: #eff6ff;
-  text-decoration: none;
-}
-
-.tab.donate-trigger:hover {
-  background: #15803d;
-  color: #ffffff;
-  text-decoration: none;
-}
 
 .main-content {
   background: #ffffff;
