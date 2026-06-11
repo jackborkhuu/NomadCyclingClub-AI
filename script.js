@@ -77,7 +77,7 @@ function ensureRaceResultsLinks() {
     const resultsLink = document.createElement('a');
     resultsLink.href = '/raceresults2026';
     resultsLink.className = group.classList.contains('tabs') ? 'tab member-login-link' : 'member-login-link';
-    resultsLink.textContent = 'Race Results';
+    resultsLink.textContent = 'Event Results 2026';
 
     const links = [...group.querySelectorAll('a')];
     const contactLink = links.find((link) => (link.getAttribute('href') || '').includes('contact.html'));
@@ -89,6 +89,7 @@ function ensureRaceResultsLinks() {
     }
   });
 }
+
 function initDonateModal() {
   const donateLinks = document.querySelectorAll('.donate-trigger');
   if (donateLinks.length === 0) {

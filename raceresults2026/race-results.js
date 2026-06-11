@@ -534,7 +534,7 @@ async function loadAndRender(tournamentId = '') {
   renderStages(payload, publishedMeta?.date || null);
 
   if (!payload.tournament) {
-    setStatus('No published race results available yet.');
+    setStatus('No published event results available yet.');
     return;
   }
 
@@ -782,7 +782,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       await loadAndRender('');
     } catch (error) {
-      setStatus(error.message || 'Unable to load public race results.', true);
+      setStatus(error.message || 'Unable to load public event results.', true);
     }
   };
 
