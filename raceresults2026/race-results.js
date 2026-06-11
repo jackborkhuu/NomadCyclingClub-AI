@@ -390,7 +390,7 @@ function renderStages(payload, refreshedAt) {
                 <article class="field-card">
                   <header class="field-card-head">
                     <h3>${escapeHtml(stageTable.stageName)} · ${escapeHtml(fieldName)}${refreshedStr ? `<span class="field-refreshed">Updated ${escapeHtml(refreshedStr)}</span>` : ''}</h3>
-                    <p>${entries.length} racer${entries.length === 1 ? '' : 's'}</p>
+                    <p>${entries.length} rider${entries.length === 1 ? '' : 's'}</p>
                   </header>
                   <div class="field-table-wrap">
                     <table class="field-table table-stage">
@@ -478,7 +478,7 @@ function renderStages(payload, refreshedAt) {
             <article class="field-card">
               <header class="field-card-head">
                 <h3>GC - General Classification · ${escapeHtml(table.fieldName)}${refreshedStr ? `<span class="field-refreshed">Updated ${escapeHtml(refreshedStr)}</span>` : ''}</h3>
-                <p>${table.rows.length} racer${table.rows.length === 1 ? '' : 's'}</p>
+                <p>${table.rows.length} rider${table.rows.length === 1 ? '' : 's'}</p>
               </header>
               <div class="field-table-wrap">
                 <table class="field-table table-gc">
