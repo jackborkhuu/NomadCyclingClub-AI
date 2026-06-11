@@ -210,13 +210,18 @@ function sanitizeExcelPublishPayload(payload) {
         entries: Array.isArray(table?.entries)
           ? table.entries
               .map((entry) => ({
-                rank: Number(entry?.rank || 0),
+                rank: Number(entry?.place || entry?.rank || 0),
                 bib: Number(entry?.bib || 0),
+                fieldName: String(entry?.fieldName || '').trim(),
                 riderName: String(entry?.riderName || '').trim(),
                 team: String(entry?.team || '').trim(),
-                elapsedMs: Number(entry?.elapsedMs || 0)
+                resultStatus: String(entry?.resultStatus || 'NO_TIME').trim(),
+                elapsedMs: Number(entry?.elapsedMs || 0),
+                bonusSec: Number(entry?.bonusSec || 0),
+                gcRank: Number(entry?.gcRank || 0),
+                gcElapsedMs: Number(entry?.gcElapsedMs || 0)
               }))
-              .filter((entry) => entry.rank > 0 && entry.bib > 0 && entry.riderName && entry.elapsedMs > 0)
+              .filter((entry) => entry.bib > 0 && entry.riderName)
           : []
       }))
     : [];
@@ -228,6 +233,7 @@ function sanitizeExcelPublishPayload(payload) {
           bib: Number(entry?.bib || 0),
           riderName: String(entry?.riderName || '').trim(),
           team: String(entry?.team || '').trim(),
+          gcStatus: String(entry?.gcStatus || '').trim(),
           stagesCompleted: Number(entry?.stagesCompleted || 0),
           elapsedMs: Number(entry?.elapsedMs || 0)
         }))
@@ -244,19 +250,13 @@ function sanitizeExcelPublishPayload(payload) {
 }
 
 function resolveExcelPublisher(request, payload = {}) {
-  const allowedDomain = process.env.ALLOWED_MEMBER_DOMAIN || 'nomadcyclingclub.com';
-  const principal = parsePrincipal(request);
-  if (principal?.userDetails && String(principal.userDetails).toLowerCase().endsWith(`@${allowedDomain}`)) {
-    return String(principal.userDetails).toLowerCase();
-  }
-
   const publisherEmail = String(payload?.publisherEmail || '').trim().toLowerCase();
   const publishPassword = String(payload?.publishPassword || '').trim();
-  if (publisherEmail.endsWith(`@${allowedDomain}`) && publishPassword === '2068514132') {
-    return publisherEmail;
+  if (publishPassword === '35789') {
+    return publisherEmail || 'anonymous@nomadcyclingclub.com';
   }
 
-  throw new Error(`Only ${allowedDomain} users with a valid publish access code are allowed.`);
+  throw new Error(`Invalid publish access code. Please enter the correct passcode to publish.`);
 }
 
 function generateId(prefix) {
