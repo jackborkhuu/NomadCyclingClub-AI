@@ -539,10 +539,10 @@ async function loadAndRender(tournamentId = '') {
   }
 
   const publishedLabel = publishedMeta
-    ? `${formatRefreshedAt(publishedMeta.date)} (API: ${publishedMeta.raw})`
-    : 'not provided by API';
+    ? formatRefreshedAt(publishedMeta.date)
+    : 'unknown';
 
-  setStatus(`Showing published results for ${payload.tournament.name}. Data refresh time: ${publishedLabel}`);
+  setStatus(`Last updated: ${publishedLabel}`);
 }
 
 function generateStagePDF(stageCard, triggerBtn) {
