@@ -255,6 +255,11 @@ function sortEntries(entries) {
       if (aElapsed !== bElapsed) {
         return aElapsed - bElapsed;
       }
+      const aBib = Number(a.bib || 0);
+      const bBib = Number(b.bib || 0);
+      if (aBib !== bBib) {
+        return aBib - bBib;
+      }
       return String(a.riderName || '').localeCompare(String(b.riderName || ''));
     }
     if (aFin) return -1;
@@ -263,6 +268,9 @@ function sortEntries(entries) {
     const aS = aStatus;
     const bS = bStatus;
     if (aS !== bS) return aS.localeCompare(bS);
+    const aBib = Number(a.bib || 0);
+    const bBib = Number(b.bib || 0);
+    if (aBib !== bBib) return aBib - bBib;
     return String(a.riderName || '').localeCompare(String(b.riderName || ''));
   });
 }
