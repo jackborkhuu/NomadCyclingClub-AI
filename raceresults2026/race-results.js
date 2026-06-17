@@ -109,19 +109,6 @@ function getDisplayTime(entry) {
   return '-';
 }
 
-function getDisplayRawTime(entry) {
-  const status = String(entry.resultStatus || '').toUpperCase();
-  if (status === 'DNF' || status === 'DNS') {
-    return status;
-  }
-  const elapsedMs = Number(entry.elapsedMs || 0);
-  if (elapsedMs > 0) {
-    const bonusMs = Math.max(0, Number(entry.bonusSec || 0)) * 1000;
-    return formatDuration(elapsedMs + bonusMs);
-  }
-  return '-';
-}
-
 function normalizeResultStatus(entry) {
   const status = String(entry?.resultStatus || '').toUpperCase();
   if (status === 'DNF' || status === 'DNS') {
@@ -333,12 +320,11 @@ function renderStages(payload, refreshedAt) {
             .map(([fieldName, entries]) => {
               const stageColGroup = `
                 <colgroup>
-                  <col style="width:7%" />
-                  <col style="width:7%" />
-                  <col style="width:29%" />
-                  <col style="width:20%" />
-                  <col style="width:18%" />
-                  <col style="width:19%" />
+                  <col style="width:8%" />
+                  <col style="width:8%" />
+                  <col style="width:34%" />
+                  <col style="width:24%" />
+                  <col style="width:26%" />
                 </colgroup>
               `;
 
@@ -361,7 +347,6 @@ function renderStages(payload, refreshedAt) {
                       <td>${entry.bib || '-'}</td>
                       <td>${escapeHtml(entry.riderName || '')}</td>
                       <td>${escapeHtml(entry.team || '')}</td>
-                      <td>${escapeHtml(getDisplayRawTime(entry))}</td>
                       <td>${escapeHtml(getDisplayTime(entry))}</td>
                     </tr>
                   `;
@@ -383,8 +368,7 @@ function renderStages(payload, refreshedAt) {
                           <th>Bib#</th>
                           <th>Name</th>
                           <th>Team</th>
-                          <th>Raw</th>
-                          <th>Net</th>
+                          <th>Time</th>
                         </tr>
                       </thead>
                       <tbody>${rowsHtml}</tbody>
