@@ -36,14 +36,6 @@ function formatDurationHms(ms) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-function formatBonusSeconds(seconds) {
-  const total = Number(seconds || 0);
-  if (!Number.isFinite(total) || total <= 0) {
-    return '-';
-  }
-  return `-${total}s`;
-}
-
 async function fetchResults(tournamentId = '') {
   const suffix = tournamentId ? `?tournamentId=${encodeURIComponent(tournamentId)}` : '';
   const isLocalFilePreview = window.location.protocol === 'file:';
@@ -126,14 +118,6 @@ function getDisplayRawTime(entry) {
   if (elapsedMs > 0) {
     const bonusMs = Math.max(0, Number(entry.bonusSec || 0)) * 1000;
     return formatDuration(elapsedMs + bonusMs);
-  }
-  return '-';
-}
-
-function getDisplayBonus(entry) {
-  const bonusSeconds = Number(entry.bonusSec || 0);
-  if (Number.isFinite(bonusSeconds) && bonusSeconds > 0) {
-    return `-${bonusSeconds}s`;
   }
   return '-';
 }
@@ -351,11 +335,10 @@ function renderStages(payload, refreshedAt) {
                 <colgroup>
                   <col style="width:7%" />
                   <col style="width:7%" />
-                  <col style="width:27%" />
+                  <col style="width:29%" />
+                  <col style="width:20%" />
                   <col style="width:18%" />
-                  <col style="width:16%" />
-                  <col style="width:8%" />
-                  <col style="width:17%" />
+                  <col style="width:19%" />
                 </colgroup>
               `;
 
@@ -379,7 +362,6 @@ function renderStages(payload, refreshedAt) {
                       <td>${escapeHtml(entry.riderName || '')}</td>
                       <td>${escapeHtml(entry.team || '')}</td>
                       <td>${escapeHtml(getDisplayRawTime(entry))}</td>
-                      <td>${escapeHtml(getDisplayBonus(entry))}</td>
                       <td>${escapeHtml(getDisplayTime(entry))}</td>
                     </tr>
                   `;
@@ -402,7 +384,6 @@ function renderStages(payload, refreshedAt) {
                           <th>Name</th>
                           <th>Team</th>
                           <th>Raw</th>
-                          <th>Bonus</th>
                           <th>Net</th>
                         </tr>
                       </thead>
@@ -436,14 +417,13 @@ function renderStages(payload, refreshedAt) {
             <colgroup>
               <col style="width:6%" />
               <col style="width:6%" />
-              <col style="width:19%" />
-              <col style="width:15%" />
-              <col style="width:9%" />
+              <col style="width:21%" />
+              <col style="width:16%" />
               <col style="width:10%" />
-              <col style="width:8%" />
               <col style="width:11%" />
-              <col style="width:6%" />
-              <col style="width:10%" />
+              <col style="width:9%" />
+              <col style="width:12%" />
+              <col style="width:9%" />
             </colgroup>
           `;
 
@@ -451,7 +431,6 @@ function renderStages(payload, refreshedAt) {
             .map((row) => {
               const statusText = row.gcStatus;
               const gcTotal = row.gcStatus === 'ACTIVE' ? formatDurationHms(row.elapsedMs) : '-';
-              const bonusTotal = row.gcStatus === 'ACTIVE' ? formatBonusSeconds(row.bonusSecTotal) : '-';
               const stageCells = (table.stageColumns || [])
                 .map((stage) => `<td>${escapeHtml(formatDuration(row.stageElapsedMs?.[stage.id]))}</td>`)
                 .join('');
@@ -463,7 +442,6 @@ function renderStages(payload, refreshedAt) {
                   <td>${escapeHtml(row.team || '')}</td>
                   <td>${escapeHtml(statusText)}</td>
                   ${stageCells}
-                  <td>${escapeHtml(bonusTotal)}</td>
                   <td>${escapeHtml(gcTotal)}</td>
                 </tr>
               `;
@@ -491,7 +469,6 @@ function renderStages(payload, refreshedAt) {
                       <th>Team</th>
                       <th>Status</th>
                       ${stageHeaders}
-                      <th>Bonus</th>
                       <th>GC Total</th>
                     </tr>
                   </thead>
