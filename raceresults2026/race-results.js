@@ -150,7 +150,8 @@ function buildGeneralClassificationByField(stageTables) {
         bonusSecTotal: 0,
         stagesCompleted: 0,
         gcStatus: 'NO_DATA',
-        stageElapsedMs: {}
+        stageElapsedMs: {},
+        stageStatusById: {}
       };
 
       if (!rider.riderName) {
@@ -166,6 +167,9 @@ function buildGeneralClassificationByField(stageTables) {
       const status = normalizeResultStatus(entry);
       if (status === 'DNS' || status === 'DNF') {
         rider.gcStatus = 'OUT';
+        if (allowedStageIds.has(currentStageId)) {
+          rider.stageStatusById[currentStageId] = status;
+        }
       } else if (Number(entry?.elapsedMs) > 0 && rider.gcStatus !== 'OUT') {
         rider.gcStatus = 'ACTIVE';
         rider.elapsedMs += Number(entry.elapsedMs);
@@ -424,7 +428,13 @@ function renderStages(payload, refreshedAt) {
               const statusText = row.gcStatus;
               const gcTotal = row.gcStatus === 'ACTIVE' ? formatDuration(row.elapsedMs) : '-';
               const stageCells = (table.stageColumns || [])
-                .map((stage) => `<td>${escapeHtml(formatDuration(row.stageElapsedMs?.[stage.id]))}</td>`)
+                .map((stage) => {
+                  const stageStatus = row.stageStatusById?.[stage.id];
+                  if (stageStatus === 'DNF' || stageStatus === 'DNS') {
+                    return `<td>${escapeHtml(stageStatus)}</td>`;
+                  }
+                  return `<td>${escapeHtml(formatDuration(row.stageElapsedMs?.[stage.id]))}</td>`;
+                })
                 .join('');
               return `
                 <tr>
