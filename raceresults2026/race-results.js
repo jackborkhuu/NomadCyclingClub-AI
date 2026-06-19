@@ -422,7 +422,7 @@ function renderStages(payload, refreshedAt) {
           const rowsHtml = table.rows
             .map((row) => {
               const statusText = row.gcStatus;
-              const gcTotal = row.gcStatus === 'ACTIVE' ? formatDurationHms(row.elapsedMs) : '-';
+              const gcTotal = row.gcStatus === 'ACTIVE' ? formatDuration(row.elapsedMs) : '-';
               const stageCells = (table.stageColumns || [])
                 .map((stage) => `<td>${escapeHtml(formatDuration(row.stageElapsedMs?.[stage.id]))}</td>`)
                 .join('');
